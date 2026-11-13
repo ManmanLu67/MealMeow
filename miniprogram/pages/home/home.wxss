@@ -1,0 +1,3 @@
+.page { padding: 32rpx; color: #2c2825; }
+.row { margin-top: 24rpx; }
+.stage { margin-top: 48rpx; min-height: 240rpx; }

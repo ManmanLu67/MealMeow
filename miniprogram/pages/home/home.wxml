@@ -1,0 +1,20 @@
+<view class="page">
+  <view>今天</view>
+  <view class="row">
+    <text data-meal="breakfast" bindtap="goCheckin">早</text>
+    <text data-meal="lunch" bindtap="goCheckin"> 中</text>
+    <text data-meal="dinner" bindtap="goCheckin"> 晚</text>
+  </view>
+  <view class="stage" wx:if="{{petView === 'memorial'}}">
+    <view>纪念页</view>
+    <view>陪伴 {{companyDays}} 天 · 共吃 {{mealsEaten}} 餐</view>
+    <view>相关进度已清空</view>
+    <view>冷却剩余 {{cooldownDays}} 天</view>
+  </view>
+  <view class="stage" wx:elif="{{petView === 'living'}}">
+    <view>{{bandText}}</view>
+    <view>陪伴与记录</view>
+  </view>
+  <view class="stage" wx:else bindtap="goAdopt">还没有宠物 · 领养</view>
+  <view class="row">相机</view>
+</view>

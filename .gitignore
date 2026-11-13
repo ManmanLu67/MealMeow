@@ -1,0 +1,10 @@
+node_modules/
+miniprogram/miniprogram_npm/
+.DS_Store
+project.private.config.json
+
+# Doubao project-skill junctions. Recreate with scripts/sync-project-skills.ps1.
+.agents/skills/
+
+# Written by the session hook. Not a document to commit.
+docs/agent/session-last.md

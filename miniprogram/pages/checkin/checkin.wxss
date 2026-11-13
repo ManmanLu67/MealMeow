@@ -1,0 +1,6 @@
+.page { padding: 32rpx; color: #2c2825; }
+.row { margin-top: 24rpx; }
+.bar { display: flex; justify-content: space-between; }
+.preview { margin-top: 32rpx; min-height: 360rpx; background: #efeae3; }
+.primary { margin-top: 48rpx; text-align: center; }
+.link { margin-top: 24rpx; text-align: center; }

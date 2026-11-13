@@ -1,0 +1,2 @@
+.page { padding: 32rpx; color: #2c2825; }
+.row { margin-top: 24rpx; }

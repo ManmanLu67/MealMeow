@@ -1,0 +1,7 @@
+<view class="page">
+  <view>昵称</view>
+  <view class="row">账号 ID</view>
+  <navigator class="row" url="/pages/settings/meals/meals">饭点设置</navigator>
+  <navigator class="row" url="/pages/settings/reminder/reminder">提醒设置</navigator>
+  <navigator class="row" url="/pages/settings/about/about">隐私与关于</navigator>
+</view>

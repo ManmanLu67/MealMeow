@@ -1,0 +1,282 @@
+import assert from 'node:assert/strict'
+import { describe, it } from 'node:test'
+import {
+  applyMeal,
+  cameraAction,
+  canAdopt,
+  canUseStaple,
+  chipLabel,
+  chipState,
+  cooldownUntil,
+  dayComplete,
+  deleteCheckin,
+  effectiveClocks,
+  evaluateFeeding,
+  homeBadge,
+  homePetView,
+  jobReady,
+  logicalDate,
+  mealInstant,
+  mealWindow,
+  nextHunger,
+  openMeals,
+  personalStreak,
+  petBand,
+  reviewDeadline,
+  settleStep,
+  settlementOutcome,
+  stapleMonth,
+  streakEndingAt,
+  validateMealClocks,
+} from '../domain/index.ts'
+
+const SH = 'Asia/Shanghai'
+const clocks = { breakfast: '07:30', lunch: '12:00', dinner: '18:00' }
+
+describe('logical day', () => {
+  it('04:00 starts the new day in Shanghai', () => {
+    assert.equal(logicalDate(new Date('2026-11-12T19:59:00Z'), SH), '2026-11-12')
+    assert.equal(logicalDate(new Date('2026-11-12T20:00:00Z'), SH), '2026-11-13')
+  })
+
+  it('places a pre-04:00 clock on the next calendar morning', () => {
+    const at = mealInstant('2026-11-13', '03:00', SH)
+    assert.equal(at.toISOString(), '2026-11-13T19:00:00.000Z')
+  })
+
+  it('converts a New York wall clock', () => {
+    const at = mealInstant('2026-11-13', '12:00', 'America/New_York')
+    assert.equal(at.toISOString(), '2026-11-13T17:00:00.000Z')
+  })
+})
+
+describe('meal windows', () => {
+  it('uses a half-open two-hour window', () => {
+    const window = mealWindow('2026-11-13', '07:30', SH)
+    assert.equal(chipState(new Date('2026-11-12T22:29:00Z'), window, null), 'upcoming')
+    assert.equal(chipState(new Date('2026-11-12T22:30:00Z'), window, null), 'due')
+    assert.equal(chipState(new Date('2026-11-13T00:29:00Z'), window, null), 'due')
+    assert.equal(chipState(new Date('2026-11-13T00:30:00Z'), window, null), 'missed')
+    assert.equal(chipState(new Date('2026-11-13T00:00:00Z'), window, 'checked_in'), 'checked_in')
+  })
+
+  it('allows a gap of exactly two hours and rejects less', () => {
+    assert.equal(validateMealClocks({ breakfast: '07:30', lunch: '09:30', dinner: '18:00' }), null)
+    assert.equal(
+      validateMealClocks({ breakfast: '07:30', lunch: '09:29', dinner: '18:00' }),
+      '相邻饭点至少相隔 2 小时',
+    )
+  })
+
+  it('rejects a wrap-around gap under two hours', () => {
+    assert.equal(
+      validateMealClocks({ breakfast: '04:30', lunch: '12:00', dinner: '03:00' }),
+      '相邻饭点至少相隔 2 小时',
+    )
+  })
+
+  it('labels chips the way the home page does', () => {
+    assert.equal(chipLabel('breakfast', 'due'), '早 · 待打卡')
+    assert.equal(chipLabel('lunch', 'exempt'), '中 · 口粮')
+    assert.equal(chipLabel('dinner', 'missed'), '晚 · 漏')
+  })
+
+  it('opens only the meal whose window contains now', () => {
+    const now = new Date('2026-11-12T22:40:00Z')
+    assert.deepEqual(openMeals(now, clocks, {}, SH), ['breakfast'])
+    assert.deepEqual(cameraAction(['breakfast']), { type: 'checkin', meal: 'breakfast' })
+    assert.deepEqual(cameraAction([]), { type: 'toast' })
+  })
+
+  it('shows the home badge only while a meal is due', () => {
+    assert.equal(homeBadge(['upcoming', 'due', 'missed']), true)
+    assert.equal(homeBadge(['checked_in', 'missed', 'upcoming']), false)
+  })
+
+  it('keeps saved clocks until the next logical day', () => {
+    const pending = {
+      clocks: { breakfast: '08:00', lunch: '12:30', dinner: '18:30' },
+      effectiveOn: '2026-11-14',
+    }
+    assert.equal(effectiveClocks(clocks, pending, '2026-11-13').breakfast, '07:30')
+    assert.equal(effectiveClocks(clocks, pending, '2026-11-14').breakfast, '08:00')
+  })
+})
+
+describe('pet hunger', () => {
+  it('recovers one band per meal and starves by one point', () => {
+    assert.equal(applyMeal(8, 'fed'), 5)
+    assert.equal(applyMeal(5, 'fed'), 2)
+    assert.equal(applyMeal(2, 'fed'), 0)
+    assert.equal(applyMeal(0, 'fed'), 0)
+    assert.equal(applyMeal(8, 'starved'), 9)
+    assert.equal(applyMeal(9, 'fed'), 9)
+  })
+
+  it('maps hunger to the five words', () => {
+    assert.equal(petBand(0), 'full')
+    assert.equal(petBand(2), 'peckish')
+    assert.equal(petBand(5), 'hungry')
+    assert.equal(petBand(8), 'critical')
+    assert.equal(petBand(9), 'dead')
+  })
+
+  it('settles at window end and skips a missing pet', () => {
+    assert.equal(settlementOutcome('exempt'), 'fed')
+    assert.equal(settlementOutcome(null), 'starved')
+    assert.equal(nextHunger(6, 'fed'), 5)
+    assert.equal(nextHunger(null, 'starved'), null)
+  })
+
+  it('blocks adoption until seven logical days later at 04:00', () => {
+    const died = new Date('2026-11-13T07:00:00Z')
+    const until = cooldownUntil(died, SH)
+    assert.equal(until.toISOString(), '2026-11-19T20:00:00.000Z')
+    assert.equal(canAdopt(until, new Date('2026-11-19T19:59:00Z')), false)
+    assert.equal(canAdopt(until, until), true)
+  })
+})
+
+describe('staple, gallery delete, streak', () => {
+  it('rolls the staple month at 04:00 on the 1st', () => {
+    assert.equal(stapleMonth(new Date('2026-09-30T19:59:00Z'), SH), '2026-09')
+    assert.equal(stapleMonth(new Date('2026-09-30T20:00:00Z'), SH), '2026-10')
+  })
+
+  it('hides staple when there is no living pet', () => {
+    assert.equal(canUseStaple({
+      livingPet: false,
+      inWindow: true,
+      settled: false,
+      stapleLeft: 2,
+      alreadyRecorded: false,
+    }), false)
+  })
+
+  it('cancels an unsettled check-in and only hides photos after settlement', () => {
+    assert.equal(deleteCheckin(false), 'cancel')
+    assert.equal(deleteCheckin(true), 'hide_photos')
+  })
+
+  it('counts a day only when all three meals are done', () => {
+    assert.equal(dayComplete(['checked_in', 'exempt', 'checked_in']), true)
+    assert.equal(dayComplete(['checked_in', null, 'checked_in']), false)
+    assert.equal(streakEndingAt(['2026-11-11', '2026-11-12', '2026-11-13'], '2026-11-13'), 3)
+    assert.equal(streakEndingAt(['2026-11-11', '2026-11-13'], '2026-11-13'), 1)
+  })
+
+  it('keeps shared days while the pet lives, then starts personal time after death', () => {
+    const dates = ['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13']
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-13',
+      adoptedOn: '2026-11-10',
+      diedOn: null,
+    }), 4)
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-13',
+      adoptedOn: '2026-11-10',
+      diedOn: '2026-11-12',
+    }), 1)
+  })
+
+  it('subtracts pet days from a check-in-first streak only after death', () => {
+    const dates = ['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13']
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-13',
+      adoptedOn: '2026-11-12',
+      diedOn: null,
+    }), 4)
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-13',
+      adoptedOn: '2026-11-12',
+      diedOn: '2026-11-12',
+    }), 3)
+  })
+})
+
+describe('settlement job and review', () => {
+  const end = new Date('2026-11-13T04:00:00Z')
+
+  it('answers fed or starved and refuses a group subject', () => {
+    assert.deepEqual(evaluateFeeding('personal', '2026-11-13', 'lunch', [{ status: 'exempt' }]), {
+      outcome: 'fed',
+    })
+    assert.deepEqual(evaluateFeeding('personal', '2026-11-13', 'lunch', []), {
+      outcome: 'starved',
+    })
+    assert.throws(
+      () => evaluateFeeding('group', '2026-11-13', 'lunch', [{ status: 'checked_in' }]),
+      /不能结算小组/,
+    )
+  })
+
+  it('freezes the pet until review finishes, and never auto-decides', () => {
+    assert.deepEqual(settleStep({
+      now: new Date(end.getTime() - 1),
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'passed',
+    }), { kind: 'not_due' })
+    assert.deepEqual(settleStep({
+      now: end,
+      windowEndAt: end,
+      record: 'exempt',
+      review: null,
+    }), { kind: 'settle', outcome: 'fed' })
+    assert.deepEqual(settleStep({
+      now: end,
+      windowEndAt: end,
+      record: null,
+      review: null,
+    }), { kind: 'settle', outcome: 'starved' })
+    assert.deepEqual(settleStep({
+      now: new Date(end.getTime() + 60 * 60 * 1000),
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'pending',
+    }), { kind: 'frozen', reason: 'waiting_review' })
+    assert.equal(reviewDeadline(end).toISOString(), '2026-11-13T06:00:00.000Z')
+    assert.deepEqual(settleStep({
+      now: reviewDeadline(end),
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'pending',
+    }), { kind: 'frozen', reason: 'manual_review' })
+    assert.deepEqual(settleStep({
+      now: new Date(end.getTime() + 3 * 60 * 60 * 1000),
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'manual',
+    }), { kind: 'frozen', reason: 'manual_review' })
+    assert.deepEqual(settleStep({
+      now: end,
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'passed',
+    }), { kind: 'settle', outcome: 'fed' })
+    assert.deepEqual(settleStep({
+      now: end,
+      windowEndAt: end,
+      record: 'checked_in',
+      review: 'rejected',
+    }), { kind: 'settle', outcome: 'starved' })
+  })
+
+  it('scans pending jobs whose window has ended', () => {
+    assert.equal(jobReady('pending', end, end), true)
+    assert.equal(jobReady('pending', end, new Date(end.getTime() - 1)), false)
+    assert.equal(jobReady('waiting_review', end, end), false)
+    assert.equal(jobReady('settled', end, end), false)
+  })
+
+  it('puts the memorial on the home pet area and drops it after cooldown', () => {
+    assert.equal(homePetView('none', true), 'pasture')
+    assert.equal(homePetView('alive', false), 'living')
+    assert.equal(homePetView('dead', false), 'memorial')
+    assert.equal(homePetView('dead', true), 'pasture')
+  })
+})

@@ -1,0 +1,13 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false
+  },
+  "appid": "touristappid",
+  "projectname": "吃饭喵",
+  "compileType": "miniprogram"
+}

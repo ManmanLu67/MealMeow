@@ -1,0 +1,5 @@
+<view class="page">
+  <view>连续打卡</view>
+  <view class="row">日期条</view>
+  <view class="row">早餐 / 午餐 / 晚餐</view>
+</view>

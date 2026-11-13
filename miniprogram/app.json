@@ -1,0 +1,44 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/gallery/gallery",
+    "pages/me/me",
+    "pages/checkin/checkin",
+    "pages/adopt/adopt",
+    "pages/settings/meals/meals",
+    "pages/settings/reminder/reminder",
+    "pages/settings/about/about"
+  ],
+  "window": {
+    "navigationBarTitleText": "吃饭喵",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#F6F3EE"
+  },
+  "tabBar": {
+    "color": "#8A847C",
+    "selectedColor": "#2F6B4F",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "assets/tab/home.png",
+        "selectedIconPath": "assets/tab/home-on.png"
+      },
+      {
+        "pagePath": "pages/gallery/gallery",
+        "text": "图鉴",
+        "iconPath": "assets/tab/gallery.png",
+        "selectedIconPath": "assets/tab/gallery-on.png"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的",
+        "iconPath": "assets/tab/me.png",
+        "selectedIconPath": "assets/tab/me-on.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}
