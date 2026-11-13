@@ -76,8 +76,12 @@ export function createMemoryStore(): Store {
     async saveJob(doc) {
       jobs.set(subjectMealKey(doc.subjectId, doc.date, doc.meal), doc)
     },
-    async listPendingJobs(_nowIso) {
-      return [...jobs.values()]
+    async listPendingJobs(nowIso) {
+      const out: SettlementJobDoc[] = []
+      for (const job of jobs.values()) {
+        if (job.status === 'pending' && job.windowEndAt <= nowIso) out.push(job)
+      }
+      return out
     },
     async getSettlement(subjectId, date, meal) {
       return settlements.get(subjectMealKey(subjectId, date, meal)) ?? null

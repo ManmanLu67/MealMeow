@@ -80,4 +80,38 @@ describe('memory store', () => {
     assert.equal(rows[0].userId, 'u1')
     assert.equal(rows[0].date, '2026-11-13')
   })
+
+  it('pending scan skips held and future jobs', async () => {
+    const now = '2026-11-13T04:00:00.000Z'
+    const store = createMemoryStore()
+    await store.saveJob({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: '2026-11-13',
+      meal: 'breakfast',
+      windowEndAt: now,
+      status: 'pending',
+    })
+    await store.saveJob({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: '2026-11-13',
+      meal: 'lunch',
+      windowEndAt: now,
+      status: 'waiting_review',
+    })
+    await store.saveJob({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: '2026-11-13',
+      meal: 'dinner',
+      windowEndAt: '2026-11-13T05:00:00.000Z',
+      status: 'pending',
+    })
+    const due = await store.listPendingJobs(now)
+    assert.deepEqual(
+      due.map((job) => job.meal),
+      ['breakfast'],
+    )
+  })
 })
