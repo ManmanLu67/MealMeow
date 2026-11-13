@@ -5,7 +5,7 @@
 
 ## 1. Current goal
 
-正式写云函数和页面行为之前，先把开发骨架和互相冲突的规则收成一套。
+按拆开的五份计划实现。先做存储，再做打卡和结算。
 
 ## 2. Status
 
@@ -38,9 +38,9 @@
 
 ## 7. Next actions
 
-1. 你确认三份规划文档和 `docs/agent/ARCHITECTURE.md` 是否还要改。
-2. 设计批准前不接云数据库，不拆新的云函数。
-3. 开工时先补失败测试，再写 `cloudfunctions/api` 和 `settle` 的真实读写。
+1. 你看 `docs/superpowers/plans/2026-11-13-mvp-split.md`，选定执行方式后再写代码。
+2. 第一份实现计划是 `2026-11-13-store.md`。
+3. 微信云函数留到第五份计划，前四份只跑 `node --test`。
 
 ## 8. References
 

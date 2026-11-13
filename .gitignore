@@ -1,4 +1,5 @@
 node_modules/
+.worktrees/
 miniprogram/miniprogram_npm/
 
 .DS_Store
