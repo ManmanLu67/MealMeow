@@ -83,3 +83,34 @@ export async function runDueJobs(
 
   return { settled, frozen }
 }
+
+export async function applyReview(
+  store: Store,
+  caller: { userId: string },
+  input: { date: string; meal: MealType; review: 'passed' | 'rejected' },
+  now: Date,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const job = await store.getJob(caller.userId, input.date, input.meal)
+  if (job === null) {
+    return { ok: false, error: '无结算任务' }
+  }
+  if (job.status === 'settled') {
+    return { ok: false, error: 'already_settled' }
+  }
+  if (job.status !== 'waiting_review' && job.status !== 'manual_review') {
+    return { ok: false, error: '状态不可审核' }
+  }
+
+  if (input.review === 'passed') {
+    const record = await store.getRecord(caller.userId, input.date, input.meal)
+    if (record !== null) {
+      await store.saveRecord({ ...record, review: 'passed' })
+    }
+  } else {
+    await store.deleteRecord(caller.userId, input.date, input.meal)
+  }
+
+  await store.saveJob({ ...job, status: 'pending' })
+  await runDueJobs(store, now)
+  return { ok: true }
+}
