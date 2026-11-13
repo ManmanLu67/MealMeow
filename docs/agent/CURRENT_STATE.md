@@ -5,25 +5,27 @@
 
 ## 1. Current goal
 
-按拆开的五份计划实现。先做存储，再做打卡和结算。
+存储、打卡和结算已经写在 `feat/store`。下一批是首页和相册的读模型，然后才接微信云函数。
 
 ## 2. Status
 
-- Stage: 规则已收口，产品功能未开工
-- Branch: main
-- Relevant code commit: ae9f24d
+- Stage: 存储、打卡、结算的命令已在隔离分支
+- Branch: feat/store（工作树 `.worktrees/feat-store`，main 停在计划提交）
+- Relevant code commit: c1a89c4
 - Overall: in progress
 
 ## 3. Completed and verified
 
-- 领域规则在 `domain/`，测试在 `test/domain.test.ts`。上一轮会话跑过 `node --test test/domain.test.ts`，24 项通过。本轮没有改领域代码，没有重跑。
-- 开发骨架已按全局规则补上：`AGENTS.md`、`CLAUDE.md`、`docs/agent/`、`scripts/sync-project-skills.ps1`。
+- 本轮在 `.worktrees/feat-store` 跑过 `node --test test/settle-run.test.ts test/checkin.test.ts test/store.test.ts test/domain.test.ts`，40 项通过。
+- `createMemoryStore` 按用户、日期、餐次覆盖。`listPendingJobs` 只返回窗口已到且仍为 `pending` 的任务。`listHeldJobs` 返回审核等待已过截止时间的任务。
+- `saveMeals` 把新饭点留到次日。`finishCheckin` 不改饥饿。`useStaple` 写口粮。`removeCheckin` 结算前删记录，结算后只隐藏照片。
+- `runDueJobs` 漏餐和驳回挨饿，审核未终态冻结，截止后改为人工复核。`applyReview` 同一餐只结算一次。
 
 ## 4. Current work
 
-- Task: 无正在写的功能
-- Expected behavior: 三份规划文档已经按 `docs/agent/ARCHITECTURE.md` 改过
-- Files / modules: `D:\Project\任务规划\吃饭喵` 的《个人用户版本》《页面设计》《技术架构》
+- Task: 存储、打卡、结算三份计划的任务已复查通过
+- Expected behavior: 打卡不喂宠物。窗口结束才结算。两小时内没有审核结果就进入人工复核，饥饿不变。
+- Files / modules: `app/types.ts`、`app/store.ts`、`app/checkin.ts`、`app/settle.ts`
 
 ## 5. Decisions
 
@@ -38,9 +40,9 @@
 
 ## 7. Next actions
 
-1. 你看 `docs/superpowers/plans/2026-11-13-mvp-split.md`，选定执行方式后再写代码。
-2. 第一份实现计划是 `2026-11-13-store.md`。
-3. 微信云函数留到第五份计划，前四份只跑 `node --test`。
+1. 读模型和领养页按 `docs/superpowers/plans/2026-11-13-views.md`。
+2. 微信云函数仍留在 `2026-11-13-wechat.md`。页面动作不能自己把审核写成通过。
+3. 这三份计划还没有合进 main。
 
 ## 8. References
 
