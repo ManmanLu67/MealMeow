@@ -39,19 +39,28 @@ export async function runDueJobs(
       continue
     }
 
-    if ((await store.getSettlement(job.subjectId, job.date, job.meal)) !== null) continue
+    const existing = await store.getSettlement(job.subjectId, job.date, job.meal)
+    if (existing !== null) {
+      if (job.status !== 'settled') {
+        await store.saveJob({ ...job, status: 'settled' })
+        settled += 1
+      }
+      continue
+    }
 
-    const { outcome } = evaluateFeeding('personal', job.date, job.meal, [
-      { status: record?.status ?? null },
-    ])
+    const participants =
+      step.outcome === 'starved'
+        ? [{ status: null as const }]
+        : [{ status: record!.status }]
+    evaluateFeeding('personal', job.date, job.meal, participants)
+
     const pet = await store.getPet(job.subjectId)
     const hungerBefore = pet?.hunger ?? 0
     let hungerAfter = hungerBefore
 
     if (pet !== null && pet.alive) {
-      const updated = nextHunger(pet.hunger, outcome)
+      const updated = nextHunger(pet.hunger, step.outcome)
       hungerAfter = updated ?? hungerBefore
-      await store.savePet({ ...pet, hunger: hungerAfter })
     }
 
     await store.saveSettlement({
@@ -59,10 +68,15 @@ export async function runDueJobs(
       subjectId: job.subjectId,
       date: job.date,
       meal: job.meal,
-      outcome,
+      outcome: step.outcome,
       hungerBefore,
       hungerAfter,
     })
+
+    if (pet !== null && pet.alive) {
+      await store.savePet({ ...pet, hunger: hungerAfter })
+    }
+
     await store.saveJob({ ...job, status: 'settled' })
     settled += 1
   }
