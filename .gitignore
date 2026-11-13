@@ -1,7 +1,16 @@
 node_modules/
 miniprogram/miniprogram_npm/
+
 .DS_Store
+Thumbs.db
+Desktop.ini
+
 project.private.config.json
+
+.env
+.env.*
+!.env.example
+private.*.key
 
 # Doubao project-skill junctions. Recreate with scripts/sync-project-skills.ps1.
 .agents/skills/
