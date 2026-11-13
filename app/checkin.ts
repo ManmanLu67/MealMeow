@@ -38,17 +38,24 @@ export async function saveMeals(
 
   for (const meal of MEALS) {
     const existing = await store.getJob(caller.userId, effectiveOn, meal)
-    if (existing !== null) continue
-
     const window = mealWindow(effectiveOn, clocks[meal], user.timeZone)
-    await store.saveJob({
-      subjectType: 'personal',
-      subjectId: caller.userId,
-      date: effectiveOn,
-      meal,
-      windowEndAt: window.end.toISOString(),
-      status: 'pending',
-    })
+    const windowEndAt = window.end.toISOString()
+
+    if (existing === null) {
+      await store.saveJob({
+        subjectType: 'personal',
+        subjectId: caller.userId,
+        date: effectiveOn,
+        meal,
+        windowEndAt,
+        status: 'pending',
+      })
+      continue
+    }
+
+    if (existing.status === 'pending') {
+      await store.saveJob({ ...existing, windowEndAt })
+    }
   }
 
   return { ok: true, effectiveOn }
@@ -111,6 +118,10 @@ export async function useStaple(
   }
 
   const logicalToday = logicalDate(now, user.timeZone)
+  if (input.date !== logicalToday) {
+    return { ok: false, error: '日期不符' }
+  }
+
   const currentMonth = stapleMonth(now, user.timeZone)
   let stapleLeft = user.stapleLeft
   let nextStapleMonth = user.stapleMonth
@@ -167,7 +178,7 @@ export async function removeCheckin(
   input: { date: string; meal: MealType },
 ): Promise<
   | { ok: true; effect: 'cancel' | 'hide_photos' }
-  | { ok: false; error?: string }
+  | { ok: false; error: string }
 > {
   const user = await store.getUser(caller.userId)
   if (user === null) {
@@ -176,7 +187,7 @@ export async function removeCheckin(
 
   const record = await store.getRecord(caller.userId, input.date, input.meal)
   if (record === null) {
-    return { ok: false }
+    return { ok: false, error: '无打卡记录' }
   }
 
   const settled = (await store.getSettlement(caller.userId, input.date, input.meal)) !== null
