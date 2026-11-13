@@ -10,8 +10,8 @@
 ## 2. Status
 
 - Stage: 规则已收口，产品功能未开工
-- Branch: 仓库还没有任何提交，工作区文件都未跟踪
-- Relevant code commit: 无
+- Branch: main
+- Relevant code commit: ae9f24d
 - Overall: in progress
 
 ## 3. Completed and verified
