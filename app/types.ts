@@ -35,7 +35,7 @@ export type UserDoc = {
   nickname: string
   timeZone: string
   meals: MealClocks
-  pendingMeals: MealClocks | null
+  pendingMeals: { clocks: MealClocks; effectiveOn: string } | null
   stapleLeft: number
   stapleMonth: string
   cooldownUntil: string | null
