@@ -1,3 +1,4 @@
+import { reviewDeadline } from '../domain/settlement.ts'
 import type {
   MealRecordDoc,
   PetDoc,
@@ -18,6 +19,7 @@ export type Store = {
   getJob(subjectId: string, date: string, meal: SettlementJobDoc['meal']): Promise<SettlementJobDoc | null>
   saveJob(doc: SettlementJobDoc): Promise<void>
   listPendingJobs(nowIso: string): Promise<SettlementJobDoc[]>
+  listHeldJobs(nowIso: string): Promise<SettlementJobDoc[]>
   getSettlement(
     subjectId: string,
     date: string,
@@ -80,6 +82,15 @@ export function createMemoryStore(): Store {
       const out: SettlementJobDoc[] = []
       for (const job of jobs.values()) {
         if (job.status === 'pending' && job.windowEndAt <= nowIso) out.push(job)
+      }
+      return out
+    },
+    async listHeldJobs(nowIso) {
+      const now = new Date(nowIso)
+      const out: SettlementJobDoc[] = []
+      for (const job of jobs.values()) {
+        if (job.status !== 'waiting_review') continue
+        if (now >= reviewDeadline(new Date(job.windowEndAt))) out.push(job)
       }
       return out
     },

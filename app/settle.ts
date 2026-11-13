@@ -81,6 +81,17 @@ export async function runDueJobs(
     settled += 1
   }
 
+  const heldJobs = await store.listHeldJobs(now.toISOString())
+  heldJobs.sort((a, b) => {
+    const byWindow = a.windowEndAt.localeCompare(b.windowEndAt)
+    if (byWindow !== 0) return byWindow
+    return mealRank[a.meal] - mealRank[b.meal]
+  })
+  for (const job of heldJobs) {
+    await store.saveJob({ ...job, status: 'manual_review' })
+    frozen += 1
+  }
+
   return { settled, frozen }
 }
 
@@ -103,9 +114,10 @@ export async function applyReview(
 
   if (input.review === 'passed') {
     const record = await store.getRecord(caller.userId, input.date, input.meal)
-    if (record !== null) {
-      await store.saveRecord({ ...record, review: 'passed' })
+    if (record === null) {
+      return { ok: false, error: '无打卡记录' }
     }
+    await store.saveRecord({ ...record, review: 'passed' })
   } else {
     await store.deleteRecord(caller.userId, input.date, input.meal)
   }

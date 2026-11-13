@@ -47,7 +47,6 @@ test('a missing record starves and a pending review freezes', async () => {
   assert.equal((await store.getPet('u')).hunger, 5)
   assert.equal((await store.getJob('u', '2026-11-13', 'lunch')).status, 'waiting_review')
   const later = new Date(end.getTime() + 2 * 60 * 60 * 1000)
-  await store.saveJob({ ...(await store.getJob('u', '2026-11-13', 'lunch')), status: 'pending' })
   await runDueJobs(store, later)
   assert.equal((await store.getPet('u')).hunger, 5)
   assert.equal((await store.getJob('u', '2026-11-13', 'lunch')).status, 'manual_review')
