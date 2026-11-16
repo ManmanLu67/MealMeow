@@ -1,5 +1,6 @@
 export {
   addIsoDays,
+  daysBetweenInclusive,
   logicalDate,
   logicalDayStart,
   mealInstant,
@@ -7,6 +8,7 @@ export {
 } from './time.ts'
 export {
   MEALS,
+  STAPLE_PER_MONTH,
   cameraAction,
   canUseStaple,
   chipLabel,
@@ -25,6 +27,7 @@ export { PET_BAND_TEXT, applyMeal, canAdopt, cooldownUntil, homePetView, petBand
 export type { HomePetView, PetBand } from './pet.ts'
 export {
   REVIEW_WAIT_MS,
+  aggregateReview,
   evaluateFeeding,
   jobReady,
   nextHunger,
@@ -32,6 +35,13 @@ export {
   settleStep,
   settlementOutcome,
 } from './settlement.ts'
-export type { FeedingEvaluation, JobStatus, MealReview, SettleStep, SubjectType } from './settlement.ts'
-export { dayComplete, personalStreak, streakEndingAt } from './streak.ts'
+export type {
+  FeedingEvaluation,
+  JobStatus,
+  MealReview,
+  PhotoReview,
+  SettleStep,
+  SubjectType,
+} from './settlement.ts'
+export { dayComplete, personalStreak, streakAnchor, streakEndingAt } from './streak.ts'
 export type { StreakInput } from './streak.ts'

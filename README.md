@@ -5,6 +5,8 @@
 ## 目录
 
 - `domain/` 纯规则。不依赖微信、云开发、数据库。
+- `app/` 命令层。只认 `app/ports.ts` 里的 `Store` 接口，`app/handle.ts` 是与平台无关的入口。
+- `adapters/` 存储的具体实现。现在有内存实现，云数据库和手机本地库以后加在这里。
 - `miniprogram/` 页面壳。三个 Tab：首页、图鉴、我的。全屏页：打卡、领养、饭点、提醒、关于。没有宠物页。
 - `cloudfunctions/api` 给页面调用的入口，还没实现。
 - `cloudfunctions/settle` 定时结算，还没实现。每分钟扫描 `settlement_jobs` 里窗口已过且仍为 `pending` 的任务。
@@ -31,5 +33,6 @@
 ## 测试
 
 ```bash
-node --test test/domain.test.ts
+npm test            # node --test "test/*.test.ts"
+npm run typecheck   # tsc --noEmit
 ```

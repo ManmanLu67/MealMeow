@@ -5,8 +5,9 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["domain/**/*.ts", "test/**/*.ts"]
+  "include": ["domain/**/*.ts", "app/**/*.ts", "adapters/**/*.ts", "test/**/*.ts"]
 }

@@ -1,32 +1,12 @@
-import { reviewDeadline } from '../domain/settlement.ts'
+import { reviewDeadline } from '../../domain/settlement.ts'
+import type { Store } from '../../app/ports.ts'
 import type {
   MealRecordDoc,
   PetDoc,
   SettlementDoc,
   SettlementJobDoc,
   UserDoc,
-} from './types.ts'
-
-export type Store = {
-  getUser(userId: string): Promise<UserDoc | null>
-  saveUser(doc: UserDoc): Promise<void>
-  getPet(userId: string): Promise<PetDoc | null>
-  savePet(doc: PetDoc): Promise<void>
-  getRecord(userId: string, date: string, meal: MealRecordDoc['meal']): Promise<MealRecordDoc | null>
-  saveRecord(doc: MealRecordDoc): Promise<void>
-  deleteRecord(userId: string, date: string, meal: MealRecordDoc['meal']): Promise<void>
-  listRecords(userId: string, date: string): Promise<MealRecordDoc[]>
-  getJob(subjectId: string, date: string, meal: SettlementJobDoc['meal']): Promise<SettlementJobDoc | null>
-  saveJob(doc: SettlementJobDoc): Promise<void>
-  listPendingJobs(nowIso: string): Promise<SettlementJobDoc[]>
-  listHeldJobs(nowIso: string): Promise<SettlementJobDoc[]>
-  getSettlement(
-    subjectId: string,
-    date: string,
-    meal: SettlementDoc['meal'],
-  ): Promise<SettlementDoc | null>
-  saveSettlement(doc: SettlementDoc): Promise<void>
-}
+} from '../../app/types.ts'
 
 function recordKey(userId: string, date: string, meal: string): string {
   return `${userId}\0${date}\0${meal}`
@@ -36,19 +16,33 @@ function subjectMealKey(subjectId: string, date: string, meal: string): string {
   return `${subjectId}\0${date}\0${meal}`
 }
 
+/**
+ * 内存实现。测试用，也可以作为手机端第一版的本地存储（进程退出就丢，只适合原型）。
+ * 它是适配器，不属于命令层，所以放在 adapters/ 下。
+ */
 export function createMemoryStore(): Store {
   const users = new Map<string, UserDoc>()
   const pets = new Map<string, PetDoc>()
   const records = new Map<string, MealRecordDoc>()
   const jobs = new Map<string, SettlementJobDoc>()
   const settlements = new Map<string, SettlementDoc>()
+  const tails = new Map<string, Promise<unknown>>()
 
   return {
+    runExclusive<T>(subjectId: string, fn: () => Promise<T>): Promise<T> {
+      const previous = tails.get(subjectId) ?? Promise.resolve()
+      const run = previous.then(fn, fn)
+      tails.set(subjectId, run.catch(() => undefined))
+      return run
+    },
     async getUser(userId) {
       return users.get(userId) ?? null
     },
     async saveUser(doc) {
       users.set(doc.userId, doc)
+    },
+    async listUserIds() {
+      return [...users.keys()]
     },
     async getPet(userId) {
       return pets.get(userId) ?? null
@@ -91,6 +85,14 @@ export function createMemoryStore(): Store {
       for (const job of jobs.values()) {
         if (job.status !== 'waiting_review') continue
         if (now >= reviewDeadline(new Date(job.windowEndAt))) out.push(job)
+      }
+      return out
+    },
+    async listFrozenJobs(subjectId) {
+      const out: SettlementJobDoc[] = []
+      for (const job of jobs.values()) {
+        if (job.subjectId !== subjectId) continue
+        if (job.status === 'waiting_review' || job.status === 'manual_review') out.push(job)
       }
       return out
     },

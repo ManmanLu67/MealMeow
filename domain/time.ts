@@ -91,6 +91,14 @@ export function parseClock(hhmm: string): number | null {
   return hour * 60 + minute
 }
 
+/** 两个逻辑日之间的天数，两端都算。from 晚于 to 时为 0。 */
+export function daysBetweenInclusive(from: string, to: string): number {
+  const [fy, fm, fd] = from.split('-').map(Number)
+  const [ty, tm, td] = to.split('-').map(Number)
+  const diff = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000)
+  return diff < 0 ? 0 : diff + 1
+}
+
 export function minutesFromDayStart(clockMinutes: number): number {
   return (clockMinutes - DAY_START_MINUTES + 1440) % 1440
 }

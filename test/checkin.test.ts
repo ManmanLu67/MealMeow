@@ -1,215 +1,208 @@
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { describe, it } from 'node:test'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from '../app/checkin.ts'
-import { createMemoryStore } from '../app/store.ts'
-import { MEALS, mealWindow } from '../domain/index.ts'
+import { runDueJobs } from '../app/settle.ts'
+import { syncUser } from '../app/user.ts'
+import { createMemoryStore } from '../adapters/memory/memory-store.ts'
+import { MEALS, mealWindow, validateMealClocks } from '../domain/index.ts'
+import { MEALS_DEFAULT, SH, mustPet, pet, record, seededStore, user } from './fixtures.ts'
 
-async function seeded(_now: Date) {
-  const store = createMemoryStore()
-  await store.saveUser({
-    userId: 'u',
-    nickname: '',
-    timeZone: 'Asia/Shanghai',
-    meals: { breakfast: '07:30', lunch: '12:00', dinner: '18:00' },
-    pendingMeals: null,
-    stapleLeft: 2,
-    stapleMonth: '2026-11',
-    cooldownUntil: null,
-    adoptedOn: null,
-    diedOn: null,
-  })
-  return store
-}
+const caller = { userId: 'u' }
+const inLunchWindow = new Date('2026-11-13T04:10:00.000Z') // 上海 12:10
+const lunch = { date: '2026-11-13', meal: 'lunch' as const }
 
-const inLunchWindow = new Date('2026-11-13T04:10:00.000Z')
-
-async function seededWithPet() {
-  const store = await seeded(inLunchWindow)
-  await store.savePet({
-    userId: 'u',
-    hunger: 6,
-    alive: true,
-    adoptedOn: '2026-11-01',
-    endedOn: null,
-    companyDays: 1,
-    mealsEaten: 0,
-  })
-  return store
-}
-
-test('staple is exempt and delete before settlement removes the row', async () => {
-  const store = await seededWithPet()
-  const used = await useStaple(store, { userId: 'u' }, inLunchWindow, {
-    date: '2026-11-13',
-    meal: 'lunch',
-  })
-  assert.equal(used.ok && used.stapleLeft, 1)
-  assert.equal((await store.getRecord('u', '2026-11-13', 'lunch'))?.status, 'exempt')
-  assert.equal((await store.getPet('u'))?.hunger, 6)
-  const removed = await removeCheckin(store, { userId: 'u' }, {
-    date: '2026-11-13',
-    meal: 'lunch',
-  })
-  assert.equal(removed.ok && removed.effect, 'cancel')
-  assert.equal(await store.getRecord('u', '2026-11-13', 'lunch'), null)
-})
-
-test('remove after settlement hides photos but keeps the record', async () => {
-  const store = await seededWithPet()
-  await store.saveRecord({
-    userId: 'u',
-    date: '2026-11-13',
-    meal: 'lunch',
-    status: 'checked_in',
-    review: 'approved',
-    hidden: false,
-    photos: ['main'],
-    checkinAt: inLunchWindow.toISOString(),
-  })
-  await store.saveSettlement({
-    subjectType: 'personal',
-    subjectId: 'u',
-    date: '2026-11-13',
-    meal: 'lunch',
-    outcome: 'fed',
-    hungerBefore: 6,
-    hungerAfter: 5,
-  })
-  const removed = await removeCheckin(store, { userId: 'u' }, {
-    date: '2026-11-13',
-    meal: 'lunch',
-  })
-  assert.equal(removed.ok && removed.effect, 'hide_photos')
-  const record = await store.getRecord('u', '2026-11-13', 'lunch')
-  assert.notEqual(record, null)
-  assert.equal(record?.hidden, true)
-  assert.deepEqual(record?.photos, ['main'])
-})
-
-test('second saveMeals on the same day refreshes pending job windows', async () => {
-  const now = new Date('2026-11-13T00:00:00.000Z')
-  const store = createMemoryStore()
-  const originalMeals = { breakfast: '07:30', lunch: '12:00', dinner: '18:00' }
-  await store.saveUser({
-    userId: 'u',
-    nickname: '',
-    timeZone: 'Asia/Shanghai',
-    meals: originalMeals,
-    pendingMeals: null,
-    stapleLeft: 2,
-    stapleMonth: '2026-11',
-    cooldownUntil: null,
-    adoptedOn: null,
-    diedOn: null,
+describe('meal clocks', () => {
+  it('starts the next logical day and creates tasks', async () => {
+    const now = new Date('2026-11-13T00:00:00.000Z') // 上海 08:00
+    const store = await seededStore({}, null)
+    const result = await saveMeals(store, caller, now, { ...MEALS_DEFAULT, breakfast: '08:00' })
+    assert.equal(result.ok && result.effectiveOn, '2026-11-14')
+    assert.equal((await store.getJob('u', '2026-11-14', 'breakfast'))?.status, 'pending')
+    assert.notEqual(await store.getJob('u', '2026-11-13', 'breakfast'), null)
   })
 
-  const first = { breakfast: '08:00', lunch: '12:00', dinner: '18:00' }
-  const second = { breakfast: '09:00', lunch: '13:00', dinner: '19:00' }
-  assert.equal((await saveMeals(store, { userId: 'u' }, now, first)).ok, true)
-  assert.equal((await saveMeals(store, { userId: 'u' }, now, second)).ok, true)
+  it('a second change on the same day refreshes pending windows only', async () => {
+    const now = new Date('2026-11-13T00:00:00.000Z')
+    const store = await seededStore({}, null)
+    const first = { breakfast: '08:00', lunch: '12:00', dinner: '18:00' }
+    const second = { breakfast: '09:00', lunch: '13:00', dinner: '19:00' }
+    await saveMeals(store, caller, now, first)
+    const held = await store.getJob('u', '2026-11-14', 'lunch')
+    await store.saveJob({ ...held!, status: 'waiting_review', windowEndAt: '2099-01-01T00:00:00.000Z' })
+    await saveMeals(store, caller, now, second)
 
-  const user = await store.getUser('u')
-  assert.deepEqual(user?.pendingMeals, { clocks: second, effectiveOn: '2026-11-14' })
-  assert.deepEqual(user?.meals, originalMeals)
-
-  for (const meal of MEALS) {
-    const job = await store.getJob('u', '2026-11-14', meal)
-    assert.equal(job?.status, 'pending')
-    assert.equal(
-      job?.windowEndAt,
-      mealWindow('2026-11-14', second[meal], 'Asia/Shanghai').end.toISOString(),
-    )
-  }
-})
-
-test('second saveMeals does not change non-pending job windows', async () => {
-  const now = new Date('2026-11-13T00:00:00.000Z')
-  const store = createMemoryStore()
-  await store.saveUser({
-    userId: 'u',
-    nickname: '',
-    timeZone: 'Asia/Shanghai',
-    meals: { breakfast: '07:30', lunch: '12:00', dinner: '18:00' },
-    pendingMeals: null,
-    stapleLeft: 2,
-    stapleMonth: '2026-11',
-    cooldownUntil: null,
-    adoptedOn: null,
-    diedOn: null,
+    const stored = await store.getUser('u')
+    assert.deepEqual(stored?.pendingMeals, { clocks: second, effectiveOn: '2026-11-14' })
+    assert.deepEqual(stored?.meals, MEALS_DEFAULT)
+    for (const meal of ['breakfast', 'dinner'] as const) {
+      const job = await store.getJob('u', '2026-11-14', meal)
+      assert.equal(job?.windowEndAt, mealWindow('2026-11-14', second[meal], SH).end.toISOString())
+    }
+    const lunchJob = await store.getJob('u', '2026-11-14', 'lunch')
+    assert.equal(lunchJob?.status, 'waiting_review')
+    assert.equal(lunchJob?.windowEndAt, '2099-01-01T00:00:00.000Z')
   })
 
-  await saveMeals(store, { userId: 'u' }, now, {
-    breakfast: '08:00',
-    lunch: '12:00',
-    dinner: '18:00',
-  })
+  it('changing clocks two days in a row keeps the first change', async () => {
+    const a = { breakfast: '08:00', lunch: '13:00', dinner: '19:00' }
+    const b = { breakfast: '09:00', lunch: '14:00', dinner: '20:00' }
+    const store = await seededStore({}, pet())
+    await saveMeals(store, caller, new Date('2026-11-13T02:00:00.000Z'), a)
+    await saveMeals(store, caller, new Date('2026-11-14T01:00:00.000Z'), b)
 
-  const lunchJobBefore = await store.getJob('u', '2026-11-14', 'lunch')
-  assert.notEqual(lunchJobBefore, null)
-  const frozenWindowEnd = '2099-01-01T00:00:00.000Z'
-  await store.saveJob({ ...lunchJobBefore!, status: 'waiting_review', windowEndAt: frozenWindowEnd })
+    const stored = await store.getUser('u')
+    assert.deepEqual(stored?.meals, a)
+    assert.deepEqual(stored?.pendingMeals, { clocks: b, effectiveOn: '2026-11-15' })
 
-  await saveMeals(store, { userId: 'u' }, now, {
-    breakfast: '09:00',
-    lunch: '13:00',
-    dinner: '19:00',
-  })
-
-  const lunchJobAfter = await store.getJob('u', '2026-11-14', 'lunch')
-  assert.equal(lunchJobAfter?.status, 'waiting_review')
-  assert.equal(lunchJobAfter?.windowEndAt, frozenWindowEnd)
-})
-
-test('meal changes start the next logical day', async () => {
-  const now = new Date('2026-11-13T00:00:00.000Z') // 上海 08:00，逻辑日 11-13
-  const store = createMemoryStore()
-  await store.saveUser({
-    userId: 'u',
-    nickname: '',
-    timeZone: 'Asia/Shanghai',
-    meals: { breakfast: '07:30', lunch: '12:00', dinner: '18:00' },
-    pendingMeals: null,
-    stapleLeft: 2,
-    stapleMonth: '2026-11',
-    cooldownUntil: null,
-    adoptedOn: null,
-    diedOn: null,
-  })
-  const result = await saveMeals(store, { userId: 'u' }, now, {
-    breakfast: '08:00',
-    lunch: '12:00',
-    dinner: '18:00',
-  })
-  assert.equal(result.ok && result.effectiveOn, '2026-11-14')
-  assert.equal(await store.getJob('u', '2026-11-13', 'breakfast'), null)
-  assert.equal((await store.getJob('u', '2026-11-14', 'breakfast'))?.status, 'pending')
-})
-
-test('finishing a check-in does not change hunger', async () => {
-  const now = new Date('2026-11-13T04:10:00.000Z') // 上海 12:10，落在 12:00 的午餐窗口
-  const store = await seeded(now)
-  await store.savePet({
-    userId: 'u',
-    hunger: 6,
-    alive: true,
-    adoptedOn: '2026-11-01',
-    endedOn: null,
-    companyDays: 1,
-    mealsEaten: 0,
-  })
-  const ok = await finishCheckin(store, { userId: 'u' }, now, {
-    date: '2026-11-13',
-    meal: 'lunch',
-    photos: ['main', 'extra'],
-  })
-  assert.equal(ok.ok, true)
-  assert.equal((await store.getPet('u')).hunger, 6)
-  assert.equal((await store.getRecord('u', '2026-11-13', 'lunch')).review, 'pending')
-  await assert.rejects(() =>
-    finishCheckin(store, { userId: 'other' }, now, {
-      date: '2026-11-13',
+    // 14 日仍按 A：13:30 在 13:00 午餐窗口内，任务窗口也一致。
+    const probe = new Date('2026-11-14T05:30:00.000Z')
+    const job = await store.getJob('u', '2026-11-14', 'lunch')
+    assert.equal(job?.windowEndAt, mealWindow('2026-11-14', a.lunch, SH).end.toISOString())
+    const done = await finishCheckin(store, caller, probe, {
+      date: '2026-11-14',
       meal: 'lunch',
-      photos: ['x'],
-    }),
-  )
+      photos: ['p'],
+    })
+    assert.equal(done.ok, true)
+  })
+
+  it('rejects clocks whose window would cross the 04:00 day line', () => {
+    assert.match(
+      validateMealClocks({ breakfast: '03:30', lunch: '12:00', dinner: '18:00' }) ?? '',
+      /4 点/,
+    )
+    assert.equal(validateMealClocks({ breakfast: '05:00', lunch: '12:00', dinner: '18:00' }), null)
+    assert.equal(validateMealClocks({ breakfast: '03:00', lunch: '12:00', dinner: '18:00' }), null)
+    assert.match(
+      validateMealClocks({ breakfast: '04:59', lunch: '12:00', dinner: '18:00' }) ?? '',
+      /4 点/,
+    )
+  })
+})
+
+describe('tasks exist for every meal', () => {
+  it('a user who never changed clocks still gets tasks, so a missed meal starves', async () => {
+    const store = createMemoryStore()
+    const now = new Date('2026-11-13T00:00:00.000Z')
+    await syncUser(store, caller, now, { timeZone: SH })
+    await store.savePet(pet({ hunger: 3 }))
+    for (const day of ['2026-11-13', '2026-11-14']) {
+      for (const meal of MEALS) assert.equal((await store.getJob('u', day, meal))?.status, 'pending')
+    }
+    await runDueJobs(store, new Date('2026-11-13T00:30:00.000Z')) // 早餐窗口 07:30 之后过了
+    assert.equal((await mustPet(store)).hunger, 4)
+  })
+
+  it('syncUser creates the user from the device time zone and rejects bad zones', async () => {
+    const store = createMemoryStore()
+    const now = new Date('2026-11-13T02:00:00.000Z')
+    const created = await syncUser(store, caller, now, { timeZone: 'America/New_York' })
+    assert.equal(created.ok && created.created, true)
+    assert.equal((await store.getUser('u'))?.timeZone, 'America/New_York')
+    assert.equal((await syncUser(store, caller, now, { timeZone: 'Not/AZone' })).ok, false)
+    const moved = await syncUser(store, caller, now, { timeZone: SH })
+    assert.equal(moved.ok && moved.created, false)
+    assert.equal((await store.getUser('u'))?.timeZone, SH)
+  })
+})
+
+describe('check-in', () => {
+  it('does not change hunger, starts review pending, and rejects other users', async () => {
+    const store = await seededStore({}, { hunger: 6 })
+    const ok = await finishCheckin(store, caller, inLunchWindow, { ...lunch, photos: ['main', 'extra'] })
+    assert.equal(ok.ok, true)
+    assert.equal((await mustPet(store)).hunger, 6)
+    const row = await store.getRecord('u', lunch.date, 'lunch')
+    assert.equal(row?.review, 'pending')
+    assert.deepEqual(row?.photoReviews, ['pending', 'pending'])
+    await assert.rejects(() =>
+      finishCheckin(store, { userId: 'other' }, inLunchWindow, { ...lunch, photos: ['x'] }),
+    )
+  })
+
+  it('replacing photos resets review to pending', async () => {
+    const store = await seededStore({}, {})
+    await finishCheckin(store, caller, inLunchWindow, { ...lunch, photos: ['p1'] })
+    await store.saveRecord({
+      ...(await store.getRecord('u', lunch.date, 'lunch'))!,
+      photoReviews: ['passed'],
+      review: 'passed',
+    })
+    await finishCheckin(store, caller, new Date(inLunchWindow.getTime() + 60_000), {
+      ...lunch,
+      photos: ['p2'],
+    })
+    const row = await store.getRecord('u', lunch.date, 'lunch')
+    assert.equal(row?.review, 'pending')
+    assert.deepEqual(row?.photoReviews, ['pending'])
+  })
+
+  it('refuses to overwrite a staple record', async () => {
+    const store = await seededStore({}, {})
+    await useStaple(store, caller, inLunchWindow, lunch)
+    const result = await finishCheckin(store, caller, inLunchWindow, { ...lunch, photos: ['p'] })
+    assert.equal(result.ok, false)
+    assert.equal((await store.getRecord('u', lunch.date, 'lunch'))?.status, 'exempt')
+    assert.equal((await store.getUser('u'))?.stapleLeft, 1)
+  })
+})
+
+describe('staple and delete', () => {
+  it('staple is exempt, delete before settlement removes it and refunds the quota', async () => {
+    const store = await seededStore({}, { hunger: 6 })
+    const used = await useStaple(store, caller, inLunchWindow, lunch)
+    assert.equal(used.ok && used.stapleLeft, 1)
+    assert.equal((await store.getRecord('u', lunch.date, 'lunch'))?.status, 'exempt')
+    assert.equal((await mustPet(store)).hunger, 6)
+
+    const removed = await removeCheckin(store, caller, inLunchWindow, lunch)
+    assert.equal(removed.ok && removed.effect, 'cancel')
+    assert.equal(await store.getRecord('u', lunch.date, 'lunch'), null)
+    assert.equal((await store.getUser('u'))?.stapleLeft, 2)
+  })
+
+  it('remove after settlement hides photos, keeps the record, and keeps the staple spent', async () => {
+    const store = await seededStore({}, {})
+    await store.saveRecord(record({ review: 'passed', photoReviews: ['passed'], photos: ['main'] }))
+    await store.saveSettlement({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: lunch.date,
+      meal: 'lunch',
+      outcome: 'fed',
+      hungerBefore: 6,
+      hungerAfter: 5,
+    })
+    const removed = await removeCheckin(store, caller, inLunchWindow, lunch)
+    assert.equal(removed.ok && removed.effect, 'hide_photos')
+    const row = await store.getRecord('u', lunch.date, 'lunch')
+    assert.equal(row?.hidden, true)
+    assert.deepEqual(row?.photos, ['main'])
+  })
+
+  it('deleting a check-in held for review lets the meal settle as missed', async () => {
+    const store = await seededStore({}, { hunger: 4 })
+    await saveMeals(store, caller, new Date('2026-11-13T02:00:00.000Z'), MEALS_DEFAULT)
+    const at = new Date('2026-11-14T04:00:00.000Z') // 14 日 12:00
+    await finishCheckin(store, caller, at, { date: '2026-11-14', meal: 'lunch', photos: ['p'] })
+    await runDueJobs(store, new Date('2026-11-14T05:00:00.000Z'))
+    assert.equal((await store.getJob('u', '2026-11-14', 'lunch'))?.status, 'waiting_review')
+
+    const removed = await removeCheckin(store, caller, new Date('2026-11-14T05:10:00.000Z'), {
+      date: '2026-11-14',
+      meal: 'lunch',
+    })
+    assert.equal(removed.ok, true)
+    const settlement = await store.getSettlement('u', '2026-11-14', 'lunch')
+    assert.equal(settlement?.outcome, 'starved')
+    assert.equal((await store.getJob('u', '2026-11-14', 'lunch'))?.status, 'settled')
+  })
+
+  it('staple needs a living pet', async () => {
+    const store = await seededStore({}, null)
+    const result = await useStaple(store, caller, inLunchWindow, lunch)
+    assert.equal(result.ok, false)
+    assert.equal(result.ok === false && result.error, '没有存活宠物')
+    assert.equal((await store.getUser('u'))?.stapleLeft, user().stapleLeft)
+  })
 })

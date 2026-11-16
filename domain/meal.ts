@@ -20,6 +20,10 @@ const MEAL_SHORT: Record<MealType, string> = {
 
 const HOUR_MS = 60 * 60 * 1000
 const MIN_GAP_MINUTES = 120
+const DAY_START_MINUTES = 4 * 60
+
+/** 应急口粮每个逻辑月的额度。 */
+export const STAPLE_PER_MONTH = 2
 
 export interface MealWindow {
   start: Date
@@ -51,6 +55,14 @@ export function validateMealClocks(clocks: MealClocks): string | null {
     const current = offsets[i]
     const next = i === offsets.length - 1 ? offsets[0] + 1440 : offsets[i + 1]
     if (next - current < MIN_GAP_MINUTES) return '相邻饭点至少相隔 2 小时'
+  }
+  // 窗口是饭点前后 1 小时。饭点在 03:01–04:59 时窗口会跨过 04:00 的逻辑日界线，
+  // 同一个窗口会分属两个逻辑日，所以不接受。03:00 和 05:00 刚好贴着界线，可以。
+  for (const meal of MEALS) {
+    const minutes = parseClock(clocks[meal]) as number
+    if (minutes > DAY_START_MINUTES - 60 && minutes < DAY_START_MINUTES + 60) {
+      return '饭点前后 1 小时不能跨过凌晨 4 点，请避开 03:01 到 04:59'
+    }
   }
   return null
 }

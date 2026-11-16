@@ -7,7 +7,7 @@
 
 - What it is: 个人可见的三餐打卡微信小程序。先吃饭，宠物才有饭吃。
 - Build / run: 用微信开发者工具打开本目录。没有单独的打包命令。
-- Test: `node --test test/domain.test.ts`
+- Test: `npm test`（`node --test "test/*.test.ts"`）。类型检查：`npm run typecheck`
 - Do not touch: 小组、跨用户读写、独立宠物页 `/pet`、密钥、`project.private.config.json`
 - 产品规则正文是 `docs/agent/ARCHITECTURE.md`。`D:\Project\任务规划\吃饭喵` 里的文档和它冲突时，以它为准。《吃饭打卡小程序：产品与规则设计文档.md》停用。
 

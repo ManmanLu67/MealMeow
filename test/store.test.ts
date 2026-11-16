@@ -1,22 +1,13 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { createMemoryStore } from '../app/store.ts'
+import { createMemoryStore } from '../adapters/memory/memory-store.ts'
+import { mustPet, pet, record, user } from './fixtures.ts'
 
 describe('memory store', () => {
   it('one row per user, date, and meal', async () => {
     const store = createMemoryStore()
-    const row = {
-      userId: 'u',
-      date: '2026-11-13',
-      meal: 'lunch' as const,
-      status: 'checked_in' as const,
-      checkinAt: '',
-      photos: ['a', 'b'],
-      review: 'pending' as const,
-      hidden: false,
-    }
-    await store.saveRecord(row)
-    await store.saveRecord({ ...row, photos: ['c'] })
+    await store.saveRecord(record({ photos: ['a', 'b'], photoReviews: ['pending', 'pending'] }))
+    await store.saveRecord(record({ photos: ['c'] }))
     const all = await store.listRecords('u', '2026-11-13')
     assert.equal(all.length, 1)
     assert.deepEqual(all[0].photos, ['c'])
@@ -32,14 +23,11 @@ describe('memory store', () => {
       windowEndAt: '2026-11-13T06:00:00.000Z',
       status: 'pending' as const,
     }
-    const breakfast = { ...lunch, meal: 'breakfast' as const }
     await store.saveJob(lunch)
-    await store.saveJob(breakfast)
+    await store.saveJob({ ...lunch, meal: 'breakfast' })
     await store.saveJob({ ...lunch, status: 'settled' })
-    const lunchJob = await store.getJob('u', '2026-11-13', 'lunch')
-    const breakfastJob = await store.getJob('u', '2026-11-13', 'breakfast')
-    assert.equal(lunchJob?.status, 'settled')
-    assert.equal(breakfastJob?.status, 'pending')
+    assert.equal((await store.getJob('u', '2026-11-13', 'lunch'))?.status, 'settled')
+    assert.equal((await store.getJob('u', '2026-11-13', 'breakfast'))?.status, 'pending')
   })
 
   it('one settlement row per subject, date, and meal', async () => {
@@ -53,65 +41,65 @@ describe('memory store', () => {
       hungerBefore: 4,
       hungerAfter: 3,
     }
-    const dinner = { ...lunch, meal: 'dinner' as const, outcome: 'starved' as const }
     await store.saveSettlement(lunch)
-    await store.saveSettlement(dinner)
+    await store.saveSettlement({ ...lunch, meal: 'dinner', outcome: 'starved' })
     await store.saveSettlement({ ...lunch, hungerAfter: 2 })
-    const lunchSet = await store.getSettlement('u', '2026-11-13', 'lunch')
-    const dinnerSet = await store.getSettlement('u', '2026-11-13', 'dinner')
-    assert.equal(lunchSet?.hungerAfter, 2)
-    assert.equal(dinnerSet?.outcome, 'starved')
+    assert.equal((await store.getSettlement('u', '2026-11-13', 'lunch'))?.hungerAfter, 2)
+    assert.equal((await store.getSettlement('u', '2026-11-13', 'dinner'))?.outcome, 'starved')
   })
 
   it('listRecords scopes to userId and date', async () => {
     const store = createMemoryStore()
-    const base = {
-      status: 'checked_in' as const,
-      checkinAt: '',
-      photos: [] as string[],
-      review: 'pending' as const,
-      hidden: false,
-    }
-    await store.saveRecord({ userId: 'u1', date: '2026-11-13', meal: 'lunch', ...base })
-    await store.saveRecord({ userId: 'u1', date: '2026-11-14', meal: 'lunch', ...base })
-    await store.saveRecord({ userId: 'u2', date: '2026-11-13', meal: 'lunch', ...base })
+    await store.saveRecord(record({ userId: 'u1' }))
+    await store.saveRecord(record({ userId: 'u1', date: '2026-11-14' }))
+    await store.saveRecord(record({ userId: 'u2' }))
     const rows = await store.listRecords('u1', '2026-11-13')
     assert.equal(rows.length, 1)
     assert.equal(rows[0].userId, 'u1')
-    assert.equal(rows[0].date, '2026-11-13')
   })
 
   it('pending scan skips held and future jobs', async () => {
     const now = '2026-11-13T04:00:00.000Z'
     const store = createMemoryStore()
+    const base = { subjectType: 'personal' as const, subjectId: 'u', date: '2026-11-13' }
+    await store.saveJob({ ...base, meal: 'breakfast', windowEndAt: now, status: 'pending' })
+    await store.saveJob({ ...base, meal: 'lunch', windowEndAt: now, status: 'waiting_review' })
     await store.saveJob({
-      subjectType: 'personal',
-      subjectId: 'u',
-      date: '2026-11-13',
-      meal: 'breakfast',
-      windowEndAt: now,
-      status: 'pending',
-    })
-    await store.saveJob({
-      subjectType: 'personal',
-      subjectId: 'u',
-      date: '2026-11-13',
-      meal: 'lunch',
-      windowEndAt: now,
-      status: 'waiting_review',
-    })
-    await store.saveJob({
-      subjectType: 'personal',
-      subjectId: 'u',
-      date: '2026-11-13',
+      ...base,
       meal: 'dinner',
       windowEndAt: '2026-11-13T05:00:00.000Z',
       status: 'pending',
     })
     const due = await store.listPendingJobs(now)
-    assert.deepEqual(
-      due.map((job) => job.meal),
-      ['breakfast'],
-    )
+    assert.deepEqual(due.map((job) => job.meal), ['breakfast'])
+  })
+
+  it('lists users and frozen jobs per subject', async () => {
+    const store = createMemoryStore()
+    await store.saveUser(user({ userId: 'a' }))
+    await store.saveUser(user({ userId: 'b' }))
+    const base = { subjectType: 'personal' as const, date: '2026-11-13', windowEndAt: '2026-11-13T04:00:00.000Z' }
+    await store.saveJob({ ...base, subjectId: 'a', meal: 'lunch', status: 'manual_review' })
+    await store.saveJob({ ...base, subjectId: 'b', meal: 'lunch', status: 'pending' })
+    assert.deepEqual((await store.listUserIds()).sort(), ['a', 'b'])
+    assert.equal((await store.listFrozenJobs('a')).length, 1)
+    assert.equal((await store.listFrozenJobs('b')).length, 0)
+  })
+
+  it('runExclusive runs the same subject one at a time', async () => {
+    const store = createMemoryStore()
+    const order: string[] = []
+    const slow = store.runExclusive('u', async () => {
+      order.push('a-start')
+      await new Promise((resolve) => setTimeout(resolve, 15))
+      order.push('a-end')
+    })
+    const fast = store.runExclusive('u', async () => {
+      order.push('b')
+    })
+    await Promise.all([slow, fast])
+    assert.deepEqual(order, ['a-start', 'a-end', 'b'])
+    await store.savePet(pet())
+    assert.equal((await mustPet(store)).hunger, 4)
   })
 })

@@ -44,6 +44,19 @@ export const REVIEW_WAIT_MS = 2 * 60 * 60 * 1000
 
 export type MealReview = 'pending' | 'passed' | 'rejected' | 'manual'
 
+export type PhotoReview = 'pending' | 'passed' | 'rejected'
+
+/**
+ * 一餐可以有多张照片，每张单独过内容安全。
+ * 只要有一张通过，这餐就算通过。全部驳回才驳回，其余仍在等。
+ * 一张已通过时不必等其余照片回结果，窗口结束就能结算。
+ */
+export function aggregateReview(photos: readonly PhotoReview[]): PhotoReview {
+  if (photos.some((photo) => photo === 'passed')) return 'passed'
+  if (photos.length > 0 && photos.every((photo) => photo === 'rejected')) return 'rejected'
+  return 'pending'
+}
+
 export type SettleStep =
   | { kind: 'not_due' }
   | { kind: 'frozen'; reason: 'waiting_review' | 'manual_review' }

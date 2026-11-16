@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  aggregateReview,
   applyMeal,
   cameraAction,
   canAdopt,
@@ -9,6 +10,7 @@ import {
   chipState,
   cooldownUntil,
   dayComplete,
+  daysBetweenInclusive,
   deleteCheckin,
   effectiveClocks,
   evaluateFeeding,
@@ -26,6 +28,7 @@ import {
   settleStep,
   settlementOutcome,
   stapleMonth,
+  streakAnchor,
   streakEndingAt,
   validateMealClocks,
 } from '../domain/index.ts'
@@ -181,6 +184,30 @@ describe('staple, gallery delete, streak', () => {
     }), 1)
   })
 
+  it('a second pet does not inherit the days the first pet lived', () => {
+    const dates = []
+    for (let d = 1; d <= 20; d += 1) dates.push(`2026-11-${String(d).padStart(2, '0')}`)
+    const past = [{ adoptedOn: '2026-11-01', diedOn: '2026-11-05' }]
+    // 先领养：第一只 11-01 领养、11-05 死亡；11-13 领养第二只，活着。
+    // 活着只算第二只领养日之后的共度：11-13 到 11-20，共 8 天。
+    // 第一只在世的 11-01 到 11-05 不会因为领养新宠物而被算回来。
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-20',
+      adoptedOn: '2026-11-13',
+      diedOn: null,
+      pastPets: past,
+    }), 8)
+    // 第二只 11-16 死亡后，个人时间从 11-17 起重计：11-17 到 11-20，共 4 天。
+    assert.equal(personalStreak({
+      completeDates: dates,
+      endDate: '2026-11-20',
+      adoptedOn: '2026-11-13',
+      diedOn: '2026-11-16',
+      pastPets: past,
+    }), 4)
+  })
+
   it('subtracts pet days from a check-in-first streak only after death', () => {
     const dates = ['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13']
     assert.equal(personalStreak({
@@ -195,6 +222,40 @@ describe('staple, gallery delete, streak', () => {
       adoptedOn: '2026-11-12',
       diedOn: '2026-11-12',
     }), 3)
+  })
+
+  it('anchors the streak on today only once today is complete', () => {
+    assert.equal(streakAnchor('2026-11-13', ['checked_in', 'exempt', 'checked_in']), '2026-11-13')
+    assert.equal(streakAnchor('2026-11-13', ['checked_in', 'due', 'upcoming']), '2026-11-12')
+    assert.equal(streakAnchor('2026-11-13', ['upcoming', 'upcoming', 'upcoming']), '2026-11-12')
+    assert.equal(streakAnchor('2026-11-13', ['checked_in', 'missed', 'upcoming']), null)
+  })
+
+  it('counts company days from adoption to death inclusive', () => {
+    assert.equal(daysBetweenInclusive('2026-11-01', '2026-11-13'), 13)
+    assert.equal(daysBetweenInclusive('2026-11-13', '2026-11-13'), 1)
+    assert.equal(daysBetweenInclusive('2026-11-14', '2026-11-13'), 0)
+  })
+})
+
+describe('photo review and clock safety', () => {
+  it('one passed photo passes the meal, only all rejected rejects it', () => {
+    assert.equal(aggregateReview(['passed', 'passed']), 'passed')
+    assert.equal(aggregateReview(['passed', 'pending']), 'passed')
+    assert.equal(aggregateReview(['passed', 'rejected']), 'passed')
+    assert.equal(aggregateReview(['rejected', 'rejected']), 'rejected')
+    assert.equal(aggregateReview(['pending', 'rejected']), 'pending')
+    assert.equal(aggregateReview(['pending', 'pending']), 'pending')
+    assert.equal(aggregateReview([]), 'pending')
+  })
+
+  it('refuses a meal clock whose window would cross the 04:00 day line', () => {
+    assert.match(
+      validateMealClocks({ breakfast: '03:30', lunch: '12:00', dinner: '18:00' }) ?? '',
+      /4 点/,
+    )
+    assert.equal(validateMealClocks({ breakfast: '03:00', lunch: '12:00', dinner: '18:00' }), null)
+    assert.equal(validateMealClocks({ breakfast: '05:00', lunch: '12:00', dinner: '18:00' }), null)
   })
 })
 
