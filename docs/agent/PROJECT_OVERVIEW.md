@@ -19,13 +19,8 @@
 
 ## Entry points
 
-- 微信开发者工具打开仓库根目录。`project.config.json` 指向 `miniprogram/` 和 `cloudfunctions/`。
-- 测试：`npm test`。类型检查：`npm run typecheck`
-
-## How to run / test
-
-- Run: 微信开发者工具
-- Test: `npm test`
+- 小程序：微信开发者工具打开仓库根目录。
+- 测试和类型检查：`npm test`、`npm run typecheck`。
 
 ## Glossary
 

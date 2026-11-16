@@ -4,7 +4,7 @@ import { finishCheckin } from '../app/checkin.ts'
 import { adoptPet, applyReview, runDueJobs } from '../app/settle.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
 import type { Store } from '../app/ports.ts'
-import { MEALS_DEFAULT, SH, mustPet, pet, record, seededStore, user } from './fixtures.ts'
+import { MEALS_DEFAULT, mustPet, pet, record, seededStore, user } from './fixtures.ts'
 
 const caller = { userId: 'u' }
 const end = new Date('2026-11-13T04:00:00.000Z')
@@ -267,7 +267,6 @@ describe('review callbacks', () => {
     assert.equal((await mustPet(store)).hunger, 2)
     assert.equal((await store.getJob('u', day, 'lunch'))?.status, 'settled')
     assert.equal((await store.getJob('u', day, 'breakfast'))?.status, 'settled')
-    assert.equal(SH, 'Asia/Shanghai')
   })
 })
 

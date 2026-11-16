@@ -1,38 +1,34 @@
 # 吃饭喵
 
-个人可见的三餐打卡小程序。给 agent 的工作约定在 `AGENTS.md`。产品规则在 `docs/agent/ARCHITECTURE.md`。规划原文在 `D:\Project\任务规划\吃饭喵`，冲突时以 `ARCHITECTURE.md` 为准。
+个人可见的三餐打卡小程序：先吃饭，宠物才有饭吃。
+
+产品规则在 [docs/agent/ARCHITECTURE.md](docs/agent/ARCHITECTURE.md)，这是唯一的一份，其他文档不重复它。给 agent 的工作约定在 [AGENTS.md](AGENTS.md)。当前进度在 [docs/agent/CURRENT_STATE.md](docs/agent/CURRENT_STATE.md)。
 
 ## 目录
 
-- `domain/` 纯规则。不依赖微信、云开发、数据库。
-- `app/` 命令层。只认 `app/ports.ts` 里的 `Store` 接口，`app/handle.ts` 是与平台无关的入口。
-- `adapters/` 存储的具体实现。现在有内存实现，云数据库和手机本地库以后加在这里。
-- `miniprogram/` 页面壳。三个 Tab：首页、图鉴、我的。全屏页：打卡、领养、饭点、提醒、关于。没有宠物页。
-- `cloudfunctions/api` 给页面调用的入口，还没实现。
-- `cloudfunctions/settle` 定时结算，还没实现。每分钟扫描 `settlement_jobs` 里窗口已过且仍为 `pending` 的任务。
+```
+domain/           纯规则：时间、饭点、饥饿、结算、连续天数。只依赖自己
+app/              命令层：用户、打卡、口粮、结算、审核回调、领养。接口在 ports.ts，平台无关入口在 handle.ts
+adapters/         存储的具体实现。现在有内存实现，云数据库和手机本地库以后加在这里
+miniprogram/      微信小程序页面
+cloudfunctions/   微信云函数：api（页面入口）、settle（每分钟结算）
+test/             domain、app、分层的测试
+docs/agent/       现状、规则正文、决定（decisions/）、交接（handoffs/）
+docs/superpowers/ 实现计划（plans/）
+```
 
-## 代码里已经定下的规则
+依赖方向只能向下：`miniprogram`、`cloudfunctions` → `adapters` → `app` → `domain`。`test/architecture.test.ts` 会检查它。
 
-- 逻辑日从当地 04:00 开始。时区由调用方传入。
-- 打卡窗口是饭点前后 1 小时，左闭右开。相邻饭点至少隔 2 小时。
-- 饥饿只在宠物域按档变化：6–8 吃一餐到 5，3–5 到 2，1–2 到 0，0 再吃不变。漏餐 +1，9 死亡。策略不返回 ±1。
-- 打卡只写事实。结算看 `settlement_jobs`。漏餐不写 `meal_records`。记录状态只有 `checked_in` 和 `exempt`。
-- 审核没回来，或窗口结束后 2 小时仍无结果，宠物冻结。通过才按吃到结算，驳回按漏餐结算。只结算一次。
-- 饭点修改挂到下一个逻辑日才生效。
-- 结算前删除打卡会撤掉记录；结算后只隐藏照片。
-- 应急口粮只在有存活宠物、窗口内、未结算、还有额度时可用。额度按逻辑月。
-- 冷却从死亡所在逻辑日起 7 个逻辑日，截止日 04:00 可再领养。冷却结束前首页是纪念页。
-- 连续天数分先领养和先打卡。先领养死后重计；先打卡死后减去宠物重合的那些天。
-- 打卡页按页面设计线框：选图后点「完成打卡」才写入。
-- 当前主体是个人。`subjectType = 'group'` 会拒绝。
-
-## 还没接上
-
-云函数里的数据库读写、内容安全回调、订阅消息、AI 抠图。小组集合和 `GroupFeedingStrategy` 不在这个版本。
-
-## 测试
+## 开发
 
 ```bash
+npm install
 npm test            # node --test "test/*.test.ts"
 npm run typecheck   # tsc --noEmit
 ```
+
+运行小程序：用微信开发者工具打开本目录。`project.config.json` 指向 `miniprogram/` 和 `cloudfunctions/`。AppID 和云环境 ID 放在被忽略的 `project.private.config.json`，不要提交。
+
+## 还没接上
+
+云函数里的数据库读写、内容安全、订阅消息、AI 抠图、手机 App。小组不在这个版本。
