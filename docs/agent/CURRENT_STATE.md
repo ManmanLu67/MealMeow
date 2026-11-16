@@ -15,16 +15,16 @@
 
 ## 3. Completed and verified
 
-- 在合并前的 `feat/store` 上跑过 `npm run typecheck`，退出码 0。跑过 `npm test`（`node --test "test/*.test.ts"`），76 项通过，0 失败。合并后的结果见第 4 节。
+- 在合并前的 `feat/store` 和合并后的 main 上都跑过 `npm run typecheck`（退出码 0）和 `npm test`（`node --test "test/*.test.ts"`，76 项通过，0 失败）。
 - 分层：`domain/` → `app/`（接口在 `app/ports.ts`，入口在 `app/handle.ts`）→ `adapters/memory/`。`test/architecture.test.ts` 检查依赖方向、平台 API 和时钟，违反会让 `npm test` 失败。
 - 已落实的规则：宠物死亡和领养、窗口前到达的审核、补结算任务、连改饭点、冻结期删除、整体冻结、同一用户写命令串行、饭点避开 03:01–04:59、口粮和打卡互斥、连续天数锚点和多只宠物、一张通过即可。规则补充见 `decisions/ADR-0002-settlement-freeze-and-review-rules.md`。
 - `.gitignore` 覆盖私有配置、密钥和证书、编译产物、手机端构建和签名、日志、编辑器目录。
 
 ## 4. Current work
 
-- Task: 整理文件夹结构，合并分支，删除重复内容
-- Expected behavior: 主目录是唯一完整的项目，不再有单独的工作树
-- Verification after merge: 见本节末尾的记录
+- Task: 无正在写的功能。文件夹整理已完成
+- Expected behavior: 主目录是唯一完整的项目，没有单独的工作树和临时分支
+- Verification: 合并后在 main 主目录用 `npm ci` 从锁文件装依赖，`npm run typecheck` 退出码 0，`npm test` 76 项通过，0 失败。`git ls-files -i -c --exclude-standard` 为空。
 
 ## 5. Decisions
 
