@@ -1,5 +1,45 @@
-<view class="page">
-  <view>连续打卡</view>
-  <view class="row">日期条</view>
-  <view class="row">早餐 / 午餐 / 晚餐</view>
+<view class="page gallery">
+  <text class="t-title">连续打卡 {{streak}} 天</text>
+
+  <view class="strip">
+    <view
+      wx:for="{{days}}"
+      wx:key="key"
+      class="day {{index === selected ? 'day-on' : ''}}"
+      data-index="{{index}}"
+      bindtap="selectDay"
+      hover-class="day-hover"
+      hover-stay-time="120"
+    >
+      <text class="t-caption day-week">{{item.week}}</text>
+      <text class="t-label day-num">{{item.day}}</text>
+      <view class="day-dot {{index === todayIndex ? 'day-dot-today' : ''}}"></view>
+    </view>
+  </view>
+
+  <view class="tiles">
+    <view
+      wx:for="{{meals}}"
+      wx:key="meal"
+      class="tile {{item.photo || item.exempt ? '' : 'tile-empty'}}"
+      data-index="{{index}}"
+      bindtap="openTile"
+    >
+      <image wx:if="{{item.photo}}" class="tile-img" src="{{item.photo}}" mode="aspectFill"></image>
+      <block wx:elif="{{item.exempt}}">
+        <view class="tile-staple">
+          <image class="tile-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+          <text class="t-caption">口粮</text>
+        </view>
+      </block>
+      <image wx:else class="tile-corner" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+      <view class="tile-name"><text class="t-caption tile-name-text">{{item.name}}</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{isEmpty}}" class="empty"><text class="t-caption">今天还没有记录</text></view>
+
+  <view wx:if="{{viewer}}" class="viewer" bindtap="closeViewer">
+    <image class="viewer-img" src="{{viewer}}" mode="aspectFit"></image>
+  </view>
 </view>

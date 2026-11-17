@@ -7,17 +7,21 @@
     "pages/adopt/adopt",
     "pages/settings/meals/meals",
     "pages/settings/reminder/reminder",
+    "pages/settings/feedback/feedback",
     "pages/settings/about/about"
   ],
   "window": {
     "navigationBarTitleText": "吃饭喵",
-    "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#F6F3EE"
+    "navigationBarBackgroundColor": "#F5F7F6",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F5F7F6",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#8A847C",
-    "selectedColor": "#2F6B4F",
-    "backgroundColor": "#ffffff",
+    "color": "#59645E",
+    "selectedColor": "#B84E0C",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/home/home",

@@ -1,21 +1,129 @@
-const MEAL_NAME = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }
+// 打卡页。选图只进预览，点「完成打卡」才写入。一餐可多张，首屏一张主图。
+const api = require('../../utils/api.js')
+const config = require('../../utils/config.js')
+const preview = require('../../utils/preview.js')
+const labels = require('../../utils/labels.js')
+
+const MAX_PHOTOS = 9
 
 Page({
   data: {
     meal: '',
     mealName: '这一餐',
     windowEnd: '',
+    checkedAt: '',
     checked: false,
+    staple: false,
+    settled: false,
+    stapleLeft: 0,
+    photos: [],
+    dialog: '',
   },
+
   onLoad(query) {
+    this.previewState = query.state || ''
+    this.date = query.date || ''
     const meal = query.meal || ''
-    this.setData({
-      meal,
-      mealName: MEAL_NAME[meal] || '这一餐',
-      checked: false,
+    this.meal = meal
+    this.setData({ meal: meal, mealName: labels.MEAL_NAME[meal] || '这一餐' })
+    if (config.usePreviewData) {
+      const view = preview.checkinView(meal, this.previewState)
+      this.setData({
+        windowEnd: view.windowEnd,
+        checkedAt: view.checkedAt,
+        checked: view.checked,
+        staple: view.staple,
+        stapleLeft: view.stapleLeft,
+        photos: view.checked ? ['/assets/preview/lunch.png'] : [],
+      })
+    }
+  },
+
+  close() {
+    wx.navigateBack({ fail() { wx.switchTab({ url: '/pages/home/home' }) } })
+  },
+
+  // 拍照和相册只往预览里加图，不写库。
+  takePhoto() { this.choose(['camera']) },
+  pickAlbum() { this.choose(['album']) },
+
+  choose(sourceType) {
+    const self = this
+    const room = MAX_PHOTOS - this.data.photos.length
+    if (room <= 0) {
+      wx.showToast({ title: '一餐最多 ' + MAX_PHOTOS + ' 张', icon: 'none' })
+      return
+    }
+    wx.chooseMedia({
+      count: room,
+      mediaType: ['image'],
+      sourceType: sourceType,
+      success(res) {
+        const added = res.tempFiles.map(function (f) { return f.tempFilePath })
+        self.setData({ photos: self.data.photos.concat(added) })
+      },
     })
   },
-  close() {
-    wx.navigateBack()
+
+  replacePhoto() {
+    const self = this
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      success(res) {
+        self.setData({ photos: [res.tempFiles[0].tempFilePath] })
+        wx.showToast({ title: '已替换，重新审核', icon: 'none' })
+      },
+    })
+  },
+
+  finish() {
+    if (!this.data.photos.length) {
+      wx.showToast({ title: '先拍一张照片', icon: 'none' })
+      return
+    }
+    const self = this
+    if (config.usePreviewData) {
+      this.setData({ checked: true, checkedAt: '12:06' })
+      wx.showToast({ title: '已打卡', icon: 'success' })
+      return
+    }
+    // 日期和窗口由云端按设备时区判断，这里只传餐次和照片。
+    api.call('checkin', { meal: this.meal, photos: this.data.photos }).then(function (res) {
+      if (!res.ok) {
+        wx.showToast({ title: res.error || '打卡失败，请重试', icon: 'none' })
+        return
+      }
+      self.setData({ checked: true })
+      wx.navigateBack({ fail() { wx.switchTab({ url: '/pages/home/home' }) } })
+    })
+  },
+
+  askStaple() { this.setData({ dialog: 'staple' }) },
+  askDelete() { this.setData({ dialog: 'delete' }) },
+  closeDialog() { this.setData({ dialog: '' }) },
+
+  confirmStaple() {
+    this.setData({ dialog: '', staple: true, photos: [] })
+    if (!config.usePreviewData) api.call('exempt', { meal: this.meal })
+  },
+
+  confirmDelete() {
+    const self = this
+    this.setData({ dialog: '' })
+    if (config.usePreviewData) {
+      this.setData({ checked: false, photos: [] })
+      wx.showToast({ title: '已删除', icon: 'none' })
+      return
+    }
+    // 删除要带日期（以后图鉴里也能删以前的），日期来自首页传进来的 date。
+    api.call('deleteCheckin', { date: this.date, meal: this.meal }).then(function (res) {
+      if (!res.ok) {
+        wx.showToast({ title: res.error || '删除失败，请重试', icon: 'none' })
+        return
+      }
+      self.setData({ checked: false, photos: [] })
+      wx.showToast({ title: '已删除', icon: 'none' })
+    })
   },
 })

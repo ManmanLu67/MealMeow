@@ -1,2 +1,6 @@
-.page { padding: 32rpx; color: #2c2825; }
-.row { margin-top: 24rpx; }
+.me { padding-top: 24rpx; }
+.profile { display: flex; align-items: center; margin-bottom: 40rpx; }
+.avatar { display: flex; align-items: center; justify-content: center; width: 120rpx; height: 120rpx; border-radius: 50%; background: var(--grass); }
+.avatar-text { color: var(--ink); }
+.profile-text { display: flex; flex-direction: column; margin-left: 32rpx; }
+

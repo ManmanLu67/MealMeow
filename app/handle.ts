@@ -3,7 +3,7 @@ import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts
 import { syncUser } from './user.ts'
 import type { Store } from './ports.ts'
 import type { MealClocks, MealType } from '../domain/index.ts'
-import { MEALS } from '../domain/index.ts'
+import { MEALS, logicalDate } from '../domain/index.ts'
 
 /**
  * 与平台无关的入口。云函数、手机 App 的本地服务、测试都调这一个函数，
@@ -17,8 +17,8 @@ export type Caller = { userId: string }
 export type Request =
   | { action: 'sync'; timeZone: string }
   | { action: 'saveMeals'; clocks: MealClocks }
-  | { action: 'checkin'; date: string; meal: MealType; photos: string[] }
-  | { action: 'exempt'; date: string; meal: MealType }
+  | { action: 'checkin'; meal: MealType; photos: string[] }
+  | { action: 'exempt'; meal: MealType }
   | { action: 'deleteCheckin'; date: string; meal: MealType }
   | { action: 'adopt' }
 
@@ -56,20 +56,30 @@ export function parseRequest(raw: unknown): Request | null {
       return clocks === null ? null : { action: 'saveMeals', clocks }
     }
     case 'checkin': {
+      // 打卡落在哪一天由服务端按用户时区算，不信客户端传来的日期。
       const photos = body.photos
-      if (!isString(body.date) || !isMeal(body.meal)) return null
+      if (!isMeal(body.meal)) return null
       if (!Array.isArray(photos) || photos.length === 0 || !photos.every(isString)) return null
-      return { action: 'checkin', date: body.date, meal: body.meal, photos: [...photos] }
+      return { action: 'checkin', meal: body.meal, photos: [...photos] }
     }
     case 'exempt':
+      if (!isMeal(body.meal)) return null
+      return { action: 'exempt', meal: body.meal }
     case 'deleteCheckin':
+      // 删除可以针对以前的日子（图鉴里删），所以要带日期。
       if (!isString(body.date) || !isMeal(body.meal)) return null
-      return { action: body.action, date: body.date, meal: body.meal }
+      return { action: 'deleteCheckin', date: body.date, meal: body.meal }
     case 'adopt':
       return { action: 'adopt' }
     default:
       return null
   }
+}
+
+/** 今天是哪个逻辑日，由用户的时区决定。用户还没同步过时区就没有答案。 */
+async function todayOf(store: Store, caller: Caller, now: Date): Promise<string | null> {
+  const user = await store.getUser(caller.userId)
+  return user === null ? null : logicalDate(now, user.timeZone)
 }
 
 export async function handle(
@@ -90,14 +100,15 @@ export async function handle(
       const result = await saveMeals(store, caller, now, request.clocks)
       return result.ok ? { ok: true, data: { effectiveOn: result.effectiveOn } } : result
     }
-    case 'checkin':
-      return finishCheckin(store, caller, now, {
-        date: request.date,
-        meal: request.meal,
-        photos: request.photos,
-      })
+    case 'checkin': {
+      const date = await todayOf(store, caller, now)
+      if (date === null) return { ok: false, error: 'no_user' }
+      return finishCheckin(store, caller, now, { date, meal: request.meal, photos: request.photos })
+    }
     case 'exempt': {
-      const result = await useStaple(store, caller, now, { date: request.date, meal: request.meal })
+      const date = await todayOf(store, caller, now)
+      if (date === null) return { ok: false, error: 'no_user' }
+      const result = await useStaple(store, caller, now, { date, meal: request.meal })
       return result.ok ? { ok: true, data: { stapleLeft: result.stapleLeft } } : result
     }
     case 'deleteCheckin': {

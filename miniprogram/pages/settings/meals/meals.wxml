@@ -1,1 +1,28 @@
-<view class="page">早餐 / 午餐 / 晚餐，次日 04:00 生效</view>
+<view class="page meals">
+  <view class="card">
+    <picker
+      wx:for="{{rows}}"
+      wx:key="meal"
+      mode="time"
+      value="{{item.value}}"
+      data-meal="{{item.meal}}"
+      bindchange="onPick"
+    >
+      <view class="list-row {{index === rows.length - 1 ? 'list-row-last' : ''}}" hover-class="list-row-on" hover-stay-time="120">
+        <text class="t-body">{{item.name}}</text>
+        <view class="row-right"><text class="t-body row-right-text">{{item.value}}</text><view class="chev"></view></view>
+      </view>
+    </picker>
+  </view>
+
+  <view class="notes">
+    <view class="note"><text class="t-caption">修改次日 04:00 生效。</text></view>
+    <view class="note"><text class="t-caption">相邻饭点至少相隔 2 小时，窗口是饭点前后各 1 小时。</text></view>
+    <view class="note"><text class="t-caption">饭点不能落在 03:01 到 04:59。</text></view>
+  </view>
+  <view wx:if="{{error}}" class="error"><text class="t-label error-text">{{error}}</text></view>
+
+  <view class="footer">
+    <view class="btn btn-primary {{dirty ? '' : 'btn-disabled'}}" bindtap="save" hover-class="{{dirty ? 'btn-primary-on' : ''}}" hover-stay-time="120"><text class="t-button">保存</text></view>
+  </view>
+</view>

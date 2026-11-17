@@ -1,3 +1,42 @@
-.page { padding: 32rpx; color: #2c2825; }
-.row { margin-top: 24rpx; }
-.stage { margin-top: 48rpx; min-height: 240rpx; }
+.home { display: flex; flex-direction: column; padding-top: 24rpx; padding-bottom: 0; }
+
+/* 餐次胶囊。三个等宽，不用 gap 和兄弟选择器。 */
+.chips { display: flex; justify-content: space-between; margin-top: 24rpx; }
+.chip { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: calc((100% - 32rpx) / 3); height: 80rpx; padding: 0 24rpx; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink-secondary); font-size: 28rpx; line-height: 40rpx; font-weight: 500; white-space: nowrap; transition: transform 120ms ease-out; }
+.chip-on { transform: scale(0.97); }
+.chip-due { background: var(--brand-tint); color: var(--brand-on-tint); animation: chip-breathe 2.4s ease-in-out infinite; }
+.chip-checked_in { background: var(--ok-bg); color: var(--ok-fg); }
+
+/* 宠物舞台。距胶囊行 16px，距相机区 0。 */
+.stage { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; min-height: 640rpx; margin-top: 32rpx; padding: 40rpx 32rpx 24rpx; border-radius: var(--radius-xl); background: var(--grass); color: var(--ink); }
+.stage-pasture { font-size: 28rpx; }
+.stage-memorial { background: var(--grass-memorial); }
+.stage-tag { margin-top: 32rpx; }
+.detail-link { display: flex; align-items: center; justify-content: center; min-height: 88rpx; padding: 0 32rpx; color: var(--ink-secondary); }
+.detail-chev { margin-left: 8rpx; }
+
+.memo-title { margin-top: 24rpx; }
+.memo-line { margin-top: 16rpx; display: flex; align-items: baseline; }
+.memo-note { margin-top: 8rpx; }
+.memo-cool { margin-top: 24rpx; }
+.memo-btn { width: 360rpx; height: 88rpx; margin-top: 24rpx; }
+.flower { position: absolute; right: 36rpx; bottom: 36rpx; width: 32rpx; height: 32rpx; border-radius: 50%; background: #F4B98E; box-shadow: 0 0 0 10rpx #FBE3D0; }
+
+/* 相机区。按钮放在区里，不压在舞台上。 */
+.camera-zone { display: flex; align-items: center; justify-content: center; height: 192rpx; }
+.fab { display: flex; align-items: center; justify-content: center; width: 144rpx; height: 144rpx; border-radius: 50%; background: var(--brand); box-shadow: 0 12rpx 32rpx rgba(184, 78, 12, 0.28); transition: transform 120ms ease-out; }
+.fab-on { transform: scale(0.94); }
+.fab-icon { width: 64rpx; height: 64rpx; }
+
+/* 弹层。 */
+.pick-row { margin-top: 24rpx; }
+.kv { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; border-bottom: 2rpx solid var(--border); }
+.sheet-note { display: block; margin-top: 24rpx; }
+
+/* 点击宠物：弹一下，飘一个爱心。 */
+.pet-bounce { animation: pet-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.heart { position: absolute; left: 50%; top: 24rpx; width: 40rpx; height: 40rpx; margin-left: -20rpx; border-radius: 50%; background: var(--brand); opacity: 0; animation: heart-up 900ms ease-out; }
+
+@keyframes chip-breathe { 0%, 100% { background-color: #FFE6D6; } 50% { background-color: #FFDAC4; } }
+@keyframes pet-pop { 0% { transform: scale(1); } 40% { transform: scale(1.08) translateY(-12rpx); } 100% { transform: scale(1); } }
+@keyframes heart-up { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-96rpx); } }

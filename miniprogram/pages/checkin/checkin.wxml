@@ -1,21 +1,70 @@
-<view class="page">
+<view class="page checkin">
   <view class="bar">
-    <text bindtap="close">关闭</text>
-    <text>{{mealName}} · {{checked ? '已打卡' : '窗口至 ' + windowEnd}}</text>
+    <view class="bar-close" bindtap="close" hover-class="bar-close-on" hover-stay-time="120">
+      <view class="x"></view>
+    </view>
+    <text class="t-label bar-title">{{mealName}} · {{checked ? '已打卡 ' + checkedAt : '窗口至 ' + windowEnd}}</text>
+    <view class="bar-close"></view>
   </view>
-  <view class="preview">照片</view>
+
+  <view class="preview">
+    <image wx:if="{{photos.length}}" class="preview-img" src="{{photos[0]}}" mode="aspectFill"></image>
+    <block wx:elif="{{staple}}">
+      <image class="preview-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+      <text class="t-caption">本餐已用应急口粮，记录为空</text>
+    </block>
+    <block wx:else>
+      <image class="preview-icon" src="/assets/icon/camera-muted.png" mode="aspectFit"></image>
+      <text class="t-caption">拍一张今天的饭</text>
+    </block>
+    <view wx:if="{{photos.length > 1}}" class="preview-count"><text class="t-caption count-text">共 {{photos.length}} 张</text></view>
+  </view>
+
   <block wx:if="{{checked}}">
-    <view class="row">
-      <text>替换照片</text>
-      <text>删除打卡</text>
+    <view class="actions">
+      <view class="btn btn-secondary action" bindtap="replacePhoto" hover-class="btn-secondary-on" hover-stay-time="120"><text>替换照片</text></view>
+      <view class="btn btn-secondary btn-danger action" bindtap="askDelete" hover-class="btn-secondary-on" hover-stay-time="120"><text>删除打卡</text></view>
     </view>
   </block>
+
+  <block wx:elif="{{staple}}">
+    <view class="staple-note"><text class="t-caption">应急口粮不需要照片，窗口结束后按吃到结算。</text></view>
+  </block>
+
   <block wx:else>
-    <view class="row">
-      <text>拍照</text>
-      <text>相册</text>
+    <view class="actions">
+      <view class="btn btn-secondary action" bindtap="takePhoto" hover-class="btn-secondary-on" hover-stay-time="120"><text>拍照</text></view>
+      <view class="btn btn-secondary action" bindtap="pickAlbum" hover-class="btn-secondary-on" hover-stay-time="120"><text>相册</text></view>
     </view>
-    <view class="primary">完成打卡</view>
-    <view class="link">吃不了？使用应急口粮</view>
+    <view class="footer">
+      <view class="btn btn-primary {{photos.length ? '' : 'btn-disabled'}}" bindtap="finish" hover-class="{{photos.length ? 'btn-primary-on' : ''}}" hover-stay-time="120">
+        <text class="t-button">完成打卡</text>
+      </view>
+      <view class="link" bindtap="askStaple"><text>吃不了？使用应急口粮</text></view>
+    </view>
+  </block>
+
+  <block wx:if="{{dialog === 'delete'}}">
+    <view class="mask" bindtap="closeDialog"></view>
+    <view class="dialog">
+      <text class="t-title">删除这条打卡？</text>
+      <view class="dialog-body"><text class="t-body t-secondary">{{settled ? '只移除图鉴记录，不影响宠物状态。' : '删除后这一餐会按没有打卡处理。'}}</text></view>
+      <view class="dialog-actions">
+        <view class="btn btn-secondary dialog-actions-btn" bindtap="closeDialog" hover-class="btn-secondary-on"><text>取消</text></view>
+        <view class="btn btn-secondary btn-danger dialog-actions-btn" bindtap="confirmDelete" hover-class="btn-secondary-on"><text>删除</text></view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{dialog === 'staple'}}">
+    <view class="mask" bindtap="closeDialog"></view>
+    <view class="dialog">
+      <text class="t-title">使用应急口粮？</text>
+      <view class="dialog-body"><text class="t-body t-secondary">这一餐不需要照片，本月还剩 {{stapleLeft}} 个。</text></view>
+      <view class="dialog-actions">
+        <view class="btn btn-secondary dialog-actions-btn" bindtap="closeDialog" hover-class="btn-secondary-on"><text>取消</text></view>
+        <view class="btn btn-primary dialog-actions-btn" bindtap="confirmStaple" hover-class="btn-primary-on"><text class="t-label">使用</text></view>
+      </view>
+    </view>
   </block>
 </view>

@@ -1,20 +1,94 @@
-<view class="page">
-  <view>今天</view>
-  <view class="row">
-    <text data-meal="breakfast" bindtap="goCheckin">早</text>
-    <text data-meal="lunch" bindtap="goCheckin"> 中</text>
-    <text data-meal="dinner" bindtap="goCheckin"> 晚</text>
+<view class="page home">
+  <text class="t-title">今天 {{dateLabel}}</text>
+
+  <view class="chips">
+    <view
+      wx:for="{{chips}}"
+      wx:key="meal"
+      class="chip chip-{{item.state}}"
+      data-meal="{{item.meal}}"
+      bindtap="onChip"
+      hover-class="chip-on"
+      hover-stay-time="120"
+    >
+      <text>{{item.label}}</text>
+    </view>
   </view>
-  <view class="stage" wx:if="{{petView === 'memorial'}}">
-    <view>纪念页</view>
-    <view>陪伴 {{companyDays}} 天 · 共吃 {{mealsEaten}} 餐</view>
-    <view>相关进度已清空</view>
-    <view>冷却剩余 {{cooldownDays}} 天</view>
+
+  <view wx:if="{{petView === 'living'}}" class="stage">
+    <view class="pet-art pet-{{band}} {{bounce ? 'pet-bounce' : ''}}" bindtap="onPetTap" bindlongpress="openPet">
+      <view class="pet-shadow"></view>
+      <view class="pet-body">
+        <view class="pet-eye pet-eye-l"></view>
+        <view class="pet-eye pet-eye-r"></view>
+        <view class="pet-cheek pet-cheek-l"></view>
+        <view class="pet-cheek pet-cheek-r"></view>
+      </view>
+      <view wx:if="{{heart}}" class="heart"></view>
+    </view>
+    <view class="stage-tag status-tag tag-{{band}}">
+      <text class="t-display">{{bandText}}</text>
+    </view>
+    <view class="detail-link" bindtap="openPet">
+      <text class="t-label">陪伴与记录</text>
+      <view class="chev detail-chev"></view>
+    </view>
   </view>
-  <view class="stage" wx:elif="{{petView === 'living'}}">
-    <view>{{bandText}}</view>
-    <view>陪伴与记录</view>
+
+  <view wx:elif="{{petView === 'memorial'}}" class="stage stage-memorial">
+    <view class="pet-art pet-memorial">
+      <view class="pet-shadow"></view>
+      <view class="pet-body">
+        <view class="pet-eye pet-eye-l"></view>
+        <view class="pet-eye pet-eye-r"></view>
+      </view>
+      <view class="flower"></view>
+    </view>
+    <text class="t-title memo-title">纪念页</text>
+    <view class="memo-line">
+      <text class="t-body">陪伴 </text><text class="t-display">{{companyDays}}</text><text class="t-body"> 天 · 共吃 </text><text class="t-display">{{mealsEaten}}</text><text class="t-body"> 餐</text>
+    </view>
+    <text class="t-caption memo-note">这只宠物的进度已清空</text>
+    <text class="t-label memo-cool">冷却剩余 {{cooldownDays}} 天</text>
+    <view class="btn btn-disabled memo-btn"><text class="t-label">领养新宠物</text></view>
   </view>
-  <view class="stage" wx:else bindtap="goAdopt">还没有宠物 · 领养</view>
-  <view class="row">相机</view>
+
+  <view wx:else class="stage stage-pasture" bindtap="goAdopt">
+    <text class="t-label">还没有宠物 · 领养</text>
+  </view>
+
+  <view class="camera-zone">
+    <view class="fab" hover-class="fab-on" hover-stay-time="120" bindtap="onCamera">
+      <image class="fab-icon" src="/assets/icon/camera.png" mode="aspectFit"></image>
+    </view>
+  </view>
+
+  <block wx:if="{{sheet === 'pick'}}">
+    <view class="mask" bindtap="closeSheet"></view>
+    <view class="sheet">
+      <view class="sheet-grip"></view>
+      <text class="t-title">选择餐次</text>
+      <view
+        wx:for="{{pickMeals}}"
+        wx:key="meal"
+        class="btn btn-secondary pick-row"
+        data-meal="{{item.meal}}"
+        bindtap="pickMeal"
+        hover-class="btn-secondary-on"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{sheet === 'pet'}}">
+    <view class="mask" bindtap="closeSheet"></view>
+    <view class="sheet">
+      <view class="sheet-grip"></view>
+      <text class="t-title">陪伴与记录</text>
+      <view class="kv"><text class="t-body">陪伴</text><text class="t-title">{{companyDays}} 天</text></view>
+      <view class="kv"><text class="t-body">共吃</text><text class="t-title">{{mealsEaten}} 餐</text></view>
+      <text class="t-caption sheet-note">{{bandNote}}</text>
+    </view>
+  </block>
 </view>

@@ -1,0 +1,50 @@
+/* 设计令牌。来源：DESIGN.md 第 10 节。改颜色、间距只改这里。 */
+page {
+  --canvas: #F5F7F6;
+  --surface: #FFFFFF;
+  --surface-sunken: #ECEFED;
+  --border: #DFE4E1;
+  --ink: #222926;
+  --ink-secondary: #59645E;
+  --ink-disabled: #A0A9A4;
+
+  --grass: #CFEAD3;
+  --grass-deep: #9FD2A8;
+  --grass-memorial: #E6EAE7;
+
+  --brand: #E5600E;
+  --brand-strong: #B84E0C;
+  --brand-tint: #FFE6D6;
+  --brand-on-tint: #A33C08;
+
+  --ok-fg: #1F6B3A;     --ok-bg: #DDF3DF;
+  --warn-fg: #7A5200;   --warn-bg: #FFF0C2;
+  --hungry-fg: #9A3B05; --hungry-bg: #FFDCC2;
+  --crit-fg: #A02A1C;   --crit-bg: #FFD6D0;
+  --danger: #C23B2A;
+
+  --radius-sm: 16rpx;  --radius-md: 24rpx;  --radius-lg: 40rpx;
+  --radius-xl: 56rpx;  --radius-pill: 999rpx;
+
+  --space-1: 8rpx;  --space-2: 16rpx; --space-3: 24rpx; --space-4: 32rpx;
+  --space-5: 40rpx; --space-6: 48rpx; --space-8: 64rpx; --space-10: 80rpx;
+
+  --font-body: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  /* 圆润字体还没选定授权，先回退到正文字体。选定后在首页 onLoad 里 wx.loadFontFace。 */
+  --font-display: "EatRound", var(--font-body);
+
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 32rpx;
+  line-height: 48rpx;
+}
+
+/* 字号。基准 375 宽，1px = 2rpx。最小 13px。 */
+.t-display { font-family: var(--font-display); font-size: 56rpx; line-height: 72rpx; font-weight: 400; }
+.t-title { font-size: 40rpx; line-height: 56rpx; font-weight: 600; }
+.t-body { font-size: 32rpx; line-height: 48rpx; }
+.t-button { font-size: 34rpx; line-height: 48rpx; font-weight: 600; }
+.t-label { font-size: 28rpx; line-height: 40rpx; font-weight: 500; }
+.t-caption { font-size: 26rpx; line-height: 36rpx; color: var(--ink-secondary); }
+.t-secondary { color: var(--ink-secondary); }

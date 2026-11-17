@@ -9,11 +9,11 @@
 - Tried: 未接数据库。这是还没做，不是规则冲突。
 - Status: open。第 5 份计划。
 
-## 页面不能在模拟器里验收
+## 页面没有在微信开发者工具里验收
 
-- Symptom: 首页和打卡页只是结构，没有接领域规则。
-- Reproduce: 用微信开发者工具打开。本轮没有打开。
-- Tried: 无
+- Symptom: 页面界面已按 `DESIGN.md` 做完，读 `miniprogram/utils/preview.js` 的样例数据。我只在 Chrome 里用自写的脚本把 wxml 近似渲染成 HTML 看过版面，那不是微信的渲染引擎。`wx:for`、`hover-class`、`picker`、`switch`、`navigator`、`env(safe-area-inset-bottom)`、`position: fixed` 在真机上的表现没有验证。
+- Reproduce: 用微信开发者工具打开，给首页加启动参数 `state=living|peckish|hungry|critical|memorial|pasture|two-due|idle`。
+- Tried: 静态检查（JSON、JS 语法、require 路径、资源引用、标签配对、class 和 data 字段都有来源）通过。
 - Status: open
 
 ## 照片没有提交内容安全
@@ -36,3 +36,17 @@
 - Reproduce: 读 `ARCHITECTURE.md` 的「分层」。
 - Tried: 无。这是还没做，不是缺陷。
 - Status: open。做之前先写一份计划。
+
+## DESIGN.md 的"零食"和现有打卡规则冲突
+
+- Symptom: `DESIGN.md` 第 11 节写「每天正餐时间外的打卡计为零食，一小时内算一次打卡，零食每日 4 点清零」。现有规则是窗口外不能打卡：`finishCheckin` 返回「不在打卡窗口」，首页相机在窗口外只弹 Toast「当前不在打卡窗口」，页面设计.md 也这么写。两者不能同时成立。
+- Reproduce: 读 `DESIGN.md` 第 461 行，对照 `app/checkin.ts` 的窗口判断和 `domain/meal.ts` 的 `cameraAction`。
+- Tried: 没有实现零食。首页相机仍按已定规则，窗口外弹 Toast。
+- Status: open，等你定。零食还牵出几个没写的规则：它算不算「一天三餐都完成」、要不要审核、要不要存进图鉴、会不会改饥饿值（DESIGN.md 7.3 说不能）。
+
+## DESIGN.md 与页面设计.md 的小差异
+
+- Symptom: DESIGN.md 要求在「我的」里加「声音与震动」，已实现，但 `页面设计.md`（规划目录里）的「我的」页还没有这一行。文案里的「xx（宠物名）」需要宠物有名字，现在宠物没有名字字段，页面用「宠物」代替。
+- Reproduce: 读 `DESIGN.md` 第 5.5、第 8 节。
+- Tried: 无
+- Status: open

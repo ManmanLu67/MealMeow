@@ -1,1 +1,16 @@
-<view class="page">订阅提醒</view>
+<view class="page reminder">
+  <view class="card">
+    <view class="list-row list-row-last">
+      <text class="t-body">订阅提醒</text>
+      <view class="status-tag {{statusTag}}"><text class="t-label">{{statusText}}</text></view>
+    </view>
+  </view>
+
+  <view class="actions">
+    <view class="btn btn-primary" bindtap="subscribe" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">{{statusButton}}</text></view>
+  </view>
+
+  <view class="notes">
+    <text class="t-caption">首页红点会在未打卡时提示。</text>
+  </view>
+</view>

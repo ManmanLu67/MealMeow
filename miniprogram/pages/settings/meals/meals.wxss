@@ -1,2 +1,7 @@
-.page { padding: 32rpx; color: #2c2825; }
-.row { margin-top: 24rpx; }
+.meals { display: flex; flex-direction: column; padding-top: 24rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)); }
+/* text 是行内元素，在 flex 列里不会自带行间距，所以每行单独占一块并留出间距。 */
+.notes { display: flex; flex-direction: column; margin-top: 32rpx; padding: 0 8rpx; }
+.note { display: block; margin-bottom: 8rpx; }
+.error { margin-top: 24rpx; padding: 0 8rpx; }
+.error-text { color: var(--danger); }
+.footer { margin-top: auto; padding-top: 32rpx; }

@@ -1,4 +1,55 @@
-<view class="page">
-  <view>选择外观</view>
-  <view class="row">确认领养</view>
+<view class="page adopt">
+  <block wx:if="{{canAdopt}}">
+    <text class="t-title">选择外观</text>
+    <view class="looks">
+      <view class="look look-on">
+        <view class="look-art">
+          <view class="pet-art look-pet">
+            <view class="pet-shadow"></view>
+            <view class="pet-body">
+              <view class="pet-eye pet-eye-l"></view>
+              <view class="pet-eye pet-eye-r"></view>
+              <view class="pet-cheek pet-cheek-l"></view>
+              <view class="pet-cheek pet-cheek-r"></view>
+            </view>
+          </view>
+        </view>
+        <text class="t-label">外观 1</text>
+      </view>
+    </view>
+    <text class="t-body warn">连续漏餐会饿死，死亡不可恢复。</text>
+    <view class="footer">
+      <view class="btn btn-primary" bindtap="ask" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">确认领养</text></view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="cool">
+      <view class="pet-art pet-memorial look-pet">
+        <view class="pet-shadow"></view>
+        <view class="pet-body">
+          <view class="pet-eye pet-eye-l"></view>
+          <view class="pet-eye pet-eye-r"></view>
+        </view>
+      </view>
+      <text class="t-title cool-title">还在冷却中</text>
+      <text class="t-display cool-days">{{cooldownDays}} 天</text>
+      <text class="t-caption">冷却结束的那天凌晨 4 点，可以领养新宠物。</text>
+    </view>
+    <view class="footer">
+      <view class="btn btn-primary btn-disabled"><text class="t-button">冷却剩余 {{cooldownDays}} 天</text></view>
+    </view>
+  </block>
+
+  <block wx:if="{{dialog}}">
+    <view class="mask" bindtap="closeDialog"></view>
+    <view class="dialog">
+      <text class="t-title">确认领养</text>
+      <view class="dialog-body"><text class="t-body">连续漏餐会饿死，死亡不可恢复。</text></view>
+      <view class="dialog-actions">
+        <view class="btn btn-secondary dialog-actions-btn" bindtap="closeDialog" hover-class="btn-secondary-on"><text>取消</text></view>
+        <view class="btn btn-primary dialog-actions-btn" bindtap="confirm" hover-class="btn-primary-on"><text class="t-label">确认</text></view>
+      </view>
+    </view>
+  </block>
 </view>

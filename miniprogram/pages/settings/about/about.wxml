@@ -1,1 +1,19 @@
-<view class="page">隐私与关于</view>
+<view class="page about">
+  <view class="card">
+    <view class="list-row">
+      <text class="t-body">可见范围</text>
+      <text class="t-body t-secondary">仅自己</text>
+    </view>
+    <view class="list-row list-row-last">
+      <text class="t-body">版本</text>
+      <text class="t-body t-secondary">0.1.0</text>
+    </view>
+  </view>
+
+  <view class="body">
+    <text class="t-title">隐私</text>
+    <text class="t-body para">你的照片和打卡记录只有你自己能看到，没有分享、没有小组、没有别人开放给你的内容。</text>
+    <text class="t-body para">上传的照片会经过微信内容安全检查。检查不判断照片是不是一顿饭，只判断内容是否合规。</text>
+    <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物会饿死，死亡不可恢复。</text>
+  </view>
+</view>
