@@ -9,6 +9,8 @@
 5. **温柔的界面，严肃的后果**：日常文案柔和不指责；只有领养确认和死亡纪念页如实讲后果。
 6. **不靠颜色单独传达状态**：每个状态都有文字（待打卡、已打、很饿……）。
 7. **一个主操作**：每个页面只有一个主按钮。
+8. Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.
+9. **每一个设计与技术决策，都应该同时提升用户体验（UX）、开发者体验（DX）和 AI Agent 体验（AX），并且不能破坏任何现有功能。**
 
 ---
 
