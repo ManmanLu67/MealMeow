@@ -44,6 +44,27 @@ export function canAdopt(cooldownUntilAt: Date | null, now: Date): boolean {
 
 export type HomePetView = 'pasture' | 'living' | 'memorial'
 
+export const DEFAULT_PET_NAME = '小饭'
+export const MAX_PET_NAME_LENGTH = 6
+
+/**
+ * 领养时取的名字。不填叫「小饭」，最多 6 个字符（按 Unicode 字符计），
+ * 不能含换行和控制字符。取了不能改，死亡后仍留在纪念页。
+ */
+export function validatePetName(
+  raw: string | undefined,
+): { ok: true; name: string } | { ok: false; error: string } {
+  const name = (raw ?? '').trim()
+  if (name === '') return { ok: true, name: DEFAULT_PET_NAME }
+  if ([...name].length > MAX_PET_NAME_LENGTH) {
+    return { ok: false, error: `名字最多 ${MAX_PET_NAME_LENGTH} 个字` }
+  }
+  if (/[\p{C}\p{Zl}\p{Zp}]/u.test(name)) {
+    return { ok: false, error: '名字里不能有换行或特殊符号' }
+  }
+  return { ok: true, name }
+}
+
 /** 没有独立宠物页。死亡后冷却结束前，首页宠物区就是纪念页。 */
 export function homePetView(
   pet: 'none' | 'alive' | 'dead',

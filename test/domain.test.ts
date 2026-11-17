@@ -16,6 +16,7 @@ import {
   evaluateFeeding,
   homeBadge,
   homePetView,
+  inAnyWindow,
   jobReady,
   logicalDate,
   mealInstant,
@@ -27,10 +28,12 @@ import {
   reviewDeadline,
   settleStep,
   settlementOutcome,
+  snackMergeTarget,
   stapleMonth,
   streakAnchor,
   streakEndingAt,
   validateMealClocks,
+  validatePetName,
 } from '../domain/index.ts'
 
 const SH = 'Asia/Shanghai'
@@ -87,8 +90,16 @@ describe('meal windows', () => {
   it('opens only the meal whose window contains now', () => {
     const now = new Date('2026-11-12T22:40:00Z')
     assert.deepEqual(openMeals(now, clocks, {}, SH), ['breakfast'])
-    assert.deepEqual(cameraAction(['breakfast']), { type: 'checkin', meal: 'breakfast' })
-    assert.deepEqual(cameraAction([]), { type: 'toast' })
+  })
+
+  it('routes the camera by what is due and whether now is in a window', () => {
+    assert.deepEqual(cameraAction(['breakfast'], true), { type: 'checkin', meal: 'breakfast' })
+    assert.deepEqual(cameraAction(['lunch', 'dinner'], true), {
+      type: 'pick',
+      meals: ['lunch', 'dinner'],
+    })
+    assert.deepEqual(cameraAction([], true), { type: 'toast', reason: 'meal_done' })
+    assert.deepEqual(cameraAction([], false), { type: 'snack' })
   })
 
   it('shows the home badge only while a meal is due', () => {
@@ -339,5 +350,59 @@ describe('settlement job and review', () => {
     assert.equal(homePetView('alive', false), 'living')
     assert.equal(homePetView('dead', false), 'memorial')
     assert.equal(homePetView('dead', true), 'pasture')
+  })
+})
+
+describe('snack window and merge', () => {
+  // 饭点 07:30 / 12:00 / 18:00，窗口是饭点前后 1 小时。
+  it('is in a window only during one meal window', () => {
+    assert.equal(inAnyWindow(new Date('2026-11-12T22:00:00Z'), clocks, SH), false) // 06:00
+    assert.equal(inAnyWindow(new Date('2026-11-12T23:00:00Z'), clocks, SH), true) // 07:00
+    assert.equal(inAnyWindow(new Date('2026-11-13T00:00:00Z'), clocks, SH), true) // 08:00
+    assert.equal(inAnyWindow(new Date('2026-11-13T00:30:00Z'), clocks, SH), false) // 08:30
+    assert.equal(inAnyWindow(new Date('2026-11-13T04:00:00Z'), clocks, SH), true) // 12:00
+  })
+
+  it('merges into the latest snack started within one hour', () => {
+    const now = new Date('2026-11-13T03:00:00Z') // 11:00
+    const starts = ['2026-11-13T02:10:00Z', '2026-11-13T02:30:00Z'] // 10:10, 10:30
+    assert.equal(snackMergeTarget(starts, now), '2026-11-13T02:30:00Z')
+  })
+
+  it('opens a new snack once the anchor is an hour old', () => {
+    const now = new Date('2026-11-13T03:30:00Z')
+    const starts = ['2026-11-13T02:30:00Z'] // 正好一小时前
+    assert.equal(snackMergeTarget(starts, now), null)
+  })
+
+  it('ignores a future start and picks the nearest eligible one', () => {
+    const now = new Date('2026-11-13T03:00:00Z')
+    const starts = ['2026-11-13T02:59:00Z', '2026-11-13T04:00:00Z']
+    assert.equal(snackMergeTarget(starts, now), '2026-11-13T02:59:00Z')
+  })
+})
+
+describe('pet name', () => {
+  it('defaults an empty name to 小饭', () => {
+    assert.deepEqual(validatePetName(undefined), { ok: true, name: '小饭' })
+    assert.deepEqual(validatePetName('   '), { ok: true, name: '小饭' })
+  })
+
+  it('trims and keeps a valid name', () => {
+    assert.deepEqual(validatePetName('  咪咪 '), { ok: true, name: '咪咪' })
+    assert.deepEqual(validatePetName('🐱饭饭'), { ok: true, name: '🐱饭饭' })
+  })
+
+  it('caps the name at six characters', () => {
+    assert.deepEqual(validatePetName('一二三四五六'), { ok: true, name: '一二三四五六' })
+    assert.deepEqual(validatePetName('一二三四五六七'), {
+      ok: false,
+      error: '名字最多 6 个字',
+    })
+  })
+
+  it('rejects control characters and line breaks', () => {
+    assert.equal(validatePetName('饭\n饭').ok, false)
+    assert.equal(validatePetName('饭\t饭').ok, false)
   })
 })

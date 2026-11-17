@@ -1,4 +1,5 @@
-// 打卡页。选图只进预览，点「完成打卡」才写入。一餐可多张，首屏一张主图。
+// 打卡页。三餐和零食共用一个页面：meal 打一餐，snack 记窗口外的零食。
+// 选图只进预览，点「完成打卡」才写入。一餐/一份零食可多张，首屏一张主图。
 const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
@@ -8,6 +9,7 @@ const MAX_PHOTOS = 9
 
 Page({
   data: {
+    mode: 'meal',
     meal: '',
     mealName: '这一餐',
     windowEnd: '',
@@ -23,11 +25,16 @@ Page({
   onLoad(query) {
     this.previewState = query.state || ''
     this.date = query.date || ''
+    this.mode = query.mode === 'snack' ? 'snack' : 'meal'
     const meal = query.meal || ''
     this.meal = meal
-    this.setData({ meal: meal, mealName: labels.MEAL_NAME[meal] || '这一餐' })
+    if (this.mode === 'snack') {
+      this.setData({ mode: 'snack', mealName: labels.SNACK_NAME })
+    } else {
+      this.setData({ mode: 'meal', mealName: labels.MEAL_NAME[meal] || '这一餐' })
+    }
     if (config.usePreviewData) {
-      const view = preview.checkinView(meal, this.previewState)
+      const view = preview.checkinView(this.mode === 'snack' ? 'snack' : meal, this.previewState)
       this.setData({
         windowEnd: view.windowEnd,
         checkedAt: view.checkedAt,
@@ -51,7 +58,7 @@ Page({
     const self = this
     const room = MAX_PHOTOS - this.data.photos.length
     if (room <= 0) {
-      wx.showToast({ title: '一餐最多 ' + MAX_PHOTOS + ' 张', icon: 'none' })
+      wx.showToast({ title: '最多 ' + MAX_PHOTOS + ' 张', icon: 'none' })
       return
     }
     wx.chooseMedia({
@@ -85,11 +92,15 @@ Page({
     const self = this
     if (config.usePreviewData) {
       this.setData({ checked: true, checkedAt: '12:06' })
-      wx.showToast({ title: '已打卡', icon: 'success' })
+      wx.showToast({ title: this.data.mode === 'snack' ? '已记录零食' : '已打卡', icon: 'success' })
       return
     }
-    // 日期和窗口由云端按设备时区判断，这里只传餐次和照片。
-    api.call('checkin', { meal: this.meal, photos: this.data.photos }).then(function (res) {
+    // 三餐传餐次，零食只传照片。日期和窗口由云端按设备时区判断。
+    const action = this.data.mode === 'snack' ? 'snack' : 'checkin'
+    const payload = this.data.mode === 'snack'
+      ? { photos: this.data.photos }
+      : { meal: this.meal, photos: this.data.photos }
+    api.call(action, payload).then(function (res) {
       if (!res.ok) {
         wx.showToast({ title: res.error || '打卡失败，请重试', icon: 'none' })
         return

@@ -18,6 +18,10 @@
       </view>
     </view>
     <text class="t-body warn">连续漏餐会饿死，死亡不可恢复。</text>
+    <view class="name-field">
+      <text class="t-body name-label">给它取个名字（可不填）</text>
+      <input class="name-input" value="{{name}}" maxlength="6" placeholder="小饭" placeholder-class="name-placeholder" bindinput="onName" />
+    </view>
     <view class="footer">
       <view class="btn btn-primary" bindtap="ask" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">确认领养</text></view>
     </view>

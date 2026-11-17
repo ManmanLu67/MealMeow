@@ -1,6 +1,7 @@
 // 设计阶段的样例视图模型。形状和计划 views.md 里 homeView / galleryView / adoptView 的返回值一致，
 // 页面只认这个形状，所以接上真实云函数时页面不用改。
-// 用法：在微信开发者工具的"编译模式"里给首页加启动参数 state=living / peckish / hungry / critical / memorial / pasture / cooling / two-due。
+// 用法：在微信开发者工具的"编译模式"里给首页加启动参数
+// state=living / peckish / hungry / critical / memorial / pasture / cooling / two-due / idle / snack。
 const MEALS = [
   { meal: 'breakfast', name: '早餐', short: '早' },
   { meal: 'lunch', name: '午餐', short: '中' },
@@ -23,12 +24,14 @@ function chips(states) {
   })
 }
 
-function cameraFor(states) {
+// 相机视图：due 是窗口内还没打的餐，insideWindow 是现在是否落在任何窗口里。
+// 窗口外的打卡算零食；窗口内但都打过了只提示。
+function cameraFor(states, insideWindow) {
   const due = MEALS.filter(function (m, i) { return states[i] === 'due' })
     .map(function (m) { return { meal: m.meal, name: m.name } })
-  if (due.length === 0) return { type: 'toast', meals: [] }
-  if (due.length === 1) return { type: 'checkin', meals: due }
-  return { type: 'pick', meals: due }
+  if (due.length === 1) return { type: 'checkin', meal: due[0].meal, name: due[0].name }
+  if (due.length > 1) return { type: 'pick', meals: due }
+  return insideWindow ? { type: 'toast', reason: 'meal_done' } : { type: 'snack' }
 }
 
 const SCENES = {
@@ -40,31 +43,37 @@ const SCENES = {
   cooling: { pet: 'memorial', band: 'full', states: ['upcoming', 'upcoming', 'upcoming'] },
   pasture: { pet: 'pasture', band: 'full', states: ['checked_in', 'upcoming', 'upcoming'] },
   'two-due': { pet: 'living', band: 'peckish', states: ['due', 'due', 'upcoming'] },
-  idle: { pet: 'living', band: 'full', states: ['checked_in', 'checked_in', 'checked_in'] },
+  idle: { pet: 'living', band: 'full', states: ['checked_in', 'checked_in', 'checked_in'], insideWindow: true },
+  snack: { pet: 'living', band: 'full', states: ['checked_in', 'checked_in', 'upcoming'], insideWindow: false },
 }
 
 function homeView(name) {
   const scene = SCENES[name] || SCENES.living
   const memorial = scene.pet === 'memorial'
+  const hasDue = scene.states.indexOf('due') >= 0
+  const insideWindow = scene.insideWindow === undefined ? hasDue : scene.insideWindow
   return {
     date: '2026-11-13',
     dateLabel: '11月13日 周五',
     chips: chips(scene.states),
-    badge: scene.states.indexOf('due') >= 0,
+    badge: hasDue,
     petView: scene.pet,
+    petName: '小饭',
     band: scene.band,
     bandText: BAND_TEXT[scene.band],
     companyDays: memorial ? 12 : 18,
     mealsEaten: memorial ? 30 : 41,
     cooldownDays: memorial ? 6 : 0,
-    camera: cameraFor(scene.states),
+    camera: cameraFor(scene.states, insideWindow),
   }
 }
 
 function checkinView(meal, name) {
   const done = name === 'done'
+  if (meal === 'snack') {
+    return { checkedAt: done ? '14:20' : '', checked: done, staple: false, stapleLeft: 0 }
+  }
   return {
-    mealName: { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }[meal] || '这一餐',
     windowEnd: '13:00',
     checkedAt: '12:06',
     checked: done,
@@ -90,6 +99,10 @@ function galleryView(name) {
       { meal: 'breakfast', name: '早餐', photo: empty ? '' : '/assets/preview/breakfast.png', exempt: false },
       { meal: 'lunch', name: '午餐', photo: '', exempt: !empty },
       { meal: 'dinner', name: '晚餐', photo: '', exempt: false },
+    ],
+    // 零食是窗口外的打卡，图鉴里单独显示一行。每份零食取封面图，count 是这一份的张数。
+    snacks: empty ? [] : [
+      { startedAt: '2026-11-13T06:00:00.000Z', photo: '/assets/preview/lunch.png', count: 1 },
     ],
   }
 }

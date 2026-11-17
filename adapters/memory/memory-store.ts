@@ -5,8 +5,13 @@ import type {
   PetDoc,
   SettlementDoc,
   SettlementJobDoc,
+  SnackDoc,
   UserDoc,
 } from '../../app/types.ts'
+
+function snackKey(userId: string, date: string, startedAt: string): string {
+  return `${userId}\0${date}\0${startedAt}`
+}
 
 function recordKey(userId: string, date: string, meal: string): string {
   return `${userId}\0${date}\0${meal}`
@@ -26,6 +31,7 @@ export function createMemoryStore(): Store {
   const records = new Map<string, MealRecordDoc>()
   const jobs = new Map<string, SettlementJobDoc>()
   const settlements = new Map<string, SettlementDoc>()
+  const snacks = new Map<string, SnackDoc>()
   const tails = new Map<string, Promise<unknown>>()
 
   return {
@@ -65,6 +71,19 @@ export function createMemoryStore(): Store {
         if (doc.userId === userId && doc.date === date) out.push(doc)
       }
       return out
+    },
+    async listSnacks(userId, date) {
+      const out: SnackDoc[] = []
+      for (const doc of snacks.values()) {
+        if (doc.userId === userId && doc.date === date) out.push(doc)
+      }
+      return out.sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+    },
+    async saveSnack(doc) {
+      snacks.set(snackKey(doc.userId, doc.date, doc.startedAt), doc)
+    },
+    async deleteSnack(userId, date, startedAt) {
+      snacks.delete(snackKey(userId, date, startedAt))
     },
     async getJob(subjectId, date, meal) {
       return jobs.get(subjectMealKey(subjectId, date, meal)) ?? null

@@ -25,6 +25,7 @@ export function user(patch: Partial<UserDoc> = {}): UserDoc {
 export function pet(patch: Partial<PetDoc> = {}): PetDoc {
   return {
     userId: 'u',
+    name: '小饭',
     hunger: 4,
     alive: true,
     adoptedOn: '2026-11-01',

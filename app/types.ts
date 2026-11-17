@@ -21,6 +21,23 @@ export type MealRecordDoc = {
   hidden: boolean
 }
 
+/**
+ * 零食：窗口外的打卡。和三餐的记录分开存，因为它不属于任何一餐、没有结算任务、
+ * 不影响宠物，也不计入「一天三餐都完成」和连续天数。
+ * 一小时内的打卡并入同一份，以这一份的第一次打卡为起点。按逻辑日归档，每日 04:00 换日。
+ */
+export type SnackDoc = {
+  userId: string
+  /** 起点所在的逻辑日。 */
+  date: string
+  /** 这一份的第一次打卡时刻（ISO）。同一天内唯一，和 userId、date 一起定位。 */
+  startedAt: string
+  photos: string[]
+  /** 和 photos 一一对应。零食也走内容安全，但结果不影响宠物，只决定这张图能不能留在图鉴里。 */
+  photoReviews: PhotoReview[]
+  hidden: boolean
+}
+
 export type SettlementJobDoc = {
   subjectType: 'personal'
   subjectId: string
@@ -57,6 +74,8 @@ export type UserDoc = {
 
 export type PetDoc = {
   userId: string
+  /** 领养时取的名字，之后不能改，死亡后仍留在纪念页。 */
+  name: string
   hunger: number
   alive: boolean
   adoptedOn: string

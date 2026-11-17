@@ -1,4 +1,4 @@
-// 图鉴。按日期看自己的三餐照片和连续天数。固定仅自己可见，不显示"谁能看"。
+// 图鉴。按日期看自己的三餐照片、零食和连续天数。固定仅自己可见，不显示"谁能看"。
 const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
@@ -10,6 +10,7 @@ Page({
     todayIndex: 0,
     selected: 0,
     meals: [],
+    snacks: [],
     isEmpty: false,
     viewer: '',
   },
@@ -31,14 +32,16 @@ Page({
   },
 
   apply(view) {
-    const hasAny = view.meals.some(function (m) { return m.photo || m.exempt })
+    const hasMeals = view.meals.some(function (m) { return m.photo || m.exempt })
+    const hasSnacks = (view.snacks || []).length > 0
     this.setData({
       streak: view.streak,
       days: view.days,
       todayIndex: view.todayIndex,
       selected: this.data.days.length ? this.data.selected : view.todayIndex,
       meals: view.meals,
-      isEmpty: !hasAny,
+      snacks: view.snacks || [],
+      isEmpty: !hasMeals && !hasSnacks,
     })
   },
 
@@ -49,7 +52,12 @@ Page({
     if (config.usePreviewData) {
       // 设计阶段：非今天的日期显示空态，方便看空态的样子。
       const view = preview.galleryView(index === this.data.todayIndex ? this.previewState : 'empty')
-      this.setData({ meals: view.meals, isEmpty: !view.meals.some(function (m) { return m.photo || m.exempt }) })
+      const hasMeals = view.meals.some(function (m) { return m.photo || m.exempt })
+      this.setData({
+        meals: view.meals,
+        snacks: view.snacks || [],
+        isEmpty: !hasMeals && (view.snacks || []).length === 0,
+      })
       return
     }
     this.onShow()
@@ -58,6 +66,11 @@ Page({
   openTile(event) {
     const meal = this.data.meals[event.currentTarget.dataset.index]
     if (meal && meal.photo) this.setData({ viewer: meal.photo })
+  },
+
+  openSnack(event) {
+    const snack = this.data.snacks[event.currentTarget.dataset.index]
+    if (snack && snack.photo) this.setData({ viewer: snack.photo })
   },
 
   closeViewer() {

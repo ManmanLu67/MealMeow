@@ -101,13 +101,22 @@ export function openMeals(
   })
 }
 
-export function cameraAction(due: readonly MealType[]):
-  | { type: 'toast' }
+export type CameraAction =
   | { type: 'checkin'; meal: MealType }
-  | { type: 'pick'; meals: MealType[] } {
-  if (due.length === 0) return { type: 'toast' }
+  | { type: 'pick'; meals: MealType[] }
+  /** 不在任何窗口里：这次打卡算零食。 */
+  | { type: 'snack' }
+  /** 在窗口里，但窗口内的餐都打过了。窗口外才算零食，所以这里只提示。 */
+  | { type: 'toast'; reason: 'meal_done' }
+
+/**
+ * 首页相机按下去做什么。due 是窗口内还没打卡的餐，insideWindow 是现在是否落在任何窗口里。
+ * 已打卡的餐不通过相机修改，修改走顶部胶囊。
+ */
+export function cameraAction(due: readonly MealType[], insideWindow: boolean): CameraAction {
   if (due.length === 1) return { type: 'checkin', meal: due[0] }
-  return { type: 'pick', meals: [...due] }
+  if (due.length > 1) return { type: 'pick', meals: [...due] }
+  return insideWindow ? { type: 'toast', reason: 'meal_done' } : { type: 'snack' }
 }
 
 export function homeBadge(states: readonly ChipState[]): boolean {

@@ -3,7 +3,7 @@ const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
 
 Page({
-  data: { canAdopt: true, cooldownDays: 0, dialog: false },
+  data: { canAdopt: true, cooldownDays: 0, dialog: false, name: '' },
 
   onLoad(query) {
     this.previewState = query.state || ''
@@ -18,6 +18,10 @@ Page({
     api.call('adoptView', {}).then(function (res) {
       if (res.ok) self.setData(res.data)
     })
+  },
+
+  onName(event) {
+    this.setData({ name: event.detail.value })
   },
 
   ask() {
@@ -35,7 +39,8 @@ Page({
       setTimeout(function () { wx.switchTab({ url: '/pages/home/home' }) }, 600)
       return
     }
-    api.call('adopt', {}).then(function (res) {
+    // 名字可选，云端会校验长度和字符，空则用默认名「小饭」。
+    api.call('adopt', { name: this.data.name }).then(function (res) {
       if (res.ok) wx.switchTab({ url: '/pages/home/home' })
       else wx.showToast({ title: res.error || '领养失败，请重试', icon: 'none' })
     })

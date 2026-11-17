@@ -1,5 +1,6 @@
 import { adoptPet } from './settle.ts'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts'
+import { recordSnack, removeSnack } from './snack.ts'
 import { syncUser } from './user.ts'
 import type { Store } from './ports.ts'
 import type { MealClocks, MealType } from '../domain/index.ts'
@@ -18,16 +19,27 @@ export type Request =
   | { action: 'sync'; timeZone: string }
   | { action: 'saveMeals'; clocks: MealClocks }
   | { action: 'checkin'; meal: MealType; photos: string[] }
+  | { action: 'snack'; photos: string[] }
   | { action: 'exempt'; meal: MealType }
   | { action: 'deleteCheckin'; date: string; meal: MealType }
-  | { action: 'adopt' }
+  | { action: 'deleteSnack'; date: string; startedAt: string }
+  | { action: 'adopt'; name?: string }
 
 export type Response =
   | { ok: true; data?: unknown }
   | { ok: false; error: string }
 
 /** 页面可以发起的动作。审核结果不在里面，它只能由平台的内容安全回调写入。 */
-export const PAGE_ACTIONS = ['sync', 'saveMeals', 'checkin', 'exempt', 'deleteCheckin', 'adopt'] as const
+export const PAGE_ACTIONS = [
+  'sync',
+  'saveMeals',
+  'checkin',
+  'snack',
+  'exempt',
+  'deleteCheckin',
+  'deleteSnack',
+  'adopt',
+] as const
 
 function isMeal(value: unknown): value is MealType {
   return typeof value === 'string' && (MEALS as readonly string[]).includes(value)
@@ -35,6 +47,11 @@ function isMeal(value: unknown): value is MealType {
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function parsePhotos(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(isString)) return null
+  return [...value]
 }
 
 function parseClocks(value: unknown): MealClocks | null {
@@ -57,10 +74,14 @@ export function parseRequest(raw: unknown): Request | null {
     }
     case 'checkin': {
       // 打卡落在哪一天由服务端按用户时区算，不信客户端传来的日期。
-      const photos = body.photos
-      if (!isMeal(body.meal)) return null
-      if (!Array.isArray(photos) || photos.length === 0 || !photos.every(isString)) return null
-      return { action: 'checkin', meal: body.meal, photos: [...photos] }
+      const photos = parsePhotos(body.photos)
+      if (!isMeal(body.meal) || photos === null) return null
+      return { action: 'checkin', meal: body.meal, photos }
+    }
+    case 'snack': {
+      // 零食不带餐次也不带日期：窗口外的打卡，归属由服务端决定。
+      const photos = parsePhotos(body.photos)
+      return photos === null ? null : { action: 'snack', photos }
     }
     case 'exempt':
       if (!isMeal(body.meal)) return null
@@ -69,8 +90,12 @@ export function parseRequest(raw: unknown): Request | null {
       // 删除可以针对以前的日子（图鉴里删），所以要带日期。
       if (!isString(body.date) || !isMeal(body.meal)) return null
       return { action: 'deleteCheckin', date: body.date, meal: body.meal }
+    case 'deleteSnack':
+      if (!isString(body.date) || !isString(body.startedAt)) return null
+      return { action: 'deleteSnack', date: body.date, startedAt: body.startedAt }
     case 'adopt':
-      return { action: 'adopt' }
+      // 名字可选。类型不对当作没填，具体长度和字符由领域层校验。
+      return { action: 'adopt', name: typeof body.name === 'string' ? body.name : undefined }
     default:
       return null
   }
@@ -105,6 +130,10 @@ export async function handle(
       if (date === null) return { ok: false, error: 'no_user' }
       return finishCheckin(store, caller, now, { date, meal: request.meal, photos: request.photos })
     }
+    case 'snack': {
+      const result = await recordSnack(store, caller, now, { photos: request.photos })
+      return result.ok ? { ok: true, data: { merged: result.merged } } : result
+    }
     case 'exempt': {
       const date = await todayOf(store, caller, now)
       if (date === null) return { ok: false, error: 'no_user' }
@@ -118,7 +147,11 @@ export async function handle(
       })
       return result.ok ? { ok: true, data: { effect: result.effect } } : result
     }
-    case 'adopt':
-      return adoptPet(store, caller, now)
+    case 'deleteSnack':
+      return removeSnack(store, caller, { date: request.date, startedAt: request.startedAt })
+    case 'adopt': {
+      const result = await adoptPet(store, caller, now, { name: request.name })
+      return result.ok ? { ok: true, data: { name: result.name } } : result
+    }
   }
 }

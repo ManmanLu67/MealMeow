@@ -15,6 +15,7 @@ Page({
     chips: [],
     badge: false,
     petView: 'pasture',
+    petName: '',
     band: 'full',
     bandText: '',
     companyDays: 0,
@@ -61,13 +62,14 @@ Page({
       chips: view.chips,
       badge: view.badge,
       petView: view.petView,
+      petName: view.petName || '小饭',
       band: view.band,
       bandText: view.bandText,
       companyDays: view.companyDays,
       mealsEaten: view.mealsEaten,
       cooldownDays: view.cooldownDays,
       camera: view.camera,
-      bandNote: labels.BAND_NOTE[view.band] || '',
+      bandNote: labels.bandNote(view.band, view.petName),
     })
     // 红点只出现在首页 Tab 上，且只表示窗口内还有没打的餐。
     if (view.badge) wx.showTabBarRedDot({ index: 0 })
@@ -92,11 +94,13 @@ Page({
   onCamera() {
     const action = this.data.camera
     if (action.type === 'checkin') {
-      this.goCheckin(action.meals[0].meal)
+      this.goCheckin(action.meal)
     } else if (action.type === 'pick') {
       this.setData({ sheet: 'pick', pickMeals: action.meals })
+    } else if (action.type === 'snack') {
+      this.goSnack()
     } else {
-      wx.showToast({ title: '当前不在打卡窗口', icon: 'none' })
+      wx.showToast({ title: '这一餐已经打过啦', icon: 'none' })
     }
   },
 
@@ -107,7 +111,12 @@ Page({
 
   goCheckin(meal) {
     const state = this.previewState ? '&state=' + this.previewState : ''
-    wx.navigateTo({ url: '/pages/checkin/checkin?meal=' + meal + '&date=' + this.data.date + state })
+    wx.navigateTo({ url: '/pages/checkin/checkin?mode=meal&meal=' + meal + '&date=' + this.data.date + state })
+  },
+
+  goSnack() {
+    const state = this.previewState ? '&state=' + this.previewState : ''
+    wx.navigateTo({ url: '/pages/checkin/checkin?mode=snack&date=' + this.data.date + state })
   },
 
   goAdopt() {

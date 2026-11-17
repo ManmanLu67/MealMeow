@@ -4,6 +4,7 @@ import {
   canAdopt,
   cooldownUntil,
   logicalDate,
+  validatePetName,
 } from '../domain/index.ts'
 import type { MealType, PhotoReview } from '../domain/index.ts'
 import { evaluateFeeding, nextHunger, settleStep } from '../domain/settlement.ts'
@@ -226,7 +227,7 @@ export async function applyReview(
 }
 
 /**
- * 领养。没有存活宠物、冷却已过才可以。
+ * 领养。没有存活宠物、冷却已过才可以。名字在这里取，取了不能改。
  * 同时把 user.adoptedOn 写下来，连续天数靠它判断先领养还是先打卡。
  * 第二只宠物领养时，上一只的死亡日仍留在 user.diedOn，连续天数照旧按那一次减。
  */
@@ -234,8 +235,11 @@ export async function adoptPet(
   store: Store,
   caller: { userId: string },
   now: Date,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+  input: { name?: string } = {},
+): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
   return store.runExclusive(caller.userId, async () => {
+    const named = validatePetName(input.name)
+    if (!named.ok) return named
     const user = await store.getUser(caller.userId)
     if (user === null) throw new Error(`user not found: ${caller.userId}`)
     const pet = await store.getPet(caller.userId)
@@ -246,6 +250,7 @@ export async function adoptPet(
     const today = logicalDate(now, user.timeZone)
     await store.savePet({
       userId: caller.userId,
+      name: named.name,
       hunger: 0,
       alive: true,
       adoptedOn: today,
@@ -263,6 +268,6 @@ export async function adoptPet(
         ? [...user.pastPets, { adoptedOn: user.adoptedOn, diedOn: user.diedOn }]
         : user.pastPets,
     })
-    return { ok: true }
+    return { ok: true, name: named.name }
   })
 }

@@ -37,16 +37,9 @@
 - Tried: 无。这是还没做，不是缺陷。
 - Status: open。做之前先写一份计划。
 
-## DESIGN.md 的"零食"和现有打卡规则冲突
-
-- Symptom: `DESIGN.md` 第 11 节写「每天正餐时间外的打卡计为零食，一小时内算一次打卡，零食每日 4 点清零」。现有规则是窗口外不能打卡：`finishCheckin` 返回「不在打卡窗口」，首页相机在窗口外只弹 Toast「当前不在打卡窗口」，页面设计.md 也这么写。两者不能同时成立。
-- Reproduce: 读 `DESIGN.md` 第 461 行，对照 `app/checkin.ts` 的窗口判断和 `domain/meal.ts` 的 `cameraAction`。
-- Tried: 没有实现零食。首页相机仍按已定规则，窗口外弹 Toast。
-- Status: open，等你定。零食还牵出几个没写的规则：它算不算「一天三餐都完成」、要不要审核、要不要存进图鉴、会不会改饥饿值（DESIGN.md 7.3 说不能）。
-
 ## DESIGN.md 与页面设计.md 的小差异
 
-- Symptom: DESIGN.md 要求在「我的」里加「声音与震动」，已实现，但 `页面设计.md`（规划目录里）的「我的」页还没有这一行。文案里的「xx（宠物名）」需要宠物有名字，现在宠物没有名字字段，页面用「宠物」代替。
-- Reproduce: 读 `DESIGN.md` 第 5.5、第 8 节。
+- Symptom: DESIGN.md 要求在「我的」里加「声音与震动」，已实现，但 `页面设计.md`（规划目录里）的「我的」页还没有这一行。
+- Reproduce: 读 `DESIGN.md` 第 5.5 节，对照 `页面设计.md` 的「我的」页。
 - Tried: 无
-- Status: open
+- Status: open（纯文档同步，页面和规则都已实现）

@@ -3,6 +3,7 @@ import type {
   PetDoc,
   SettlementDoc,
   SettlementJobDoc,
+  SnackDoc,
   UserDoc,
 } from './types.ts'
 
@@ -25,6 +26,10 @@ export type Store = {
   saveRecord(doc: MealRecordDoc): Promise<void>
   deleteRecord(userId: string, date: string, meal: MealRecordDoc['meal']): Promise<void>
   listRecords(userId: string, date: string): Promise<MealRecordDoc[]>
+  /** 某个逻辑日的零食，按起点时间排序。 */
+  listSnacks(userId: string, date: string): Promise<SnackDoc[]>
+  saveSnack(doc: SnackDoc): Promise<void>
+  deleteSnack(userId: string, date: string, startedAt: string): Promise<void>
   getJob(subjectId: string, date: string, meal: SettlementJobDoc['meal']): Promise<SettlementJobDoc | null>
   saveJob(doc: SettlementJobDoc): Promise<void>
   listPendingJobs(nowIso: string): Promise<SettlementJobDoc[]>

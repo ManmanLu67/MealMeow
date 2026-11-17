@@ -23,8 +23,20 @@ export {
   validateMealClocks,
 } from './meal.ts'
 export type { ChipState, MealClocks, MealType, MealWindow, RecordedStatus } from './meal.ts'
-export { PET_BAND_TEXT, applyMeal, canAdopt, cooldownUntil, homePetView, petBand } from './pet.ts'
+export type { CameraAction } from './meal.ts'
+export {
+  DEFAULT_PET_NAME,
+  MAX_PET_NAME_LENGTH,
+  PET_BAND_TEXT,
+  applyMeal,
+  canAdopt,
+  cooldownUntil,
+  homePetView,
+  petBand,
+  validatePetName,
+} from './pet.ts'
 export type { HomePetView, PetBand } from './pet.ts'
+export { SNACK_MERGE_MS, inAnyWindow, snackMergeTarget } from './snack.ts'
 export {
   REVIEW_WAIT_MS,
   aggregateReview,

@@ -37,6 +37,22 @@
     </view>
   </view>
 
+  <block wx:if="{{snacks.length}}">
+    <text class="t-label snack-title">零食</text>
+    <view class="snack-row">
+      <view
+        wx:for="{{snacks}}"
+        wx:key="startedAt"
+        class="snack-thumb"
+        data-index="{{index}}"
+        bindtap="openSnack"
+      >
+        <image class="snack-img" src="{{item.photo}}" mode="aspectFill"></image>
+        <view wx:if="{{item.count > 1}}" class="snack-count"><text class="t-caption count-text">×{{item.count}}</text></view>
+      </view>
+    </view>
+  </block>
+
   <view wx:if="{{isEmpty}}" class="empty"><text class="t-caption">今天还没有记录</text></view>
 
   <view wx:if="{{viewer}}" class="viewer" bindtap="closeViewer">

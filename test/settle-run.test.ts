@@ -175,6 +175,36 @@ describe('death, cooldown, and adoption', () => {
     assert.equal((await mustPet(store)).hunger, 0)
     assert.equal((await store.getSettlement('u', day, 'lunch'))?.hungerAfter, 0)
   })
+
+  it('trims a chosen name and returns it to the caller', async () => {
+    const store = await seededStore({}, null)
+    const named = await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), { name: '  咪咪 ' })
+    assert.equal(named.ok && named.name, '咪咪')
+    assert.equal((await mustPet(store)).name, '咪咪')
+  })
+
+  it('rejects an over-long name before touching the pet', async () => {
+    const store = await seededStore({}, null)
+    const tooLong = await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), {
+      name: '一二三四五六七',
+    })
+    assert.equal(tooLong.ok, false)
+    assert.equal(tooLong.ok === false && tooLong.error, '名字最多 6 个字')
+    assert.equal(await store.getPet('u'), null)
+  })
+
+  it('keeps the adopted name on the memorial after death', async () => {
+    const store = createMemoryStore()
+    await store.saveUser(user({ meals: MEALS_DEFAULT }))
+    await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), { name: '团团' })
+    await store.savePet({ ...(await mustPet(store)), hunger: 8 })
+    const windowEnd = new Date('2026-11-13T06:00:00.000Z') // 晚于领养时刻，这一餐漏了才扣得到
+    await job(store, 'lunch', windowEnd)
+    await runDueJobs(store, windowEnd)
+    const dead = await mustPet(store)
+    assert.equal(dead.alive, false)
+    assert.equal(dead.name, '团团')
+  })
 })
 
 describe('review callbacks', () => {

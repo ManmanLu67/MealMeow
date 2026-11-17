@@ -1,5 +1,6 @@
-// 页面固定文案。餐次名和宠物状态说明只在这里定义，页面不各写一份。
+// 页面固定文案。餐次名、零食名和宠物状态说明只在这里定义，页面不各写一份。
 const MEAL_NAME = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }
+const SNACK_NAME = '零食'
 
 // 宠物详情半屏里的状态说明。语气柔和，不指责。
 const BAND_NOTE = {
@@ -9,4 +10,11 @@ const BAND_NOTE = {
   critical: '很虚弱了，请尽快好好吃一顿。',
 }
 
-module.exports = { MEAL_NAME, BAND_NOTE }
+// 状态说明带上宠物名字，例如「小饭吃得很好，今天心情不错。」
+function bandNote(band, name) {
+  const note = BAND_NOTE[band]
+  if (!note) return ''
+  return (name || '小饭') + note
+}
+
+module.exports = { MEAL_NAME, SNACK_NAME, bandNote }

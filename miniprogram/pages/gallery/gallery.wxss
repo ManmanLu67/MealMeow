@@ -22,6 +22,15 @@
 .tile-name { position: absolute; left: 12rpx; top: 12rpx; padding: 0 16rpx; border-radius: var(--radius-pill); background: var(--surface); }
 .tile-name-text { color: var(--ink); }
 
+/* 零食：三餐格下方单独一行，缩略图横排。 */
+.snack-title { display: block; margin-top: 40rpx; }
+.snack-row { display: flex; flex-wrap: wrap; margin-top: 16rpx; }
+.snack-thumb { position: relative; box-sizing: border-box; width: calc((100% - 32rpx) / 3); height: 0; padding-bottom: calc((100% - 32rpx) / 3); margin-right: 16rpx; margin-bottom: 16rpx; overflow: hidden; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.snack-thumb:nth-child(3n) { margin-right: 0; }
+.snack-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.snack-count { position: absolute; right: 12rpx; bottom: 12rpx; padding: 2rpx 16rpx; border-radius: var(--radius-pill); background: var(--surface); }
+.snack-count .count-text { color: var(--ink); }
+
 .empty { margin-top: 48rpx; text-align: center; }
 
 .viewer { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(34, 41, 38, 0.92); }
