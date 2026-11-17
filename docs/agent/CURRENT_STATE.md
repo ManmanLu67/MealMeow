@@ -5,44 +5,44 @@
 
 ## 1. Current goal
 
-在 `feat/snack-name` 上做两件事：窗口外打卡算零食、宠物名字字段。域、命令、内存存储、页面和文档都改完，已提交（126e9a2）。
+在 `feat/views` 上做首页、图鉴、领养的读模型。`app/views.ts` 已写完，测试通过。还没接到云函数，页面仍读预览数据。
 
 ## 2. Status
 
-- Stage: 零食和宠物名字已实现并提交（126e9a2）
-- Branch: feat/snack-name（main 是主干）
-- Overall: 待合并（代码与测试已完成）
+- Stage: 读模型已实现，未提交
+- Branch: feat/views（从 feat/snack-name 的 7731f28 拉出；main 是主干）
+- Overall: 工作区有未提交的读模型。feat/snack-name 仍停在 7731f28，可以单独合并
 
 ## 3. Completed and verified
 
-- `npm run typecheck`（退出码 0）和 `npm test`（`node --test "test/*.test.ts"`，98 项通过，0 失败）都在本会话跑过。
-- 零食：窗口外打卡 `domain/snack.ts` + `app/snack.ts`（一小时内合并、按逻辑日归档、窗口内拒绝、按照片 ID 审核）、`handle.ts` 新增 `snack`/`deleteSnack` 动作、`Store` 新增 `listSnacks/saveSnack/deleteSnack`、`SnackDoc` 类型。规则：不改饥饿、不进结算、不占口粮额度、不算「一天三餐都完成」、不设每日上限、图鉴单独一行。
-- 宠物名字：`domain/pet.ts` 的 `validatePetName`（最多 6 个 Unicode 字符、可不填默认「小饭」、禁控制字符）、`adoptPet` 收 `name`、`PetDoc.name`，死亡后保留。
-- 页面：首页相机在窗口外进零食记录、窗口内已打过只提示；打卡页支持 snack 模式；图鉴显示零食行；领养页加名字输入；`preview.js` 加 `snack`/`idle` 场景和 `petName`、零食样例。`config.usePreviewData` 仍为 true。
-- 静态检查：自写 `chifan-lint.mjs`（在 %TEMP%）通过，56 个文件无问题；`chifan-render.mjs` 渲染 24 张截图成功（近似渲染，非微信引擎）。
+- 本会话 `npm test`：108 项通过，0 失败。`npm run typecheck` 退出码 0。
+- `homeView`：胶囊、红点、宠物区、状态词、名字、相机动作。审核未完成不留红点，也不改状态词。
+- `galleryView`：连续天数用 `personalStreak` + `streakAnchor`。三格去掉隐藏和整餐驳回，口粮无图，一餐多张只留未驳回的。零食单独一行。可选日期只换当天的三格和零食，不改连续天数。
+- `adoptView`：活着的宠物不能领养；冷却未结束也不能。
 
 ## 4. Current work
 
-- Task: 零食 + 名字功能收尾。代码、页面、文档已改并提交（126e9a2），收尾完成。
-- Expected behavior: 见 `ARCHITECTURE.md` 的「零食」一节和「页面和范围」的领养/名字描述。
-- Verification: 见第 3 节。真机/微信开发者工具里的页面点击未验收（见 KNOWN_ISSUES）。
+- Task: 页面读模型。代码和测试已写，未提交，未接页面。
+- Expected behavior: 见 `ARCHITECTURE.md` 的连续天数、零食、页面和范围。计划在 `docs/superpowers/plans/2026-11-13-views.md`。
+- Verification: 见第 3 节。页面仍是 `config.usePreviewData = true`。
 
 ## 5. Decisions
 
-- 零食规则（用户已定）：窗口外打卡算零食，一小时内合并、按逻辑日归档，要照片要审核，图鉴单独一行，不设每日上限，不改饥饿、不进结算。落于 `ARCHITECTURE.md`。
-- 宠物名字（用户已定）：领养时取名，最多 6 个字，可不填默认「小饭」，取了不能改，死后保留。
-- 相机决策：窗口内只剩一个未打卡 → 打这一餐；多个 → 选餐次；窗口内都打过 → Toast「这一餐已经打过啦」；窗口外 → 零食。
-- 配置入库：`project.config.json` 和 `project.private.config.json` 不跟踪。`project.example.config` 是可提交示例，不忽略。
+- 计划里的返回值比现有页面少。读模型按页面已经在读的形状补了：首页的 `date`、`petName`、`band`、`camera`；图鉴的 `days`、`todayIndex`、`snacks`，以及三格上的 `name`。错了的代价是以后接页面时要再改一次字段。
+- `galleryView` 第四个参数是要看的逻辑日，不传就是今天。连续天数和顶栏一周始终按 `now`。
+- `adoptView.canAdopt` 在宠物还活着时为 false。领域函数 `canAdopt` 只看冷却。
+- 连续天数按天调用 `listRecords`，从终点往前走到第一个没完成的日子。没有按范围一次取出。
 
 ## 6. Blockers
 
 - 云函数没接数据库（未做）。照片内容安全提交/回调没接（见 KNOWN_ISSUES）。
 - 页面只在 Chrome 近似渲染里看过，没有在微信开发者工具里验收。
+- 读模型没有接到 `handle.ts` 和云函数。页面还在读 `preview.js`。
 
 ## 7. Next actions
 
-1. 决定是否把 `feat/snack-name` 合并到 `main`。
-2. 按 `docs/superpowers/plans/2026-11-13-views.md` 做真实读模型，接云函数。
+1. 决定是否提交 `feat/views`，以及 `feat/snack-name` 是否先合并到 `main`。
+2. 把 `home` / `gallery` / `adopt` 接到 `handle.ts`，云函数改为调用读模型。页面把 `usePreviewData` 关掉。
 3. 内容安全提交和回调（`KNOWN_ISSUES.md`）。
 
 ## 8. References
@@ -50,4 +50,5 @@
 - Overview: PROJECT_OVERVIEW.md
 - Architecture: ARCHITECTURE.md
 - Known issues: KNOWN_ISSUES.md
+- Plan: docs/superpowers/plans/2026-11-13-views.md
 - Latest handoff: handoffs/
