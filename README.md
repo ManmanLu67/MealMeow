@@ -27,7 +27,7 @@ npm test            # node --test "test/*.test.ts"
 npm run typecheck   # tsc --noEmit
 ```
 
-运行小程序：用微信开发者工具打开本目录。`project.config.json` 指向 `miniprogram/` 和 `cloudfunctions/`。AppID 和云环境 ID 放在被忽略的 `project.private.config.json`，不要提交。
+运行小程序：用微信开发者工具打开本目录。本机的 `project.config.json` 指向 `miniprogram/` 和 `cloudfunctions/`，含 AppID，不入库。仓库里的示例是 `project.example.config`。`project.private.config.json` 由开发者工具本机生成，不入库。
 
 ## 还没接上
 

@@ -6,7 +6,9 @@ miniprogram/miniprogram_npm/
 Thumbs.db
 Desktop.ini
 
-# 微信开发者工具的个人配置，里面有 AppID、云环境 ID 和本机路径。
+# 本机项目配置含 AppID，不入库。示例 project.example.config 要入库。
+project.config.json
+# 微信开发者工具的个人配置，里面有云环境 ID 和本机路径。
 project.private.config.json
 miniprogram/project.private.config.json
 

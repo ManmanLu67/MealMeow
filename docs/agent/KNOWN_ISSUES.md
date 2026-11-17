@@ -28,7 +28,7 @@
 - Symptom: `project.config.json` 是 `touristappid`，`wx.cloud.init` 没给 `env`，云开发用不了。
 - Reproduce: 读 `project.config.json` 和 `miniprogram/app.js`。
 - Tried: 无
-- Status: open。真实值放 `project.private.config.json`，不入库。
+- Status: open。真实 AppID 在本机 `project.config.json`，不入库。
 
 ## 手机 App 还没有任何代码
 
