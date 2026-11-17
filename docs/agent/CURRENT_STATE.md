@@ -5,13 +5,13 @@
 
 ## 1. Current goal
 
-在 `feat/snack-name` 上做两件事：窗口外打卡算零食、宠物名字字段。域、命令、内存存储、页面和文档都改完，等提交。
+在 `feat/snack-name` 上做两件事：窗口外打卡算零食、宠物名字字段。域、命令、内存存储、页面和文档都改完，已提交（126e9a2）。
 
 ## 2. Status
 
-- Stage: 零食和宠物名字已实现，待提交
+- Stage: 零食和宠物名字已实现并提交（126e9a2）
 - Branch: feat/snack-name（main 是主干）
-- Overall: in progress
+- Overall: 待合并（代码与测试已完成）
 
 ## 3. Completed and verified
 
@@ -23,7 +23,7 @@
 
 ## 4. Current work
 
-- Task: 零食 + 名字功能收尾。代码、页面、文档已改，剩余是提交。
+- Task: 零食 + 名字功能收尾。代码、页面、文档已改并提交（126e9a2），收尾完成。
 - Expected behavior: 见 `ARCHITECTURE.md` 的「零食」一节和「页面和范围」的领养/名字描述。
 - Verification: 见第 3 节。真机/微信开发者工具里的页面点击未验收（见 KNOWN_ISSUES）。
 
@@ -40,7 +40,7 @@
 
 ## 7. Next actions
 
-1. 提交 `feat/snack-name` 到 worktree/分支，然后决定是否合并。
+1. 决定是否把 `feat/snack-name` 合并到 `main`。
 2. 按 `docs/superpowers/plans/2026-11-13-views.md` 做真实读模型，接云函数。
 3. 内容安全提交和回调（`KNOWN_ISSUES.md`）。
 
