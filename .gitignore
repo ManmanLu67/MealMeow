@@ -77,3 +77,6 @@ npm-debug.log*
 
 # Written by the session hook. Not a document to commit.
 docs/agent/session-last.md
+
+# 本机调试备忘，不入库。
+docs/local/

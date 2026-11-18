@@ -33,6 +33,13 @@ describe('home view', () => {
     assert.equal(view.petView, 'living')
     assert.equal(view.dateLabel, '11月13日 周五')
     assert.equal(view.petName, '小饭')
+    assert.equal(view.chips[0].name, '早餐')
+    assert.equal(view.chips[0].time, '07:30')
+    assert.equal(view.chips[1].name, '午餐')
+    assert.equal(view.hungerText, '0%')
+    assert.equal(view.healthText, '33')
+    assert.equal(view.levelText, '0')
+    assert.equal(view.emotion, '饱足')
   })
 })
 

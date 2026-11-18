@@ -6,6 +6,7 @@ import type {
   PhotoReview,
   RecordedStatus,
 } from '../domain/index.ts'
+import type { HungerDay } from '../domain/index.ts'
 
 export type MealRecordDoc = {
   userId: string
@@ -68,8 +69,8 @@ export type UserDoc = {
   cooldownUntil: string | null
   adoptedOn: string | null
   diedOn: string | null
-  /** 已经死亡的宠物的在世区间。领养新宠物时不会清掉，连续天数靠它扣除。 */
-  pastPets: { adoptedOn: string; diedOn: string }[]
+  /** 已经死亡的宠物的在世区间。领养新宠物时不会清掉，连续天数靠它扣除。名字在下一次领养时从当时的宠物抄下来。 */
+  pastPets: { adoptedOn: string; diedOn: string; name?: string }[]
 }
 
 export type PetDoc = {
@@ -84,4 +85,6 @@ export type PetDoc = {
   endedOn: string | null
   companyDays: number
   mealsEaten: number
+  /** 每个逻辑日结算后的饥饿档。扣等级只看已经结束的那些天。 */
+  hungerLog: HungerDay[]
 }

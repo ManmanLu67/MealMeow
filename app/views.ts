@@ -10,8 +10,13 @@ import {
   homeBadge,
   homePetView,
   inAnyWindow,
+  emotionFromHunger,
+  feedingHungerPercent,
+  healthScore,
+  petLevel,
   logicalDate,
   mealWindow,
+  nextMealAt,
   personalStreak,
   petBand,
   streakAnchor,
@@ -38,7 +43,7 @@ export type HomeCamera =
 export type HomeView = {
   date: string
   dateLabel: string
-  chips: { meal: MealType; label: string; state: ChipState }[]
+  chips: { meal: MealType; name: string; time: string; label: string; state: ChipState }[]
   badge: boolean
   petView: 'pasture' | 'living' | 'memorial'
   petName: string
@@ -47,6 +52,10 @@ export type HomeView = {
   companyDays: number
   mealsEaten: number
   cooldownDays: number
+  hungerText: string
+  healthText: string
+  levelText: string
+  emotion: string
   camera: HomeCamera
 }
 
@@ -91,6 +100,32 @@ function cameraOf(states: readonly ChipState[], now: Date, clocks: UserDoc['meal
   return action
 }
 
+const LEVEL_LOOKBACK_DAYS = 120
+
+/** 最近两天里最后一次算数的打卡，以及回看期内最早的一次。没有记录时饥饿按 100%。 */
+async function checkinSpan(
+  store: Store,
+  userId: string,
+  today: string,
+  todayRecords: readonly MealRecordDoc[],
+): Promise<{ latest: MealRecordDoc | null; earliestAt: string | null }> {
+  const yesterday = await store.listRecords(userId, addIsoDays(today, -1))
+  const recent = [...yesterday, ...todayRecords].filter((row) => countsAsEaten(row) !== null)
+  recent.sort((a, b) => a.checkinAt.localeCompare(b.checkinAt))
+  let earliestAt = recent[0]?.checkinAt ?? null
+  let cursor = addIsoDays(today, -2)
+  const stop = addIsoDays(today, -LEVEL_LOOKBACK_DAYS)
+  while (cursor >= stop) {
+    const rows = await store.listRecords(userId, cursor)
+    for (const row of rows) {
+      if (countsAsEaten(row) === null) continue
+      if (earliestAt === null || row.checkinAt < earliestAt) earliestAt = row.checkinAt
+    }
+    cursor = addIsoDays(cursor, -1)
+  }
+  return { latest: recent[recent.length - 1] ?? null, earliestAt }
+}
+
 /**
  * 首页要画的东西。不写库，也不在这里结算。
  * 红点只表示窗口内还有没打的餐。审核没完不留红点，也不改宠物状态词。
@@ -102,6 +137,25 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   const clocks = clocksOn(user, today)
   const records = await store.listRecords(caller.userId, today)
   const states = chipStates(user, today, now, records)
+  const span = await checkinSpan(store, caller.userId, today, records)
+  let hungerPercent = 100
+  if (span.latest) {
+    const next = nextMealAt(
+      span.latest.date,
+      span.latest.meal,
+      clocksOn(user, span.latest.date),
+      user.timeZone,
+    )
+    hungerPercent = feedingHungerPercent(
+      now,
+      new Date(span.latest.checkinAt),
+      next,
+      span.latest.status === 'exempt',
+    )
+  }
+  const hours = span.earliestAt === null
+    ? 0
+    : (now.getTime() - new Date(span.earliestAt).getTime()) / 3_600_000
   const alive = pet?.alive === true
   const dead = pet !== null && !pet.alive
   const cooldownOver = canAdopt(user.cooldownUntil ? new Date(user.cooldownUntil) : null, now)
@@ -109,7 +163,13 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   return {
     date: today,
     dateLabel: dateLabel(today),
-    chips: MEALS.map((meal, index) => ({ meal, state: states[index], label: chipLabel(meal, states[index]) })),
+    chips: MEALS.map((meal, index) => ({
+      meal,
+      name: MEAL_NAME[meal],
+      time: clocks[meal],
+      state: states[index],
+      label: chipLabel(meal, states[index]),
+    })),
     badge: homeBadge(states),
     petView: homePetView(alive ? 'alive' : dead ? 'dead' : 'none', cooldownOver),
     petName: pet?.name || '小饭',
@@ -118,6 +178,12 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     companyDays: pet?.companyDays ?? 0,
     mealsEaten: pet?.mealsEaten ?? 0,
     cooldownDays: cooldownDaysLeft(user, today, now),
+    hungerText: `${hungerPercent}%`,
+    healthText: pet ? String(healthScore(pet.hunger)) : '—',
+    levelText: pet
+      ? String(petLevel(hours, (pet.hungerLog ?? []).filter((day) => day.date < today)))
+      : '—',
+    emotion: emotionFromHunger(hungerPercent),
     camera: cameraOf(states, now, clocks, user.timeZone),
   }
 }

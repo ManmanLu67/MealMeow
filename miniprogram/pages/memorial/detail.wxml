@@ -1,0 +1,16 @@
+<view class="page memorial">
+  <view wx:if="{{missing}}" class="empty">
+    <text class="empty-text">没有这只宠物</text>
+  </view>
+  <block wx:else>
+    <image wx:if="{{photo}}" class="hero" src="{{photo}}" mode="aspectFill"></image>
+    <view wx:else class="hero hero-empty"></view>
+    <text class="name">{{name}}</text>
+    <view class="row"><text class="k">陪伴</text><text class="v">{{companyDays}} 天</text></view>
+    <view class="row"><text class="k">共吃</text><text class="v">{{mealsEaten}} 餐</text></view>
+    <view class="row"><text class="k">等级</text><text class="v">{{level}}</text></view>
+    <view class="row"><text class="k">领养</text><text class="v">{{adoptedOn}}</text></view>
+    <view class="row"><text class="k">离开</text><text class="v">{{diedOn}}</text></view>
+    <view wx:if="{{cooldownDays}}" class="row"><text class="k">冷却</text><text class="v">剩余 {{cooldownDays}} 天</text></view>
+  </block>
+</view>

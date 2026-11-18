@@ -33,6 +33,7 @@ export function pet(patch: Partial<PetDoc> = {}): PetDoc {
     endedOn: null,
     companyDays: 1,
     mealsEaten: 0,
+    hungerLog: [],
     ...patch,
   }
 }

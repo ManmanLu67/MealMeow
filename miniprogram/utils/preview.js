@@ -18,9 +18,49 @@ function chipLabel(short, state) {
   return short + ' · 漏'
 }
 
+const META = {
+  breakfast: { name: '早餐', time: '07:30' },
+  lunch: { name: '午餐', time: '12:00' },
+  dinner: { name: '晚餐', time: '18:00' },
+}
+
+const HEALTH = { full: '100', peckish: '78', hungry: '44', critical: '22' }
+
+// 预览没有时钟。每个饥饿档落在不同的百分比区间，情绪词才会跟着变。
+const SCENE_HUNGER = {
+  living: '18%',
+  snack: '18%',
+  pasture: '18%',
+  idle: '8%',
+  memorial: '10%',
+  peckish: '48%',
+  'two-due': '48%',
+  hungry: '74%',
+  critical: '96%',
+  cooling: '100%',
+}
+
+function sceneHunger(name) {
+  return SCENE_HUNGER[name] || '18%'
+}
+
+function sceneEmotion(name) {
+  const percent = Number(sceneHunger(name).replace('%', ''))
+  if (percent <= 30) return '饱足'
+  if (percent <= 60) return '满足'
+  if (percent <= 85) return '有点饿'
+  return '饿扁了'
+}
+
 function chips(states) {
   return MEALS.map(function (m, i) {
-    return { meal: m.meal, state: states[i], label: chipLabel(m.short, states[i]) }
+    return {
+      meal: m.meal,
+      name: META[m.meal].name,
+      time: META[m.meal].time,
+      state: states[i],
+      label: chipLabel(m.short, states[i]),
+    }
   })
 }
 
@@ -61,6 +101,13 @@ function homeView(name) {
     petName: '小饭',
     band: scene.band,
     bandText: BAND_TEXT[scene.band],
+    // 饥饿百分比按场景写死，情绪词由百分比换算。健康用原来的档换算成满分 100。
+    emotion: sceneEmotion(name),
+    hungerText: sceneHunger(name),
+    healthText: scene.pet === 'pasture' ? '—' : (scene.pet === 'memorial' ? '0' : HEALTH[scene.band]),
+    levelText: scene.pet === 'pasture' ? '—' : '1',
+    bowlFull: name === 'idle',
+    recentPhoto: name === 'idle' ? '/assets/preview/lunch.png' : '',
     companyDays: memorial ? 12 : 18,
     mealsEaten: memorial ? 30 : 41,
     cooldownDays: memorial ? 6 : 0,
@@ -116,4 +163,43 @@ function meView() {
   return { nickname: '吃饭人', accountId: 'cf-2048-7731' }
 }
 
-module.exports = { homeView, checkinView, galleryView, adoptView, meView }
+// 预览用的旧宠物。照片是现成的打卡样图，不是宠物肖像。
+const MEMORIALS = [
+  {
+    id: 'fan',
+    name: '小饭',
+    photo: '/assets/preview/lunch.png',
+    companyDays: 12,
+    mealsEaten: 30,
+    level: '1',
+    adoptedOn: '2026-11-01',
+    diedOn: '2026-11-13',
+    cooldownDays: 6,
+  },
+  {
+    id: 'tuan',
+    name: '团团',
+    photo: '/assets/preview/breakfast.png',
+    companyDays: 40,
+    mealsEaten: 90,
+    level: '3',
+    adoptedOn: '2026-09-01',
+    diedOn: '2026-10-20',
+    cooldownDays: 0,
+  },
+]
+
+function memorialList() {
+  return MEMORIALS.map(function (pet) {
+    return { id: pet.id, name: pet.name, photo: pet.photo }
+  })
+}
+
+function memorialDetail(id) {
+  for (let i = 0; i < MEMORIALS.length; i += 1) {
+    if (MEMORIALS[i].id === id) return MEMORIALS[i]
+  }
+  return null
+}
+
+module.exports = { homeView, checkinView, galleryView, adoptView, meView, memorialList, memorialDetail }

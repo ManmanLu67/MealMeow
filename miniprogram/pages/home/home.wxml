@@ -1,67 +1,97 @@
-<view class="page home">
-  <text class="t-title">今天 {{dateLabel}}</text>
-
-  <view class="chips">
+<view class="page home" style="padding-top: {{padTop}}px">
+  <view class="home-body">
+  <view class="top">
+    <view class="stat">
+      <view class="stat-row"><text class="stat-k">饥饿</text><text class="stat-v">{{hungerText}}</text></view>
+      <view class="stat-row"><text class="stat-k">健康</text><text class="stat-v">{{healthText}}</text></view>
+      <view class="stat-row"><text class="stat-k">等级</text><text class="stat-v">{{levelText}}</text></view>
+    </view>
+    <view class="meals">
     <view
       wx:for="{{chips}}"
       wx:key="meal"
-      class="chip chip-{{item.state}}"
+      class="meal meal-{{item.tone}}"
       data-meal="{{item.meal}}"
       bindtap="onChip"
-      hover-class="chip-on"
-      hover-stay-time="120"
     >
-      <text>{{item.label}}</text>
+      <view wx:if="{{item.tone === 'done'}}" class="badge"><view class="tick"></view></view>
+      <text class="meal-time">{{item.time}}</text>
+      <text class="meal-name">{{item.name}}</text>
+    </view>
     </view>
   </view>
 
-  <view wx:if="{{petView === 'living'}}" class="stage">
-    <view class="pet-art pet-{{band}} {{bounce ? 'pet-bounce' : ''}}" bindtap="onPetTap" bindlongpress="openPet">
-      <view class="pet-shadow"></view>
-      <view class="pet-body">
-        <view class="pet-eye pet-eye-l"></view>
-        <view class="pet-eye pet-eye-r"></view>
-        <view class="pet-cheek pet-cheek-l"></view>
-        <view class="pet-cheek pet-cheek-r"></view>
+  <view class="center">
+    <view class="stage">
+      <view wx:if="{{showMemorial}}" class="memo-mark" catchtap="openMemorial">
+        <view class="album-sheet"></view>
+        <view class="album">
+          <view class="album-spine"></view>
+          <view class="album-window"></view>
+        </view>
       </view>
-      <view wx:if="{{heart}}" class="heart"></view>
-    </view>
-    <view class="stage-tag status-tag tag-{{band}}">
-      <text class="t-display">{{bandText}}</text>
-    </view>
-    <view class="detail-link" bindtap="openPet">
-      <text class="t-label">陪伴与记录</text>
-      <view class="chev detail-chev"></view>
-    </view>
-  </view>
 
-  <view wx:elif="{{petView === 'memorial'}}" class="stage stage-memorial">
-    <view class="pet-art pet-memorial">
-      <view class="pet-shadow"></view>
-      <view class="pet-body">
-        <view class="pet-eye pet-eye-l"></view>
-        <view class="pet-eye pet-eye-r"></view>
+      <view wx:if="{{petView === 'living'}}" class="pet">
+        <view class="cat cat-{{band}}" bindtap="onPetTap" bindlongpress="openPet">
+          <view class="ear ear-l"><image class="ear-img" src="/assets/icon/ear.png" mode="scaleToFill"></image></view>
+          <view class="ear ear-r"><image class="ear-img" src="/assets/icon/ear.png" mode="scaleToFill"></image></view>
+          <view class="cat-head">
+            <view class="eye eye-l"><view class="lid"></view><view class="pupil"></view></view>
+            <view class="eye eye-r"><view class="lid"></view><view class="pupil"></view></view>
+            <view class="blush blush-l"></view>
+            <view class="blush blush-r"></view>
+            <view class="mouth"></view>
+          </view>
+          <view class="bowl" aria-label="{{bowlFull ? '食盘（有食物）' : '食盘（空）'}}">
+            <view class="bowl-body"></view>
+            <view class="bowl-rim"></view>
+            <view class="bowl-well"></view>
+            <view wx:if="{{bowlFull}}" class="foods">
+              <view class="k k1"></view><view class="k k2"></view><view class="k k3"></view><view class="k k4"></view>
+              <view class="k k5"></view><view class="k k6"></view><view class="k k7"></view>
+              <view class="k k8"></view><view class="k k9"></view>
+            </view>
+          </view>
+          <view wx:if="{{showBag}}" class="bag">
+            <view class="bag-tie"></view>
+            <view class="bag-neck"></view>
+            <view class="bag-body"></view>
+          </view>
+          <view wx:if="{{emotion}}" class="emo"><text class="emo-text">{{emotion}}</text></view>
+        </view>
+        <view wx:if="{{recentPhoto}}" class="polaroid">
+          <view class="pin"><view class="pin-head"></view><view class="pin-needle"></view></view>
+          <image class="polaroid-photo" src="{{recentPhoto}}" mode="aspectFill"></image>
+        </view>
       </view>
-      <view class="flower"></view>
-    </view>
-    <text class="t-title memo-title">{{petName}}</text>
-    <text class="t-caption">纪念页</text>
-    <view class="memo-line">
-      <text class="t-body">陪伴 </text><text class="t-display">{{companyDays}}</text><text class="t-body"> 天 · 共吃 </text><text class="t-display">{{mealsEaten}}</text><text class="t-body"> 餐</text>
-    </view>
-    <text class="t-caption memo-note">这只宠物的进度已清空</text>
-    <text class="t-label memo-cool">冷却剩余 {{cooldownDays}} 天</text>
-    <view class="btn btn-disabled memo-btn"><text class="t-label">领养新宠物</text></view>
-  </view>
 
-  <view wx:else class="stage stage-pasture" bindtap="goAdopt">
-    <text class="t-label">还没有宠物 · 领养</text>
-  </view>
-
-  <view class="camera-zone">
-    <view class="fab" hover-class="fab-on" hover-stay-time="120" bindtap="onCamera">
-      <image class="fab-icon" src="/assets/icon/camera.png" mode="aspectFit"></image>
+      <view wx:else class="adopt" bindtap="goAdopt">
+        <view class="person">
+          <view class="person-head"></view>
+          <view class="person-body"></view>
+        </view>
+        <text class="adopt-label">领养</text>
+        <view wx:if="{{showBag}}" class="bag bag-stick">
+          <view class="bag-tie"></view>
+          <view class="bag-neck"></view>
+          <view class="bag-body"></view>
+        </view>
+      </view>
     </view>
+
+    <view
+      class="cam {{hasCurrent ? 'cam-now' : ''}}"
+      hover-class="cam-press"
+      hover-stay-time="80"
+      bindtap="onCamera"
+      aria-label="拍照记录"
+    >
+      <view class="cam-body">
+        <view class="cam-bump"></view>
+        <view class="cam-lens"></view>
+      </view>
+    </view>
+  </view>
   </view>
 
   <block wx:if="{{sheet === 'pick'}}">
@@ -92,4 +122,5 @@
       <text class="t-caption sheet-note">{{bandNote}}</text>
     </view>
   </block>
+
 </view>

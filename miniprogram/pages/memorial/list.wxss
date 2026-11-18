@@ -1,0 +1,7 @@
+.page.memorial { background: #F7F8F9; color: #1A1A1A; }
+.empty { padding: 80rpx 0; text-align: center; }
+.empty-text { font-size: 28rpx; color: #6B6B6B; }
+.card { box-sizing: border-box; margin-bottom: 28rpx; overflow: hidden; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
+.card-photo { display: block; width: 100%; height: 360rpx; background: #F7F8F9; }
+.card-photo-empty { height: 200rpx; }
+.card-name { display: block; padding: 20rpx 24rpx 24rpx; font-size: 32rpx; font-weight: 800; letter-spacing: 0.06em; }

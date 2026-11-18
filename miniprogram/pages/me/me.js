@@ -5,6 +5,9 @@ Page({
   data: { nickname: '', initial: '', accountId: '' },
 
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 2 })
+    }
     // 昵称和账号 ID 由云端按登录态返回。账号 ID 只展示，不提供搜索、邀请、复制入口。
     const view = config.usePreviewData ? preview.meView() : { nickname: '', accountId: '' }
     const nickname = view.nickname || '吃饭人'

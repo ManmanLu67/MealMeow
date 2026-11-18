@@ -1,42 +1,127 @@
-.home { display: flex; flex-direction: column; padding-top: 24rpx; padding-bottom: 0; }
+/* 首页按《首页 UI 规格》。令牌只在这一页用，不改其他页。不用 gap。 */
+.page.home {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 0 32rpx calc(184rpx + env(safe-area-inset-bottom));
+  background: #F7F8F9;
+  color: #1A1A1A;
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
 
-/* 餐次胶囊。三个等宽，不用 gap 和兄弟选择器。 */
-.chips { display: flex; justify-content: space-between; margin-top: 24rpx; }
-.chip { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: calc((100% - 32rpx) / 3); height: 80rpx; padding: 0 24rpx; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink-secondary); font-size: 28rpx; line-height: 40rpx; font-weight: 500; white-space: nowrap; transition: transform 120ms ease-out; }
-.chip-on { transform: scale(0.97); }
-.chip-due { background: var(--brand-tint); color: var(--brand-on-tint); animation: chip-breathe 2.4s ease-in-out infinite; }
-.chip-checked_in { background: var(--ok-bg); color: var(--ok-fg); }
+.home-body { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.top { display: flex; flex-shrink: 0; align-items: stretch; padding-top: 16rpx; }
+.stat { box-sizing: border-box; width: 280rpx; padding: 8rpx 20rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
+.stat-row { display: flex; align-items: center; justify-content: space-between; height: 76rpx; border-bottom: 2rpx solid #1A1A1A; }
+.stat-row:last-child { border-bottom: none; }
+.stat-k { font-size: 28rpx; font-weight: 400; letter-spacing: 0.08em; }
+.stat-v { font-size: 32rpx; font-weight: 800; }
 
-/* 宠物舞台。距胶囊行 16px，距相机区 0。 */
-.stage { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; min-height: 640rpx; margin-top: 32rpx; padding: 40rpx 32rpx 24rpx; border-radius: var(--radius-xl); background: var(--grass); color: var(--ink); }
-.stage-pasture { font-size: 28rpx; }
-.stage-memorial { background: var(--grass-memorial); }
-.stage-tag { margin-top: 32rpx; }
-.detail-link { display: flex; align-items: center; justify-content: center; min-height: 88rpx; padding: 0 32rpx; color: var(--ink-secondary); }
-.detail-chev { margin-left: 8rpx; }
+.meals { display: flex; flex: 1; flex-direction: column; justify-content: space-between; min-width: 0; margin-left: 20rpx; overflow: visible; }
+.meal { position: relative; display: flex; flex-direction: row; align-items: center; justify-content: space-between; box-sizing: border-box; width: 100%; height: 72rpx; padding: 0 24rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; overflow: visible; }
+.meal-time { font-size: 24rpx; font-weight: 600; line-height: 32rpx; letter-spacing: 0.02em; color: #6B6B6B; }
+.meal-name { font-size: 30rpx; font-weight: 800; line-height: 36rpx; color: #1A1A1A; }
+.meal-done { background: #8F9E63; }
+.meal-done .meal-time { color: #1A1A1A; }
+.meal-now { background: #FFC107; box-shadow: 6rpx 6rpx 0 #1A1A1A; }
+.meal-now .meal-time { color: #1A1A1A; }
+.meal-miss { background: #F7F8F9; }
+.meal-miss .meal-time { color: #6B6B6B; }
+.meal-miss .meal-name { color: #6B6B6B; }
+.badge { position: absolute; top: -14rpx; right: -14rpx; display: flex; align-items: center; justify-content: center; width: 36rpx; height: 36rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
+.tick { width: 14rpx; height: 8rpx; margin-top: -4rpx; border-bottom: 4rpx solid #1A1A1A; border-left: 4rpx solid #1A1A1A; transform: rotate(-45deg); }
 
-.memo-title { margin-top: 24rpx; }
-.memo-line { margin-top: 16rpx; display: flex; align-items: baseline; }
-.memo-note { margin-top: 8rpx; }
-.memo-cool { margin-top: 24rpx; }
-.memo-btn { width: 360rpx; height: 88rpx; margin-top: 24rpx; }
-.flower { position: absolute; right: 36rpx; bottom: 36rpx; width: 32rpx; height: 32rpx; border-radius: 50%; background: #F4B98E; box-shadow: 0 0 0 10rpx #FBE3D0; }
+.center { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: space-between; min-height: 0; padding-top: 40rpx; }
+.stage { position: relative; display: flex; flex: 1; align-items: center; justify-content: center; width: 100%; overflow: visible; }
 
-/* 相机区。按钮放在区里，不压在舞台上。 */
-.camera-zone { display: flex; align-items: center; justify-content: center; height: 192rpx; }
-.fab { display: flex; align-items: center; justify-content: center; width: 144rpx; height: 144rpx; border-radius: 50%; background: var(--brand); box-shadow: 0 12rpx 32rpx rgba(184, 78, 12, 0.28); transition: transform 120ms ease-out; }
-.fab-on { transform: scale(0.94); }
-.fab-icon { width: 64rpx; height: 64rpx; }
+.pet { display: flex; align-items: flex-end; justify-content: center; max-width: 100%; }
+.pet-side { display: flex; flex-direction: column; align-items: flex-start; margin-left: 24rpx; }
+/* 耳朵是上窄下宽的圆角三角，图在 assets/icon/ear.png。耳根埋在头后面，各状态同一对。 */
+.cat { position: relative; flex-shrink: 0; width: 420rpx; height: 411rpx; margin-bottom: 72rpx; overflow: visible; }
+.ear { position: absolute; z-index: 0; width: 112rpx; height: 118rpx; transform-origin: 50% 100%; }
+.ear-img { width: 100%; height: 100%; }
+.ear-l { left: 56rpx; top: 14rpx; transform: rotate(-7deg); }
+.ear-r { left: 252rpx; top: 14rpx; transform: rotate(7deg); }
+.cat-head { position: absolute; z-index: 1; left: 32rpx; top: 80rpx; width: 356rpx; height: 316rpx; background: #1A1A1A; border-radius: 116rpx; }
+.eye { position: absolute; top: 78rpx; display: flex; align-items: center; justify-content: center; width: 80rpx; height: 80rpx; overflow: hidden; background: #FFC107; border-radius: 50%; }
+.eye-l { left: 62rpx; }
+.eye-r { left: 222rpx; }
+.blush { position: absolute; top: 168rpx; width: 40rpx; height: 16rpx; background: #A37B68; border-radius: 50%; }
+.blush-l { left: 40rpx; }
+.blush-r { left: 284rpx; }
+.lid { display: none; }
+.mouth { position: absolute; left: 164rpx; top: 196rpx; width: 36rpx; height: 12rpx; border-bottom: 4rpx solid #4A4A4A; border-radius: 0 0 18rpx 18rpx; }
+.pupil { width: 16rpx; height: 46rpx; background: #1A1A1A; border-radius: 8rpx; animation: pupil-blink 4s infinite; }
+.cat-hungry .lid { position: absolute; left: 0; top: 0; z-index: 1; display: block; width: 80rpx; height: 24rpx; background: #1A1A1A; border-radius: 0 0 16rpx 16rpx; }
+.cat-hungry .pupil { height: 32rpx; }
+.cat-hungry .mouth { top: 222rpx; border-bottom: none; border-top: 4rpx solid #4A4A4A; border-radius: 18rpx 18rpx 0 0; }
+.cat-critical .lid { position: absolute; left: 0; top: 0; z-index: 1; display: block; width: 80rpx; height: 42rpx; background: #1A1A1A; border-radius: 0 0 20rpx 20rpx; }
+.cat-critical .pupil { height: 18rpx; }
+.cat-critical .blush { opacity: 0.45; }
+.cat-critical .mouth { left: 146rpx; top: 228rpx; width: 48rpx; border-bottom: none; border-top: 4rpx solid #4A4A4A; border-radius: 20rpx 20rpx 0 0; }
 
-/* 弹层。 */
+.bowl { position: absolute; left: 8rpx; top: 84%; z-index: 2; width: 168rpx; height: 112rpx; }
+.bowl-body { position: absolute; left: 2%; right: 2%; top: 46%; height: 34%; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-top: none; border-radius: 0 0 80rpx 80rpx; }
+.bowl-rim { position: absolute; left: 0; top: 24%; width: 100%; height: 43%; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
+.bowl-well { position: absolute; left: 16%; top: 32%; width: 68%; height: 27%; background: #F7F8F9; border: 4rpx solid #1A1A1A; border-radius: 50%; }
+.foods { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.k { position: absolute; width: 16rpx; height: 16rpx; background: #8F9E63; border: 2rpx solid #1A1A1A; border-radius: 50%; animation: food-drop 400ms ease-out both; }
+.k1 { left: 22%; top: 46%; animation-delay: 0ms; }
+.k2 { left: 38%; top: 48%; animation-delay: 40ms; }
+.k3 { left: 54%; top: 48%; animation-delay: 80ms; }
+.k4 { left: 70%; top: 46%; animation-delay: 120ms; }
+.k5 { left: 30%; top: 32%; animation-delay: 160ms; }
+.k6 { left: 46%; top: 32%; animation-delay: 200ms; }
+.k7 { left: 62%; top: 32%; animation-delay: 240ms; }
+.k8 { left: 38%; top: 18%; animation-delay: 280ms; }
+.k9 { left: 54%; top: 18%; animation-delay: 320ms; }
+
+.bag { position: absolute; left: 176rpx; top: 86%; z-index: 2; width: 72rpx; height: 96rpx; }
+.bag-tie { position: absolute; left: 28rpx; top: 0; width: 16rpx; height: 16rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
+.bag-neck { position: absolute; left: 18rpx; top: 12rpx; width: 36rpx; height: 22rpx; background: #8F9E63; border: 4rpx solid #1A1A1A; border-radius: 8rpx 8rpx 0 0; }
+.bag-body { position: absolute; left: 0; top: 28rpx; width: 72rpx; height: 64rpx; background: #8F9E63; border: 4rpx solid #1A1A1A; border-radius: 12rpx 12rpx 32rpx 32rpx; }
+.bag-stick { left: -8rpx; top: auto; bottom: 88rpx; }
+.emo { position: absolute; left: 248rpx; top: 348rpx; z-index: 3; padding: 8rpx 12rpx; background: #FFC107; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(-5deg); }
+.emo-text { font-size: 28rpx; font-weight: 800; letter-spacing: 0.08em; color: #1A1A1A; white-space: nowrap; }
+.polaroid { position: relative; box-sizing: border-box; width: 148rpx; margin-left: 56rpx; margin-bottom: 8rpx; padding: 12rpx 12rpx 40rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(5deg); }
+.polaroid-photo { display: block; width: 116rpx; height: 116rpx; background: #F7F8F9; }
+.pin { position: absolute; left: 50%; top: -20rpx; z-index: 2; width: 36rpx; height: 44rpx; margin-left: -18rpx; transform: rotate(-5deg); }
+.pin-head { width: 28rpx; height: 28rpx; margin-left: 4rpx; background: #FFC107; border: 4rpx solid #1A1A1A; border-radius: 50%; box-sizing: border-box; }
+.pin-needle { width: 4rpx; height: 16rpx; margin-left: 16rpx; margin-top: -4rpx; background: #1A1A1A; }
+
+.adopt { position: relative; display: flex; flex-direction: column; align-items: center; }
+.person { position: relative; width: 120rpx; height: 196rpx; }
+.person-head { width: 56rpx; height: 56rpx; margin-left: 32rpx; background: #F7F8F9; border: 4rpx solid #1A1A1A; border-radius: 50%; box-sizing: border-box; }
+.person-body { width: 88rpx; height: 108rpx; margin-top: 12rpx; margin-left: 16rpx; background: transparent; border: 4rpx solid #1A1A1A; border-radius: 40rpx 40rpx 16rpx 16rpx; box-sizing: border-box; }
+.adopt-label { margin-top: 36rpx; padding: 8rpx 28rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; font-size: 28rpx; font-weight: 800; letter-spacing: 0.14em; color: #1A1A1A; }
+
+.memo-mark { position: absolute; top: 8rpx; right: 0; z-index: 2; width: 84rpx; height: 72rpx; }
+.album-sheet { position: absolute; left: 14rpx; top: 0; width: 64rpx; height: 56rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; }
+.album { position: absolute; left: 0; top: 10rpx; width: 76rpx; height: 58rpx; background: #FFC107; border: 4rpx solid #1A1A1A; border-radius: 4rpx; }
+.album-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 12rpx; background: #1A1A1A; }
+.album-window { position: absolute; left: 22rpx; top: 10rpx; width: 40rpx; height: 30rpx; background: #FFFFFF; border: 3rpx solid #1A1A1A; border-radius: 2rpx; }
+
+.cam { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 168rpx; height: 168rpx; margin-top: 16rpx; margin-bottom: 8rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; box-shadow: 8rpx 8rpx 0 #1A1A1A; }
+.cam-now { background: #FFC107; }
+.cam-press { transform: translate(4rpx, 4rpx); box-shadow: 4rpx 4rpx 0 #1A1A1A; }
+.cam-body { position: relative; width: 64rpx; height: 44rpx; margin-top: 16rpx; border: 8rpx solid #1A1A1A; border-radius: 6rpx; }
+.cam-bump { position: absolute; top: -18rpx; left: 12rpx; width: 28rpx; height: 12rpx; border: 8rpx solid #1A1A1A; border-bottom: none; border-radius: 6rpx 6rpx 0 0; }
+.cam-lens { width: 20rpx; height: 20rpx; margin: 8rpx auto 0; border: 8rpx solid #1A1A1A; border-radius: 50%; }
+
 .pick-row { margin-top: 24rpx; }
-.kv { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; border-bottom: 2rpx solid var(--border); }
+.kv { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; border-bottom: 2rpx solid #DFE4E1; }
 .sheet-note { display: block; margin-top: 24rpx; }
 
-/* 点击宠物：弹一下，飘一个爱心。 */
-.pet-bounce { animation: pet-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }
-.heart { position: absolute; left: 50%; top: 24rpx; width: 40rpx; height: 40rpx; margin-left: -20rpx; border-radius: 50%; background: var(--brand); opacity: 0; animation: heart-up 900ms ease-out; }
-
-@keyframes chip-breathe { 0%, 100% { background-color: #FFE6D6; } 50% { background-color: #FFDAC4; } }
-@keyframes pet-pop { 0% { transform: scale(1); } 40% { transform: scale(1.08) translateY(-12rpx); } 100% { transform: scale(1); } }
-@keyframes heart-up { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-96rpx); } }
+@keyframes pupil-blink {
+  0%, 92%, 100% { transform: scale(1, 1); }
+  95% { transform: scale(0.3, 1.3); }
+}
+@keyframes food-drop {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pupil { animation: none; }
+  .k { animation: none; }
+}

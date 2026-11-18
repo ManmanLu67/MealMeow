@@ -49,6 +49,7 @@ describe('settlement', () => {
     const first = await runDueJobs(store, end)
     // 早餐和午餐窗口同时结束。早餐排在前面，先按漏餐结算；午餐等审核，冻结。
     assert.equal((await mustPet(store)).hunger, 5)
+    assert.deepEqual((await mustPet(store)).hungerLog, [{ date: day, band: 'hungry', meals: 1 }])
     assert.equal((await store.getJob('u', day, 'lunch'))?.status, 'waiting_review')
     assert.equal(first.settled, 1)
     assert.equal(first.frozen, 1)
@@ -165,6 +166,7 @@ describe('death, cooldown, and adoption', () => {
     assert.equal(fresh.hunger, 0)
     assert.equal(fresh.adoptedOn, '2026-11-20')
     assert.equal((await store.getUser('u'))?.diedOn, null)
+    assert.equal((await store.getUser('u'))?.pastPets[0]?.name, '小饭')
   })
 
   it('meals that ended before adoption do not feed or starve the new pet', async () => {

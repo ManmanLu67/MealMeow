@@ -56,4 +56,15 @@ export type {
   SubjectType,
 } from './settlement.ts'
 export { dayComplete, personalStreak, streakAnchor, streakEndingAt } from './streak.ts'
+export {
+  emotionFromHunger,
+  feedingHungerPercent,
+  healthScore,
+  levelFromCheckinHours,
+  levelPenalty,
+  nextMealAt,
+  petLevel,
+  recordHungerDay,
+} from './vitals.ts'
+export type { HungerDay } from './vitals.ts'
 export type { StreakInput } from './streak.ts'

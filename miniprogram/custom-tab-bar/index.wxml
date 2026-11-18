@@ -1,0 +1,20 @@
+<view class="nav">
+  <view class="item {{selected === 0 ? 'item-on' : ''}}" data-index="0" bindtap="switchTab" hover-class="item-press" hover-stay-time="80">
+    <view class="ico">
+      <view class="house"></view>
+      <view wx:if="{{badge}}" class="dot"></view>
+    </view>
+    <text class="label">首页</text>
+  </view>
+  <view class="item {{selected === 1 ? 'item-on' : ''}}" data-index="1" bindtap="switchTab" hover-class="item-press" hover-stay-time="80">
+    <view class="ico"><view class="book"></view></view>
+    <text class="label">图鉴</text>
+  </view>
+  <view class="item {{selected === 2 ? 'item-on' : ''}}" data-index="2" bindtap="switchTab" hover-class="item-press" hover-stay-time="80">
+    <view class="ico user">
+      <view class="user-head"></view>
+      <view class="user-body"></view>
+    </view>
+    <text class="label">用户</text>
+  </view>
+</view>

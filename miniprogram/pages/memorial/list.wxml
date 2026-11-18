@@ -1,0 +1,16 @@
+<view class="page memorial">
+  <view wx:if="{{pets.length === 0}}" class="empty">
+    <text class="empty-text">还没有离开的宠物</text>
+  </view>
+  <view
+    wx:for="{{pets}}"
+    wx:key="id"
+    class="card"
+    data-id="{{item.id}}"
+    bindtap="openDetail"
+  >
+    <image wx:if="{{item.photo}}" class="card-photo" src="{{item.photo}}" mode="aspectFill"></image>
+    <view wx:else class="card-photo card-photo-empty"></view>
+    <text class="card-name">{{item.name}}</text>
+  </view>
+</view>

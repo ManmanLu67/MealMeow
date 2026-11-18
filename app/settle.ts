@@ -4,6 +4,8 @@ import {
   canAdopt,
   cooldownUntil,
   logicalDate,
+  petBand,
+  recordHungerDay,
   validatePetName,
 } from '../domain/index.ts'
 import type { MealType, PhotoReview } from '../domain/index.ts'
@@ -53,8 +55,13 @@ async function markDead(
 }
 
 /** 结算后给存活宠物累计吃到的餐数，陪伴天数在活着时按今天算。 */
-function afterMeal(pet: PetDoc, outcome: 'fed' | 'starved', hunger: number): PetDoc {
-  return { ...pet, hunger, mealsEaten: pet.mealsEaten + (outcome === 'fed' ? 1 : 0) }
+function afterMeal(pet: PetDoc, outcome: 'fed' | 'starved', hunger: number, date: string): PetDoc {
+  return {
+    ...pet,
+    hunger,
+    mealsEaten: pet.mealsEaten + (outcome === 'fed' ? 1 : 0),
+    hungerLog: recordHungerDay(pet.hungerLog ?? [], date, petBand(hunger)),
+  }
 }
 
 /** 任务窗口在领养之前就结束的，宠物不为它挨饿也不进食。 */
@@ -142,7 +149,7 @@ async function settleOne(
   if (living && pet !== null && user !== null) {
     const updated = nextHunger(pet.hunger, outcome) ?? hungerBefore
     hungerAfter = updated
-    const next = afterMeal(pet, outcome, updated)
+    const next = afterMeal(pet, outcome, updated, job.date)
     if (updated >= 9) {
       // 死亡时刻取窗口结束，而不是扫描跑到的时刻，这样补跑也落在正确的逻辑日。
       await markDead(store, user, next, new Date(job.windowEndAt))
@@ -258,6 +265,7 @@ export async function adoptPet(
       endedOn: null,
       companyDays: 0,
       mealsEaten: 0,
+      hungerLog: [],
     })
     await store.saveUser({
       ...user,
@@ -265,7 +273,11 @@ export async function adoptPet(
       diedOn: null,
       cooldownUntil: null,
       pastPets: user.diedOn !== null && user.adoptedOn !== null
-        ? [...user.pastPets, { adoptedOn: user.adoptedOn, diedOn: user.diedOn }]
+        ? [...user.pastPets, {
+            adoptedOn: user.adoptedOn,
+            diedOn: user.diedOn,
+            name: pet !== null && pet.alive === false ? pet.name : undefined,
+          }]
         : user.pastPets,
     })
     return { ok: true, name: named.name }
