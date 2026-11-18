@@ -70,14 +70,14 @@ describe('meal windows', () => {
     assert.equal(validateMealClocks({ breakfast: '07:30', lunch: '09:30', dinner: '18:00' }), null)
     assert.equal(
       validateMealClocks({ breakfast: '07:30', lunch: '09:29', dinner: '18:00' }),
-      '相邻饭点至少相隔 2 小时',
+      '打卡时间不能重合',
     )
   })
 
   it('rejects a wrap-around gap under two hours', () => {
     assert.equal(
       validateMealClocks({ breakfast: '04:30', lunch: '12:00', dinner: '03:00' }),
-      '相邻饭点至少相隔 2 小时',
+      '打卡时间不能重合',
     )
   })
 
@@ -92,14 +92,14 @@ describe('meal windows', () => {
     assert.deepEqual(openMeals(now, clocks, {}, SH), ['breakfast'])
   })
 
-  it('routes the camera by what is due and whether now is in a window', () => {
-    assert.deepEqual(cameraAction(['breakfast'], true), { type: 'checkin', meal: 'breakfast' })
-    assert.deepEqual(cameraAction(['lunch', 'dinner'], true), {
+  it('offers each due meal or a snack, and snacks when nothing is due', () => {
+    assert.deepEqual(cameraAction(['breakfast']), { type: 'pick', meals: ['breakfast'], snack: true })
+    assert.deepEqual(cameraAction(['lunch', 'dinner']), {
       type: 'pick',
       meals: ['lunch', 'dinner'],
+      snack: true,
     })
-    assert.deepEqual(cameraAction([], true), { type: 'toast', reason: 'meal_done' })
-    assert.deepEqual(cameraAction([], false), { type: 'snack' })
+    assert.deepEqual(cameraAction([]), { type: 'snack' })
   })
 
   it('shows the home badge only while a meal is due', () => {

@@ -17,7 +17,7 @@ function problem(clocks) {
   const offsets = ORDER.map(function (m) { return (minutes(clocks[m]) - DAY_START + 1440) % 1440 }).sort(function (a, b) { return a - b })
   for (let i = 0; i < offsets.length; i += 1) {
     const next = i === offsets.length - 1 ? offsets[0] + 1440 : offsets[i + 1]
-    if (next - offsets[i] < MIN_GAP) return '相邻饭点至少相隔 2 小时'
+    if (next - offsets[i] < MIN_GAP) return '打卡时间不能重合'
   }
   for (let i = 0; i < ORDER.length; i += 1) {
     const t = minutes(clocks[ORDER[i]])

@@ -80,7 +80,7 @@
     <view class="mask" bindtap="closeSheet"></view>
     <view class="sheet">
       <view class="sheet-grip"></view>
-      <text class="t-title">选择餐次</text>
+      <text class="t-title">选择打卡</text>
       <view
         wx:for="{{pickMeals}}"
         wx:key="meal"
@@ -90,6 +90,9 @@
         hover-class="btn-secondary-on"
       >
         <text>{{item.name}}</text>
+      </view>
+      <view wx:if="{{showSnack}}" class="btn btn-secondary pick-row" bindtap="onPickSnack" hover-class="btn-secondary-on">
+        <text>零食</text>
       </view>
     </view>
   </block>

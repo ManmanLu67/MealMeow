@@ -1,5 +1,4 @@
-import { inAnyWindow, logicalDate, snackMergeTarget } from '../domain/index.ts'
-import { clocksOn } from './schedule.ts'
+import { logicalDate, snackMergeTarget } from '../domain/index.ts'
 import type { Store } from './ports.ts'
 import type { SnackDoc } from './types.ts'
 import { requireUser } from './user.ts'
@@ -7,10 +6,8 @@ import { requireUser } from './user.ts'
 type Fail = { ok: false; error: string }
 
 /**
- * 窗口外的打卡算零食。一小时内的打卡并入同一份。
+ * 打卡可以另记一份零食，饭点里也可以，不代替这一餐。一小时内的打卡并入同一份。
  * 零食不改宠物、不进结算、不算「一天三餐都完成」，也不占应急口粮额度。
- * 窗口内不能走这里：窗口内要么打这一餐，要么这一餐已经打过了。
- * 否则同一个窗口里能多打一份「零食」，绕开「一餐一条记录」。
  */
 export async function recordSnack(
   store: Store,
@@ -23,9 +20,6 @@ export async function recordSnack(
     if (input.photos.length === 0) return { ok: false, error: '需要照片' }
 
     const day = logicalDate(now, user.timeZone)
-    if (inAnyWindow(now, clocksOn(user, day), user.timeZone)) {
-      return { ok: false, error: '现在在打卡窗口内，请直接打这一餐' }
-    }
 
     // 零食按逻辑日归档。04:00 前的零食属于前一个逻辑日，所以并入时要看当前这一天和前一天。
     const today = await store.listSnacks(caller.userId, day)

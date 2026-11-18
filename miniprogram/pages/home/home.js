@@ -54,8 +54,9 @@ Page({
     showBag: false,
     showMemorial: false,
     hasCurrent: false,
-    camera: { type: 'toast' },
+    camera: { type: 'snack' },
     pickMeals: [],
+    showSnack: false,
     sheet: '',
     bandNote: '',
   },
@@ -190,10 +191,13 @@ Page({
 
   onCamera() {
     const action = this.data.camera
-    if (action.type === 'checkin') this.goCheckin(action.meal)
-    else if (action.type === 'pick') this.setData({ sheet: 'pick', pickMeals: action.meals })
-    else if (action.type === 'snack') this.goSnack()
-    else wx.showToast({ title: '这一餐已经打过啦', icon: 'none' })
+    if (action.type === 'pick') this.setData({ sheet: 'pick', pickMeals: action.meals, showSnack: action.snack })
+    else this.goSnack()
+  },
+
+  onPickSnack() {
+    this.setData({ sheet: '' })
+    this.goSnack()
   },
 
   pickMeal(event) {

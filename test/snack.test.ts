@@ -13,12 +13,13 @@ const inWindow = new Date('2026-11-13T04:10:00.000Z')
 const outOfWindow = new Date('2026-11-13T05:30:00.000Z')
 
 describe('record snack', () => {
-  it('rejects a snack inside a meal window', async () => {
+  it('records a snack inside a meal window without replacing that meal', async () => {
     const store = await seededStore()
     const result = await recordSnack(store, caller, inWindow, { photos: ['p'] })
-    assert.equal(result.ok, false)
-    assert.equal(result.ok === false && result.error, '现在在打卡窗口内，请直接打这一餐')
-    assert.deepEqual(await store.listSnacks('u', day), [])
+    assert.deepEqual(result, { ok: true, merged: false })
+    const snacks = await store.listSnacks('u', day)
+    assert.equal(snacks.length, 1)
+    assert.deepEqual(snacks[0].photos, ['p'])
   })
 
   it('creates a snack outside the window with photos pending review', async () => {

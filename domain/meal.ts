@@ -42,7 +42,7 @@ export function mealWindow(
   }
 }
 
-/** 相邻窗口至少隔 2 小时，恰好 2 小时允许。窗口用左闭右开，端点不相交。 */
+/** 窗口是饭点前后 1 小时，左闭右开。相邻窗口不能重合；恰好隔 2 小时时端点相接，允许。 */
 export function validateMealClocks(clocks: MealClocks): string | null {
   const offsets: number[] = []
   for (const meal of MEALS) {
@@ -54,7 +54,7 @@ export function validateMealClocks(clocks: MealClocks): string | null {
   for (let i = 0; i < offsets.length; i += 1) {
     const current = offsets[i]
     const next = i === offsets.length - 1 ? offsets[0] + 1440 : offsets[i + 1]
-    if (next - current < MIN_GAP_MINUTES) return '相邻饭点至少相隔 2 小时'
+    if (next - current < MIN_GAP_MINUTES) return '打卡时间不能重合'
   }
   // 窗口是饭点前后 1 小时。饭点在 03:01–04:59 时窗口会跨过 04:00 的逻辑日界线，
   // 同一个窗口会分属两个逻辑日，所以不接受。03:00 和 05:00 刚好贴着界线，可以。
@@ -102,21 +102,17 @@ export function openMeals(
 }
 
 export type CameraAction =
-  | { type: 'checkin'; meal: MealType }
-  | { type: 'pick'; meals: MealType[] }
-  /** 不在任何窗口里：这次打卡算零食。 */
+  | { type: 'pick'; meals: MealType[]; snack: true }
+  /** 没有待打的餐：直接记零食。窗口里这一餐已经打过时也走这里。 */
   | { type: 'snack' }
-  /** 在窗口里，但窗口内的餐都打过了。窗口外才算零食，所以这里只提示。 */
-  | { type: 'toast'; reason: 'meal_done' }
 
 /**
- * 首页相机按下去做什么。due 是窗口内还没打卡的餐，insideWindow 是现在是否落在任何窗口里。
- * 已打卡的餐不通过相机修改，修改走顶部胶囊。
+ * 首页相机按下去做什么。due 是窗口内还没打卡的餐。
+ * 有待打的餐时，可选其中一餐，也可以另记零食。已打卡的餐不通过相机修改，修改走顶部胶囊。
  */
-export function cameraAction(due: readonly MealType[], insideWindow: boolean): CameraAction {
-  if (due.length === 1) return { type: 'checkin', meal: due[0] }
-  if (due.length > 1) return { type: 'pick', meals: [...due] }
-  return insideWindow ? { type: 'toast', reason: 'meal_done' } : { type: 'snack' }
+export function cameraAction(due: readonly MealType[]): CameraAction {
+  if (due.length > 0) return { type: 'pick', meals: [...due], snack: true }
+  return { type: 'snack' }
 }
 
 export function homeBadge(states: readonly ChipState[]): boolean {

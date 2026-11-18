@@ -9,7 +9,6 @@ import {
   chipState,
   homeBadge,
   homePetView,
-  inAnyWindow,
   emotionFromHunger,
   feedingHungerPercent,
   healthScore,
@@ -36,10 +35,8 @@ const MEAL_NAME: Record<MealType, string> = {
 const WEEKDAY = ['日', '一', '二', '三', '四', '五', '六']
 
 export type HomeCamera =
-  | { type: 'checkin'; meal: MealType; name: string }
-  | { type: 'pick'; meals: { meal: MealType; name: string }[] }
+  | { type: 'pick'; meals: { meal: MealType; name: string }[]; snack: true }
   | { type: 'snack' }
-  | { type: 'toast'; reason: 'meal_done' }
 
 export type HomeView = {
   date: string
@@ -95,14 +92,13 @@ function cooldownDaysLeft(user: UserDoc, today: string, now: Date): number {
   return Math.max(dayDistance(today, logicalDate(until, user.timeZone)), 0)
 }
 
-function cameraOf(states: readonly ChipState[], now: Date, clocks: UserDoc['meals'], timeZone: string): HomeCamera {
+function cameraOf(states: readonly ChipState[]): HomeCamera {
   const due = MEALS.filter((_, index) => states[index] === 'due')
-  const action = cameraAction(due, inAnyWindow(now, clocks, timeZone))
-  if (action.type === 'checkin') return { type: 'checkin', meal: action.meal, name: MEAL_NAME[action.meal] }
+  const action = cameraAction(due)
   if (action.type === 'pick') {
-    return { type: 'pick', meals: action.meals.map((meal) => ({ meal, name: MEAL_NAME[meal] })) }
+    return { type: 'pick', meals: action.meals.map((meal) => ({ meal, name: MEAL_NAME[meal] })), snack: true }
   }
-  return action
+  return { type: 'snack' }
 }
 
 const LEVEL_LOOKBACK_DAYS = 120
@@ -200,7 +196,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
       ? String(petLevel(hours, (pet.hungerLog ?? []).filter((day) => day.date < today)))
       : '—',
     emotion: emotionFromHunger(hungerPercent),
-    camera: cameraOf(states, now, clocks, user.timeZone),
+    camera: cameraOf(states),
     species: pet?.species ?? 'cat',
     photos: MEALS.flatMap((meal) => {
       const src = keptPhoto(countsAsEaten(records.find((row) => row.meal === meal)))
