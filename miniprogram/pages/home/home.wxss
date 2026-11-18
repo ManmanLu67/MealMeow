@@ -3,8 +3,9 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  min-height: 100vh;
-  padding: 0 32rpx calc(184rpx + env(safe-area-inset-bottom));
+  height: 100vh;
+  overflow: hidden;
+  padding: 0 32rpx calc(160rpx + env(safe-area-inset-bottom));
   background: #F7F8F9;
   color: #1A1A1A;
   font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
@@ -29,99 +30,55 @@
 .meal-miss { background: #F7F8F9; }
 .meal-miss .meal-time { color: #6B6B6B; }
 .meal-miss .meal-name { color: #6B6B6B; }
+.meal-wait { background: #FFFFFF; border-color: #6B6B6B; }
+.meal-wait .meal-time { color: #6B6B6B; }
+.meal-wait .meal-name { color: #6B6B6B; }
 .badge { position: absolute; top: -14rpx; right: -14rpx; display: flex; align-items: center; justify-content: center; width: 36rpx; height: 36rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
 .tick { width: 14rpx; height: 8rpx; margin-top: -4rpx; border-bottom: 4rpx solid #1A1A1A; border-left: 4rpx solid #1A1A1A; transform: rotate(-45deg); }
 
-.center { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: space-between; min-height: 0; padding-top: 40rpx; }
-.stage { position: relative; display: flex; flex: 1; align-items: center; justify-content: center; width: 100%; overflow: visible; }
+.center { position: relative; flex: 1; width: 100%; min-height: 0; overflow: hidden; }
+.stage { position: absolute; left: 0; top: 0; width: 100%; height: 996rpx; transform-origin: top center; }
+.pet-img { position: absolute; z-index: 1; left: 134rpx; top: 88rpx; width: 482rpx; height: 458rpx; }
+.pet-img-cat { left: 76rpx; top: 56rpx; width: 560rpx; height: 490rpx; }
 
-.pet { display: flex; align-items: flex-end; justify-content: center; max-width: 100%; }
-.pet-side { display: flex; flex-direction: column; align-items: flex-start; margin-left: 24rpx; }
-/* 耳朵是上窄下宽的圆角三角，图在 assets/icon/ear.png。耳根埋在头后面，各状态同一对。 */
-.cat { position: relative; flex-shrink: 0; width: 420rpx; height: 411rpx; margin-bottom: 72rpx; overflow: visible; }
-.ear { position: absolute; z-index: 0; width: 112rpx; height: 118rpx; transform-origin: 50% 100%; }
-.ear-img { width: 100%; height: 100%; }
-.ear-l { left: 56rpx; top: 14rpx; transform: rotate(-7deg); }
-.ear-r { left: 252rpx; top: 14rpx; transform: rotate(7deg); }
-.cat-head { position: absolute; z-index: 1; left: 32rpx; top: 80rpx; width: 356rpx; height: 316rpx; background: #1A1A1A; border-radius: 116rpx; }
-.eye { position: absolute; top: 78rpx; display: flex; align-items: center; justify-content: center; width: 80rpx; height: 80rpx; overflow: hidden; background: #FFC107; border-radius: 50%; }
-.eye-l { left: 62rpx; }
-.eye-r { left: 222rpx; }
-.blush { position: absolute; top: 168rpx; width: 40rpx; height: 16rpx; background: #A37B68; border-radius: 50%; }
-.blush-l { left: 40rpx; }
-.blush-r { left: 284rpx; }
-.lid { display: none; }
-.mouth { position: absolute; left: 164rpx; top: 196rpx; width: 36rpx; height: 12rpx; border-bottom: 4rpx solid #4A4A4A; border-radius: 0 0 18rpx 18rpx; }
-.pupil { width: 16rpx; height: 46rpx; background: #1A1A1A; border-radius: 8rpx; animation: pupil-blink 4s infinite; }
-.cat-hungry .lid { position: absolute; left: 0; top: 0; z-index: 1; display: block; width: 80rpx; height: 24rpx; background: #1A1A1A; border-radius: 0 0 16rpx 16rpx; }
-.cat-hungry .pupil { height: 32rpx; }
-.cat-hungry .mouth { top: 222rpx; border-bottom: none; border-top: 4rpx solid #4A4A4A; border-radius: 18rpx 18rpx 0 0; }
-.cat-critical .lid { position: absolute; left: 0; top: 0; z-index: 1; display: block; width: 80rpx; height: 42rpx; background: #1A1A1A; border-radius: 0 0 20rpx 20rpx; }
-.cat-critical .pupil { height: 18rpx; }
-.cat-critical .blush { opacity: 0.45; }
-.cat-critical .mouth { left: 146rpx; top: 228rpx; width: 48rpx; border-bottom: none; border-top: 4rpx solid #4A4A4A; border-radius: 20rpx 20rpx 0 0; }
+.bowl { position: absolute; left: 174rpx; top: 434rpx; z-index: 2; width: 168rpx; height: 112rpx; }
+.bowl-plate, .bowl-kibble { position: absolute; left: 0; top: 0; width: 168rpx; height: 112rpx; }
 
-.bowl { position: absolute; left: 8rpx; top: 84%; z-index: 2; width: 168rpx; height: 112rpx; }
-.bowl-body { position: absolute; left: 2%; right: 2%; top: 46%; height: 34%; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-top: none; border-radius: 0 0 80rpx 80rpx; }
-.bowl-rim { position: absolute; left: 0; top: 24%; width: 100%; height: 43%; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
-.bowl-well { position: absolute; left: 16%; top: 32%; width: 68%; height: 27%; background: #F7F8F9; border: 4rpx solid #1A1A1A; border-radius: 50%; }
-.foods { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.k { position: absolute; width: 16rpx; height: 16rpx; background: #8F9E63; border: 2rpx solid #1A1A1A; border-radius: 50%; animation: food-drop 400ms ease-out both; }
-.k1 { left: 22%; top: 46%; animation-delay: 0ms; }
-.k2 { left: 38%; top: 48%; animation-delay: 40ms; }
-.k3 { left: 54%; top: 48%; animation-delay: 80ms; }
-.k4 { left: 70%; top: 46%; animation-delay: 120ms; }
-.k5 { left: 30%; top: 32%; animation-delay: 160ms; }
-.k6 { left: 46%; top: 32%; animation-delay: 200ms; }
-.k7 { left: 62%; top: 32%; animation-delay: 240ms; }
-.k8 { left: 38%; top: 18%; animation-delay: 280ms; }
-.k9 { left: 54%; top: 18%; animation-delay: 320ms; }
-
-.bag { position: absolute; left: 176rpx; top: 86%; z-index: 2; width: 72rpx; height: 96rpx; }
-.bag-tie { position: absolute; left: 28rpx; top: 0; width: 16rpx; height: 16rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; }
-.bag-neck { position: absolute; left: 18rpx; top: 12rpx; width: 36rpx; height: 22rpx; background: #8F9E63; border: 4rpx solid #1A1A1A; border-radius: 8rpx 8rpx 0 0; }
-.bag-body { position: absolute; left: 0; top: 28rpx; width: 72rpx; height: 64rpx; background: #8F9E63; border: 4rpx solid #1A1A1A; border-radius: 12rpx 12rpx 32rpx 32rpx; }
-.bag-stick { left: -8rpx; top: auto; bottom: 88rpx; }
-.emo { position: absolute; left: 248rpx; top: 348rpx; z-index: 3; padding: 8rpx 12rpx; background: #FFC107; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(-5deg); }
-.emo-text { font-size: 28rpx; font-weight: 800; letter-spacing: 0.08em; color: #1A1A1A; white-space: nowrap; }
-.polaroid { position: relative; box-sizing: border-box; width: 148rpx; margin-left: 56rpx; margin-bottom: 8rpx; padding: 12rpx 12rpx 40rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(5deg); }
+.bag { position: absolute; left: 40rpx; top: 444rpx; z-index: 3; width: 109rpx; height: 132rpx; }
+.polaroid { position: absolute; z-index: 4; box-sizing: border-box; width: 148rpx; height: 176rpx; padding: 12rpx 12rpx 40rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(-5deg); overflow: visible; }
 .polaroid-photo { display: block; width: 116rpx; height: 116rpx; background: #F7F8F9; }
-.pin { position: absolute; left: 50%; top: -20rpx; z-index: 2; width: 36rpx; height: 44rpx; margin-left: -18rpx; transform: rotate(-5deg); }
-.pin-head { width: 28rpx; height: 28rpx; margin-left: 4rpx; background: #FFC107; border: 4rpx solid #1A1A1A; border-radius: 50%; box-sizing: border-box; }
-.pin-needle { width: 4rpx; height: 16rpx; margin-left: 16rpx; margin-top: -4rpx; background: #1A1A1A; }
+.polaroid-pin { position: absolute; left: 56rpx; top: -20rpx; z-index: 2; width: 36rpx; height: 44rpx; transform: rotate(5deg); }
+.polaroid-breakfast { left: 27rpx; top: 640rpx; }
+.polaroid-lunch { left: 271rpx; top: 604rpx; }
+.polaroid-dinner { left: 513rpx; top: 638rpx; }
 
-.adopt { position: relative; display: flex; flex-direction: column; align-items: center; }
-.person { position: relative; width: 120rpx; height: 196rpx; }
-.person-head { width: 56rpx; height: 56rpx; margin-left: 32rpx; background: #F7F8F9; border: 4rpx solid #1A1A1A; border-radius: 50%; box-sizing: border-box; }
-.person-body { width: 88rpx; height: 108rpx; margin-top: 12rpx; margin-left: 16rpx; background: transparent; border: 4rpx solid #1A1A1A; border-radius: 40rpx 40rpx 16rpx 16rpx; box-sizing: border-box; }
-.adopt-label { margin-top: 36rpx; padding: 8rpx 28rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; font-size: 28rpx; font-weight: 800; letter-spacing: 0.14em; color: #1A1A1A; }
+.adopt { position: absolute; left: 50%; top: 88rpx; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 482rpx; height: 458rpx; margin-left: -241rpx; }
+.pasture {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.pasture .adopt, .pasture .cam { pointer-events: auto; }
+.pasture .adopt { position: relative; left: auto; top: auto; width: auto; height: auto; margin-left: 0; }
+.pasture .cam { position: relative; left: auto; top: auto; margin-top: 48rpx; margin-left: 0; }
+.person { display: block; width: 204rpx; height: 333rpx; }
+.adopt-label { display: block; margin-top: 27rpx; padding: 14rpx 41rpx 14rpx 48rpx; background: #FFFFFF; border: 7rpx solid #1A1A1A; border-radius: 14rpx; font-size: 48rpx; font-weight: 800; line-height: 48rpx; letter-spacing: 0.14em; text-align: center; color: #1A1A1A; }
 
-.memo-mark { position: absolute; top: 8rpx; right: 0; z-index: 2; width: 84rpx; height: 72rpx; }
-.album-sheet { position: absolute; left: 14rpx; top: 0; width: 64rpx; height: 56rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; }
-.album { position: absolute; left: 0; top: 10rpx; width: 76rpx; height: 58rpx; background: #FFC107; border: 4rpx solid #1A1A1A; border-radius: 4rpx; }
-.album-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 12rpx; background: #1A1A1A; }
-.album-window { position: absolute; left: 22rpx; top: 10rpx; width: 40rpx; height: 30rpx; background: #FFFFFF; border: 3rpx solid #1A1A1A; border-radius: 2rpx; }
+.memo-mark { position: absolute; right: 0; top: 16rpx; z-index: 5; width: 174rpx; height: 158rpx; }
+.album-img { width: 174rpx; height: 158rpx; }
 
-.cam { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 168rpx; height: 168rpx; margin-top: 16rpx; margin-bottom: 8rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 50%; box-shadow: 8rpx 8rpx 0 #1A1A1A; }
-.cam-now { background: #FFC107; }
-.cam-press { transform: translate(4rpx, 4rpx); box-shadow: 4rpx 4rpx 0 #1A1A1A; }
-.cam-body { position: relative; width: 64rpx; height: 44rpx; margin-top: 16rpx; border: 8rpx solid #1A1A1A; border-radius: 6rpx; }
-.cam-bump { position: absolute; top: -18rpx; left: 12rpx; width: 28rpx; height: 12rpx; border: 8rpx solid #1A1A1A; border-bottom: none; border-radius: 6rpx 6rpx 0 0; }
-.cam-lens { width: 20rpx; height: 20rpx; margin: 8rpx auto 0; border: 8rpx solid #1A1A1A; border-radius: 50%; }
+.cam { position: absolute; left: 50%; top: 828rpx; z-index: 6; width: 168rpx; height: 168rpx; margin-left: -84rpx; }
+.cam-press { opacity: 0.72; }
+.cam-img { width: 168rpx; height: 168rpx; }
 
 .pick-row { margin-top: 24rpx; }
 .kv { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; border-bottom: 2rpx solid #DFE4E1; }
 .sheet-note { display: block; margin-top: 24rpx; }
-
-@keyframes pupil-blink {
-  0%, 92%, 100% { transform: scale(1, 1); }
-  95% { transform: scale(0.3, 1.3); }
-}
-@keyframes food-drop {
-  from { opacity: 0; transform: translateY(-24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pupil { animation: none; }
-  .k { animation: none; }
-}

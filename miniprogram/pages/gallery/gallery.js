@@ -3,6 +3,13 @@ const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
 
+function filled(meals, snacks) {
+  const shown = (meals || []).some(function (item) {
+    return item.photo || item.exempt || item.face === 'window' || item.face === 'waiting'
+  })
+  return shown || (snacks || []).length > 0
+}
+
 Page({
   data: {
     streak: 0,
@@ -35,16 +42,15 @@ Page({
   },
 
   apply(view) {
-    const hasMeals = view.meals.some(function (m) { return m.photo || m.exempt })
-    const hasSnacks = (view.snacks || []).length > 0
+    const snacks = view.snacks || []
     this.setData({
       streak: view.streak,
       days: view.days,
       todayIndex: view.todayIndex,
       selected: this.data.days.length ? this.data.selected : view.todayIndex,
       meals: view.meals,
-      snacks: view.snacks || [],
-      isEmpty: !hasMeals && !hasSnacks,
+      snacks: snacks,
+      isEmpty: !filled(view.meals, snacks),
     })
   },
 
@@ -53,13 +59,11 @@ Page({
     this.selectedDate = this.data.days[index].key
     this.setData({ selected: index })
     if (config.usePreviewData) {
-      // 设计阶段：非今天的日期显示空态，方便看空态的样子。
-      const view = preview.galleryView(index === this.data.todayIndex ? this.previewState : 'empty')
-      const hasMeals = view.meals.some(function (m) { return m.photo || m.exempt })
+      const day = preview.galleryDay(this.selectedDate, this.previewState)
       this.setData({
-        meals: view.meals,
-        snacks: view.snacks || [],
-        isEmpty: !hasMeals && (view.snacks || []).length === 0,
+        meals: day.meals,
+        snacks: day.snacks,
+        isEmpty: !filled(day.meals, day.snacks),
       })
       return
     }

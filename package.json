@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"test/*.test.ts\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build:cloud": "tsc -p tsconfig.cloud.json && node --input-type=module -e \"import fs from 'node:fs'; fs.writeFileSync('cloudfunctions/lib/package.json', '{\\\"type\\\":\\\"commonjs\\\"}\\n')\""
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

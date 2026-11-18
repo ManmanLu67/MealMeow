@@ -95,6 +95,22 @@ describe('platform-neutral entry', () => {
     assert.equal(await store.getRecord('u', '2026-01-01', 'lunch'), null)
   })
 
+  it('serves the home, gallery, and adopt screens through the same entry', async () => {
+    const store = createMemoryStore()
+    const who = { userId: 'u' }
+    assert.deepEqual(await handle(store, who, now, { action: 'home' }), { ok: false, error: 'no_user' })
+    await handle(store, who, now, { action: 'sync', timeZone: 'Asia/Shanghai' })
+    const home = await handle(store, who, now, { action: 'home' })
+    assert.equal(home.ok, true)
+    if (home.ok) assert.equal((home.data as { petView: string }).petView, 'pasture')
+    const gallery = await handle(store, who, now, { action: 'gallery', date: '2026-11-13' })
+    assert.equal(gallery.ok, true)
+    const adopt = await handle(store, who, now, { action: 'adoptView' })
+    assert.equal(adopt.ok, true)
+    if (adopt.ok) assert.equal((adopt.data as { canAdopt: boolean }).canAdopt, true)
+    assert.equal(parseRequest({ action: 'gallery', date: 'yesterday' }), null)
+  })
+
   it('answers no_user when the time zone was never synced', async () => {
     const store = createMemoryStore()
     const result = await handle(store, { userId: 'u' }, now, { action: 'checkin', meal: 'lunch', photos: ['a'] })

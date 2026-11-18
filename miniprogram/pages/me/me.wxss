@@ -3,8 +3,9 @@
 .avatar { display: flex; align-items: center; justify-content: center; width: 112rpx; height: 112rpx; border: 4rpx solid #1A1A1A; border-radius: 50%; background: #FFC107; }
 .avatar-text { color: #1A1A1A; font-weight: 800; }
 .profile-text { display: flex; flex-direction: column; margin-left: 24rpx; }
-.me .card { background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
-.me .list-row { border-bottom: 2rpx solid #1A1A1A; background: #FFFFFF; }
-.me .list-row-last { border-bottom: none; }
 .me .t-title { font-weight: 800; color: #1A1A1A; }
+.setting-card { display: flex; align-items: center; box-sizing: border-box; height: 112rpx; margin-bottom: 32rpx; padding: 0 32rpx 0 32rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
+.setting-card-on { background: #F7F8F9; }
+.setting-icon { width: 48rpx; height: 48rpx; margin-right: 16rpx; }
+.setting-name { flex: 1; }
 

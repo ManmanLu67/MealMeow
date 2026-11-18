@@ -73,10 +73,14 @@ export type UserDoc = {
   pastPets: { adoptedOn: string; diedOn: string; name?: string }[]
 }
 
+export type PetSpecies = 'cat' | 'samoyed' | 'parrot' | 'goldfish'
+
 export type PetDoc = {
   userId: string
   /** 领养时取的名字，之后不能改，死亡后仍留在纪念页。 */
   name: string
+  /** 没写的旧档按黑猫画。新领养一定会写上。 */
+  species?: PetSpecies
   hunger: number
   alive: boolean
   adoptedOn: string

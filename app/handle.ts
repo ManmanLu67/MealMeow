@@ -2,8 +2,10 @@ import { adoptPet } from './settle.ts'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts'
 import { recordSnack, removeSnack } from './snack.ts'
 import { syncUser } from './user.ts'
+import { adoptView, galleryView, homeView } from './views.ts'
 import type { Store } from './ports.ts'
 import type { MealClocks, MealType } from '../domain/index.ts'
+import type { PetSpecies } from './types.ts'
 import { MEALS, logicalDate } from '../domain/index.ts'
 
 /**
@@ -23,7 +25,10 @@ export type Request =
   | { action: 'exempt'; meal: MealType }
   | { action: 'deleteCheckin'; date: string; meal: MealType }
   | { action: 'deleteSnack'; date: string; startedAt: string }
-  | { action: 'adopt'; name?: string }
+  | { action: 'adopt'; name?: string; species?: PetSpecies }
+  | { action: 'home' }
+  | { action: 'gallery'; date?: string }
+  | { action: 'adoptView' }
 
 export type Response =
   | { ok: true; data?: unknown }
@@ -39,14 +44,25 @@ export const PAGE_ACTIONS = [
   'deleteCheckin',
   'deleteSnack',
   'adopt',
+  'home',
+  'gallery',
+  'adoptView',
 ] as const
 
 function isMeal(value: unknown): value is MealType {
   return typeof value === 'string' && (MEALS as readonly string[]).includes(value)
 }
 
+function isSpecies(value: unknown): value is PetSpecies {
+  return value === 'cat' || value === 'samoyed' || value === 'parrot' || value === 'goldfish'
+}
+
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function isDate(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
 }
 
 function parsePhotos(value: unknown): string[] | null {
@@ -95,7 +111,20 @@ export function parseRequest(raw: unknown): Request | null {
       return { action: 'deleteSnack', date: body.date, startedAt: body.startedAt }
     case 'adopt':
       // 名字可选。类型不对当作没填，具体长度和字符由领域层校验。
-      return { action: 'adopt', name: typeof body.name === 'string' ? body.name : undefined }
+      // 物种写了但不是四种动物之一，整条请求无效。
+      if (body.species !== undefined && !isSpecies(body.species)) return null
+      return {
+        action: 'adopt',
+        name: typeof body.name === 'string' ? body.name : undefined,
+        species: isSpecies(body.species) ? body.species : undefined,
+      }
+    case 'home':
+      return { action: 'home' }
+    case 'gallery':
+      if (body.date !== undefined && !isDate(body.date)) return null
+      return { action: 'gallery', date: isDate(body.date) ? body.date : undefined }
+    case 'adoptView':
+      return { action: 'adoptView' }
     default:
       return null
   }
@@ -150,8 +179,16 @@ export async function handle(
     case 'deleteSnack':
       return removeSnack(store, caller, { date: request.date, startedAt: request.startedAt })
     case 'adopt': {
-      const result = await adoptPet(store, caller, now, { name: request.name })
+      const result = await adoptPet(store, caller, now, { name: request.name, species: request.species })
       return result.ok ? { ok: true, data: { name: result.name } } : result
+    }
+    case 'home':
+    case 'gallery':
+    case 'adoptView': {
+      if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
+      if (request.action === 'home') return { ok: true, data: await homeView(store, caller, now) }
+      if (request.action === 'gallery') return { ok: true, data: await galleryView(store, caller, now, request.date) }
+      return { ok: true, data: await adoptView(store, caller, now) }
     }
   }
 }

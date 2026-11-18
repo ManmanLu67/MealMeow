@@ -11,9 +11,9 @@
 
 ## 页面没有在微信开发者工具里验收
 
-- Symptom: 页面界面已按 `DESIGN.md` 做完，读 `miniprogram/utils/preview.js` 的样例数据。我只在 Chrome 里用自写的脚本把 wxml 近似渲染成 HTML 看过版面，那不是微信的渲染引擎。`wx:for`、`hover-class`、`picker`、`switch`、`navigator`、`env(safe-area-inset-bottom)`、`position: fixed` 在真机上的表现没有验证。
-- Reproduce: 用微信开发者工具打开，给首页加启动参数 `state=living|peckish|hungry|critical|memorial|pasture|two-due|idle`。
-- Tried: 静态检查（JSON、JS 语法、require 路径、资源引用、标签配对、class 和 data 字段都有来源）通过。
+- Symptom: 页面读 `miniprogram/utils/preview.js` 的样例数据。还没有在微信开发者工具里打开过。
+- Reproduce: 用微信开发者工具打开。首页启动参数见本机 `docs/local/preview-states.md`。
+- Tried: 无。
 - Status: open
 
 ## 照片没有提交内容安全

@@ -14,6 +14,7 @@ import {
   feedingHungerPercent,
   healthScore,
   petLevel,
+  bowlFill,
   logicalDate,
   mealWindow,
   nextMealAt,
@@ -23,7 +24,7 @@ import {
 } from '../domain/index.ts'
 import { clocksOn } from './schedule.ts'
 import type { Store } from './ports.ts'
-import type { MealRecordDoc, SnackDoc, UserDoc } from './types.ts'
+import type { MealRecordDoc, PetSpecies, SnackDoc, UserDoc } from './types.ts'
 import { requireUser } from './user.ts'
 
 const MEAL_NAME: Record<MealType, string> = {
@@ -57,6 +58,10 @@ export type HomeView = {
   levelText: string
   emotion: string
   camera: HomeCamera
+  species: PetSpecies
+  photos: { meal: MealType; src: string }[]
+  /** 0 是空盘，100 是稿子里那盘丸子。只跟着最近一次打卡，到下一顿饭点变成 0。 */
+  bowlFill: number
 }
 
 type Caller = { userId: string }
@@ -102,16 +107,17 @@ function cameraOf(states: readonly ChipState[], now: Date, clocks: UserDoc['meal
 
 const LEVEL_LOOKBACK_DAYS = 120
 
-/** 最近两天里最后一次算数的打卡，以及回看期内最早的一次。没有记录时饥饿按 100%。 */
+/** 最近两天里最后一次算数的进食，回看期内最早的一次，以及最近一次真正的打卡。没有记录时饥饿按 100%。 */
 async function checkinSpan(
   store: Store,
   userId: string,
   today: string,
   todayRecords: readonly MealRecordDoc[],
-): Promise<{ latest: MealRecordDoc | null; earliestAt: string | null }> {
+): Promise<{ latest: MealRecordDoc | null; earliestAt: string | null; bowlFrom: MealRecordDoc | null }> {
   const yesterday = await store.listRecords(userId, addIsoDays(today, -1))
   const recent = [...yesterday, ...todayRecords].filter((row) => countsAsEaten(row) !== null)
   recent.sort((a, b) => a.checkinAt.localeCompare(b.checkinAt))
+  const bowlFrom = recent.filter((row) => row.status === 'checked_in').at(-1) ?? null
   let earliestAt = recent[0]?.checkinAt ?? null
   let cursor = addIsoDays(today, -2)
   const stop = addIsoDays(today, -LEVEL_LOOKBACK_DAYS)
@@ -123,7 +129,7 @@ async function checkinSpan(
     }
     cursor = addIsoDays(cursor, -1)
   }
-  return { latest: recent[recent.length - 1] ?? null, earliestAt }
+  return { latest: recent[recent.length - 1] ?? null, earliestAt, bowlFrom }
 }
 
 /**
@@ -156,6 +162,16 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   const hours = span.earliestAt === null
     ? 0
     : (now.getTime() - new Date(span.earliestAt).getTime()) / 3_600_000
+  let bowl = 0
+  if (span.bowlFrom) {
+    const next = nextMealAt(
+      span.bowlFrom.date,
+      span.bowlFrom.meal,
+      clocksOn(user, span.bowlFrom.date),
+      user.timeZone,
+    )
+    bowl = bowlFill(now, new Date(span.bowlFrom.checkinAt), next)
+  }
   const alive = pet?.alive === true
   const dead = pet !== null && !pet.alive
   const cooldownOver = canAdopt(user.cooldownUntil ? new Date(user.cooldownUntil) : null, now)
@@ -185,14 +201,28 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
       : '—',
     emotion: emotionFromHunger(hungerPercent),
     camera: cameraOf(states, now, clocks, user.timeZone),
+    species: pet?.species ?? 'cat',
+    photos: MEALS.flatMap((meal) => {
+      const src = keptPhoto(countsAsEaten(records.find((row) => row.meal === meal)))
+      return src === null ? [] : [{ meal, src }]
+    }),
+    bowlFill: bowl,
   }
 }
+
+function keptPhoto(record: MealRecordDoc | null): string | null {
+  if (record === null || record.status !== 'checked_in') return null
+  return firstShown(record.photos, record.photoReviews)
+}
+
+export type GalleryFace = 'photo' | 'staple' | 'window' | 'waiting' | 'empty'
 
 export type GalleryMeal = {
   meal: MealType
   name: string
   photo: string | null
   exempt: boolean
+  face: GalleryFace
 }
 
 export type GallerySnack = {
@@ -205,6 +235,8 @@ export type GalleryDay = {
   key: string
   week: string
   day: number
+  marked: boolean
+  star: boolean
 }
 
 export type GalleryView = {
@@ -244,7 +276,7 @@ function firstShown(photos: readonly string[], reviews: readonly string[]): stri
   return null
 }
 
-function mealTile(meal: MealType, record: MealRecordDoc | undefined): GalleryMeal {
+function mealTile(meal: MealType, record: MealRecordDoc | undefined): Omit<GalleryMeal, 'face'> {
   const eaten = countsAsEaten(record)
   if (!eaten) return { meal, name: MEAL_NAME[meal], photo: null, exempt: false }
   if (eaten.status === 'exempt') return { meal, name: MEAL_NAME[meal], photo: null, exempt: true }
@@ -254,6 +286,27 @@ function mealTile(meal: MealType, record: MealRecordDoc | undefined): GalleryMea
     photo: firstShown(eaten.photos, eaten.photoReviews),
     exempt: false,
   }
+}
+
+function mealFace(
+  meal: MealType,
+  record: MealRecordDoc | undefined,
+  now: Date,
+  user: UserDoc,
+  shown: string,
+): GalleryMeal {
+  const tile = mealTile(meal, record)
+  if (tile.photo) return { ...tile, face: 'photo' }
+  if (tile.exempt) return { ...tile, face: 'staple' }
+  const clocks = clocksOn(user, shown)
+  const state = chipState(now, mealWindow(shown, clocks[meal], user.timeZone), null)
+  if (state === 'due') return { ...tile, face: 'window' }
+  if (state === 'upcoming') return { ...tile, face: 'waiting' }
+  return { ...tile, face: 'empty' }
+}
+
+function allCheckedIn(records: readonly MealRecordDoc[]): boolean {
+  return MEALS.every((meal) => countsAsEaten(records.find((row) => row.meal === meal))?.status === 'checked_in')
 }
 
 function snackTiles(snacks: readonly SnackDoc[]): GallerySnack[] {
@@ -268,7 +321,7 @@ function snackTiles(snacks: readonly SnackDoc[]): GallerySnack[] {
 }
 
 /** 图鉴顶部那一周一到日，今天落在哪一格。 */
-function weekOf(today: string): { days: GalleryDay[]; todayIndex: number } {
+function weekOf(today: string): { days: { key: string; week: string; day: number }[]; todayIndex: number } {
   const [year, month, day] = today.split('-').map(Number)
   const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay()
   const monday = addIsoDays(today, weekday === 0 ? -6 : 1 - weekday)
@@ -320,11 +373,16 @@ export async function galleryView(
     store.listRecords(caller.userId, shown),
     store.listSnacks(caller.userId, shown),
   ])
+  const days = await Promise.all(week.days.map(async (day) => {
+    const rows = day.key === shown ? records : await store.listRecords(caller.userId, day.key)
+    const eaten = MEALS.some((meal) => countsAsEaten(rows.find((row) => row.meal === meal)) !== null)
+    return { ...day, marked: eaten, star: allCheckedIn(rows) }
+  }))
   return {
     streak,
     todayIndex: week.todayIndex,
-    days: week.days,
-    meals: MEALS.map((meal) => mealTile(meal, records.find((row) => row.meal === meal))),
+    days,
+    meals: MEALS.map((meal) => mealFace(meal, records.find((row) => row.meal === meal), now, user, shown)),
     snacks: snackTiles(snacks),
   }
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  bowlFill,
   emotionFromHunger,
   feedingHungerPercent,
   healthScore,
@@ -31,6 +32,14 @@ describe('feeding hunger', () => {
 
   it('stays at 10 when the meal was a staple', () => {
     assert.equal(feedingHungerPercent(next, start, next, true), 10)
+  })
+
+  it('fills the bowl at a check-in and empties it at the next meal time', () => {
+    assert.equal(bowlFill(start, start, next), 100)
+    const mid = new Date(start.getTime() + (next.getTime() - start.getTime()) / 2)
+    assert.equal(bowlFill(mid, start, next), 50)
+    assert.equal(bowlFill(next, start, next), 0)
+    assert.equal(bowlFill(new Date(next.getTime() + 60_000), start, next), 0)
   })
 
   it('points dinner at the next breakfast', () => {

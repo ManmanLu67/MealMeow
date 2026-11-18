@@ -11,6 +11,14 @@ export type HungerDay = {
 }
 
 /**
+ * 打卡当时食盘是满的，到下一顿饭点清空。
+ * 只用于真正的打卡。口粮和零食不往盘子里加丸子。
+ */
+export function bowlFill(now: Date, checkinAt: Date, nextAt: Date): number {
+  return 100 - feedingHungerPercent(now, checkinAt, nextAt, false)
+}
+
+/**
  * 打卡之后饥饿从 0% 涨到下一餐的饭点。口粮不跟着涨，停在 10%。
  * 到了饭点或已经过了，就是 100%。
  */

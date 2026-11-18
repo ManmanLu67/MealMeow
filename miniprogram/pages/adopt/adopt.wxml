@@ -1,20 +1,18 @@
 <view class="page adopt">
   <block wx:if="{{canAdopt}}">
-    <text class="t-title">选择外观</text>
+    <text class="t-title">请选择</text>
     <view class="looks">
-      <view class="look look-on">
+      <view
+        wx:for="{{looks}}"
+        wx:key="id"
+        class="look {{species === item.id ? 'look-on' : ''}}"
+        data-species="{{item.id}}"
+        bindtap="selectLook"
+      >
         <view class="look-art">
-          <view class="pet-art look-pet">
-            <view class="pet-shadow"></view>
-            <view class="pet-body">
-              <view class="pet-eye pet-eye-l"></view>
-              <view class="pet-eye pet-eye-r"></view>
-              <view class="pet-cheek pet-cheek-l"></view>
-              <view class="pet-cheek pet-cheek-r"></view>
-            </view>
-          </view>
+          <image class="look-img" src="{{item.src}}" mode="aspectFit"></image>
         </view>
-        <text class="t-label">外观 1</text>
+        <text class="t-label">{{item.name}}</text>
       </view>
     </view>
     <text class="t-body warn">连续漏餐会饿死，死亡不可恢复。</text>
@@ -29,13 +27,7 @@
 
   <block wx:else>
     <view class="cool">
-      <view class="pet-art pet-memorial look-pet">
-        <view class="pet-shadow"></view>
-        <view class="pet-body">
-          <view class="pet-eye pet-eye-l"></view>
-          <view class="pet-eye pet-eye-r"></view>
-        </view>
-      </view>
+      <image class="cool-img" src="/assets/pet/cat.png" mode="aspectFit"></image>
       <text class="t-title cool-title">还在冷却中</text>
       <text class="t-display cool-days">{{cooldownDays}} 天</text>
       <text class="t-caption">冷却结束的那天凌晨 4 点，可以领养新宠物。</text>

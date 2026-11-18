@@ -3,11 +3,21 @@ const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
 const labels = require('../../utils/labels.js')
+const pets = require('../../utils/pets.js')
 
 const MEAL_META = {
   breakfast: { name: '早餐', time: '07:30' },
   lunch: { name: '午餐', time: '12:00' },
   dinner: { name: '晚餐', time: '18:00' },
+}
+
+const PHOTO_ORDER = ['breakfast', 'lunch', 'dinner']
+
+function photosOf(list) {
+  return PHOTO_ORDER.map(function (meal) {
+    const found = (list || []).filter(function (item) { return item.meal === meal && item.src })[0]
+    return found ? { meal: meal, src: found.src } : null
+  }).filter(Boolean)
 }
 
 function toneOf(state) {
@@ -34,8 +44,13 @@ Page({
     mealsEaten: 0,
     cooldownDays: 0,
     levelCard: '—',
-    bowlFull: false,
-    recentPhoto: '',
+    bowlFill: 0,
+    bowlOpacity: 0,
+    species: 'cat',
+    petSrc: '',
+    cameraSrc: '',
+    photos: [],
+    stageScale: 1,
     showBag: false,
     showMemorial: false,
     hasCurrent: false,
@@ -57,6 +72,10 @@ Page({
     this.setData({ padTop: padTop })
   },
 
+  onReady() {
+    this.fitStage()
+  },
+
   onShow() {
     this.load()
     this.markTab()
@@ -71,7 +90,10 @@ Page({
   load() {
     const self = this
     if (config.usePreviewData) {
-      this.apply(preview.homeView(this.previewState))
+      const chosen = this.chosenSpecies()
+      let view = preview.homeView(this.previewState)
+      if (chosen && view.petView === 'pasture') view = preview.homeView('living')
+      this.apply(view, chosen)
       return
     }
     api.call('sync', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(function () {
@@ -82,7 +104,38 @@ Page({
     })
   },
 
-  apply(view) {
+  chosenSpecies() {
+    try {
+      const saved = wx.getStorageSync('previewSpecies')
+      if (pets.isSpecies(saved)) return saved
+    } catch (err) {
+      return ''
+    }
+    return ''
+  },
+
+  fitStage(attempt) {
+    const self = this
+    this.createSelectorQuery().select('.center').boundingClientRect(function (rect) {
+      if (!rect || !rect.height) {
+        if ((attempt || 0) < 2) setTimeout(function () { self.fitStage((attempt || 0) + 1) }, 50)
+        return
+      }
+      let width = 375
+      try {
+        const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
+        if (info && info.windowWidth) width = info.windowWidth
+      } catch (err) {
+        width = 375
+      }
+      const design = 996 * (width / 750)
+      const scale = Math.min(1, rect.height / design)
+      const next = Math.round(scale * 1000) / 1000
+      if (next !== self.data.stageScale) self.setData({ stageScale: next })
+    }).exec()
+  },
+
+  apply(view, speciesOverride) {
     const chips = (view.chips || []).map(function (chip) {
       const meta = MEAL_META[chip.meal] || { name: '', time: '' }
       const tone = toneOf(chip.state)
@@ -95,6 +148,9 @@ Page({
       }
     })
     const showMemorial = view.petView === 'memorial'
+    const species = speciesOverride || view.species || 'cat'
+    const bowlFill = Math.max(0, Math.min(100, Number(view.bowlFill) || 0))
+    const self = this
     this.setData({
       date: view.date,
       hungerText: view.hungerText || '—',
@@ -110,14 +166,18 @@ Page({
       companyDays: view.companyDays,
       mealsEaten: view.mealsEaten,
       cooldownDays: view.cooldownDays,
-      bowlFull: !!view.bowlFull,
-      recentPhoto: view.recentPhoto || '',
+      bowlFill: bowlFill,
+      bowlOpacity: bowlFill / 100,
+      species: species,
+      petSrc: pets.art(species, view.band),
+      cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.png',
+      photos: photosOf(view.photos),
       showBag: chips.some(function (chip) { return chip.tone === 'staple' }),
       showMemorial: showMemorial,
       hasCurrent: chips.some(function (chip) { return chip.tone === 'now' }),
       camera: view.camera,
       bandNote: labels.bandNote(view.band, view.petName),
-    })
+    }, function () { self.fitStage() })
     this.markTab()
   },
 

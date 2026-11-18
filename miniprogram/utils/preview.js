@@ -44,6 +44,15 @@ function sceneHunger(name) {
   return SCENE_HUNGER[name] || '18%'
 }
 
+// 预览没有时钟。丸子按这一幕固定：刚打完还在窗口里是满盘，下一顿还没到留一半，
+// 已经到下一顿窗口就快没了。口粮、漏餐和还没打过是空盘。
+function sceneBowl(name) {
+  if (name === 'idle') return 100
+  if (name === 'snack') return 55
+  if (name === 'living') return 20
+  return 0
+}
+
 function sceneEmotion(name) {
   const percent = Number(sceneHunger(name).replace('%', ''))
   if (percent <= 30) return '饱足'
@@ -106,8 +115,15 @@ function homeView(name) {
     hungerText: sceneHunger(name),
     healthText: scene.pet === 'pasture' ? '—' : (scene.pet === 'memorial' ? '0' : HEALTH[scene.band]),
     levelText: scene.pet === 'pasture' ? '—' : '1',
-    bowlFull: name === 'idle',
-    recentPhoto: name === 'idle' ? '/assets/preview/lunch.png' : '',
+    bowlFill: sceneBowl(name),
+    recentPhoto: '',
+    species: 'cat',
+    // 当天打过卡、并且有照片的餐，留在首页对应的拍立得上。平时的 living 没有照片。
+    photos: name === 'idle' ? [
+      { meal: 'breakfast', src: '/assets/preview/breakfast.png' },
+      { meal: 'lunch', src: '/assets/preview/lunch.png' },
+      { meal: 'dinner', src: '/assets/preview/lunch.png' },
+    ] : [],
     companyDays: memorial ? 12 : 18,
     mealsEaten: memorial ? 30 : 41,
     cooldownDays: memorial ? 6 : 0,
@@ -129,29 +145,75 @@ function checkinView(meal, name) {
   }
 }
 
+function mealSlot(meal, name, photo, face) {
+  return { meal: meal, name: name, photo: photo, exempt: face === 'staple', face: face }
+}
+
+const EMPTY_MEALS = [
+  mealSlot('breakfast', '早餐', '', 'empty'),
+  mealSlot('lunch', '午餐', '', 'empty'),
+  mealSlot('dinner', '晚餐', '', 'empty'),
+]
+
+const GALLERY_DAYS = [
+  { key: '2026-11-09', week: '一', day: 9, marked: false, star: false },
+  { key: '2026-11-10', week: '二', day: 10, marked: false, star: false },
+  { key: '2026-11-11', week: '三', day: 11, marked: true, star: false },
+  { key: '2026-11-12', week: '四', day: 12, marked: true, star: true },
+  { key: '2026-11-13', week: '五', day: 13, marked: false, star: false },
+  { key: '2026-11-14', week: '六', day: 14, marked: false, star: false },
+  { key: '2026-11-15', week: '日', day: 15, marked: false, star: false },
+]
+
+function galleryMeals(kind) {
+  if (kind === 'today') {
+    return [
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
+      mealSlot('lunch', '午餐', '', 'window'),
+      mealSlot('dinner', '晚餐', '', 'waiting'),
+    ]
+  }
+  if (kind === 'partial') {
+    return [
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
+      mealSlot('lunch', '午餐', '', 'empty'),
+      mealSlot('dinner', '晚餐', '', 'empty'),
+    ]
+  }
+  if (kind === 'full') {
+    return [
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
+      mealSlot('lunch', '午餐', '/assets/preview/lunch.png', 'photo'),
+      mealSlot('dinner', '晚餐', '/assets/preview/lunch.png', 'photo'),
+    ]
+  }
+  return EMPTY_MEALS
+}
+
+function gallerySnacks(show) {
+  return show ? [{ startedAt: '2026-11-13T06:00:00.000Z', photo: '/assets/preview/lunch.png', count: 1 }] : []
+}
+
 function galleryView(name) {
-  const today = 4
-  const days = [
-    { key: '2026-11-09', week: '一', day: 9 }, { key: '2026-11-10', week: '二', day: 10 },
-    { key: '2026-11-11', week: '三', day: 11 }, { key: '2026-11-12', week: '四', day: 12 },
-    { key: '2026-11-13', week: '五', day: 13 }, { key: '2026-11-14', week: '六', day: 14 },
-    { key: '2026-11-15', week: '日', day: 15 },
-  ]
   const empty = name === 'empty'
   return {
     streak: empty ? 0 : 3,
-    todayIndex: today,
-    days: days,
-    meals: [
-      { meal: 'breakfast', name: '早餐', photo: empty ? '' : '/assets/preview/breakfast.png', exempt: false },
-      { meal: 'lunch', name: '午餐', photo: '', exempt: !empty },
-      { meal: 'dinner', name: '晚餐', photo: '', exempt: false },
-    ],
-    // 零食是窗口外的打卡，图鉴里单独显示一行。每份零食取封面图，count 是这一份的张数。
-    snacks: empty ? [] : [
-      { startedAt: '2026-11-13T06:00:00.000Z', photo: '/assets/preview/lunch.png', count: 1 },
-    ],
+    todayIndex: 4,
+    days: GALLERY_DAYS.map(function (day) {
+      if (!empty) return day
+      return { key: day.key, week: day.week, day: day.day, marked: false, star: false }
+    }),
+    meals: galleryMeals(empty ? 'none' : 'today'),
+    snacks: gallerySnacks(!empty),
   }
+}
+
+function galleryDay(key, name) {
+  if (name === 'empty') return { meals: EMPTY_MEALS, snacks: [] }
+  if (key === '2026-11-11') return { meals: galleryMeals('partial'), snacks: [] }
+  if (key === '2026-11-12') return { meals: galleryMeals('full'), snacks: [] }
+  if (key === '2026-11-13') return { meals: galleryMeals('today'), snacks: gallerySnacks(true) }
+  return { meals: EMPTY_MEALS, snacks: [] }
 }
 
 function adoptView(name) {
@@ -202,4 +264,4 @@ function memorialDetail(id) {
   return null
 }
 
-module.exports = { homeView, checkinView, galleryView, adoptView, meView, memorialList, memorialDetail }
+module.exports = { homeView, checkinView, galleryView, galleryDay, adoptView, meView, memorialList, memorialDetail }

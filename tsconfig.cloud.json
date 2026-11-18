@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": false,
+    "outDir": "cloudfunctions/lib",
+    "rootDir": ".",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["domain/**/*.ts", "app/**/*.ts", "adapters/**/*.ts"]
+}

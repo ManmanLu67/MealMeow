@@ -57,6 +57,7 @@ export type {
 } from './settlement.ts'
 export { dayComplete, personalStreak, streakAnchor, streakEndingAt } from './streak.ts'
 export {
+  bowlFill,
   emotionFromHunger,
   feedingHungerPercent,
   healthScore,

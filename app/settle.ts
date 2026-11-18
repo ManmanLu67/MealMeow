@@ -13,7 +13,7 @@ import { evaluateFeeding, nextHunger, settleStep } from '../domain/settlement.ts
 import { daysBetweenInclusive } from '../domain/time.ts'
 import { topUpAllJobs } from './schedule.ts'
 import type { Store } from './ports.ts'
-import type { MealRecordDoc, PetDoc, SettlementJobDoc, UserDoc } from './types.ts'
+import type { MealRecordDoc, PetDoc, PetSpecies, SettlementJobDoc, UserDoc } from './types.ts'
 
 const mealRank = Object.fromEntries(MEALS.map((meal, index) => [meal, index])) as Record<
   MealType,
@@ -238,15 +238,24 @@ export async function applyReview(
  * 同时把 user.adoptedOn 写下来，连续天数靠它判断先领养还是先打卡。
  * 第二只宠物领养时，上一只的死亡日仍留在 user.diedOn，连续天数照旧按那一次减。
  */
+const PET_SPECIES = ['cat', 'samoyed', 'parrot', 'goldfish'] as const
+
+function chosenSpecies(value: PetSpecies | undefined): PetSpecies | null {
+  if (value === undefined) return 'cat'
+  return PET_SPECIES.includes(value) ? value : null
+}
+
 export async function adoptPet(
   store: Store,
   caller: { userId: string },
   now: Date,
-  input: { name?: string } = {},
+  input: { name?: string; species?: PetSpecies } = {},
 ): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
   return store.runExclusive(caller.userId, async () => {
     const named = validatePetName(input.name)
     if (!named.ok) return named
+    const species = chosenSpecies(input.species)
+    if (species === null) return { ok: false, error: '没有这种动物' }
     const user = await store.getUser(caller.userId)
     if (user === null) throw new Error(`user not found: ${caller.userId}`)
     const pet = await store.getPet(caller.userId)
@@ -266,6 +275,7 @@ export async function adoptPet(
       companyDays: 0,
       mealsEaten: 0,
       hungerLog: [],
+      species,
     })
     await store.saveUser({
       ...user,

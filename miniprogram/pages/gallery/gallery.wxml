@@ -5,12 +5,13 @@
     <view
       wx:for="{{days}}"
       wx:key="key"
-      class="day {{index === selected ? 'day-on' : ''}}"
+      class="day {{index === selected ? 'day-on' : ''}} {{item.marked && index !== selected ? 'day-marked' : ''}}"
       data-index="{{index}}"
       bindtap="selectDay"
       hover-class="day-hover"
       hover-stay-time="120"
     >
+      <image wx:if="{{item.star}}" class="day-star" src="/assets/icon/star.png" mode="aspectFit"></image>
       <text class="t-caption day-week">{{item.week}}</text>
       <text class="t-label day-num">{{item.day}}</text>
       <view class="day-dot {{index === todayIndex ? 'day-dot-today' : ''}}"></view>
@@ -21,7 +22,7 @@
     <view
       wx:for="{{meals}}"
       wx:key="meal"
-      class="tile {{item.photo || item.exempt ? '' : 'tile-empty'}}"
+      class="tile face-{{item.face || (item.photo ? 'photo' : (item.exempt ? 'staple' : 'empty'))}}"
       data-index="{{index}}"
       bindtap="openTile"
     >
@@ -32,6 +33,7 @@
           <text class="t-caption">口粮</text>
         </view>
       </block>
+      <image wx:elif="{{item.face === 'window' || item.face === 'waiting'}}" class="tile-plate" src="/assets/icon/plate.png" mode="aspectFit"></image>
       <image wx:else class="tile-corner" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
       <view class="tile-name"><text class="t-caption tile-name-text">{{item.name}}</text></view>
     </view>

@@ -22,75 +22,57 @@
   </view>
 
   <view class="center">
-    <view class="stage">
-      <view wx:if="{{showMemorial}}" class="memo-mark" catchtap="openMemorial">
-        <view class="album-sheet"></view>
-        <view class="album">
-          <view class="album-spine"></view>
-          <view class="album-window"></view>
-        </view>
-      </view>
+  <view wx:if="{{petView === 'pasture'}}" class="pasture">
+    <view class="adopt" bindtap="goAdopt">
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit"></image>
+      <text class="adopt-label">领养</text>
+    </view>
+    <view class="cam" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
+      <image class="cam-img" src="{{cameraSrc}}" mode="aspectFit"></image>
+    </view>
+  </view>
+  <view wx:if="{{petView === 'pasture' && photos.length}}" class="stage" style="transform: scale({{stageScale}});">
+    <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
+      <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
+      <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
+    </view>
+  </view>
 
-      <view wx:if="{{petView === 'living'}}" class="pet">
-        <view class="cat cat-{{band}}" bindtap="onPetTap" bindlongpress="openPet">
-          <view class="ear ear-l"><image class="ear-img" src="/assets/icon/ear.png" mode="scaleToFill"></image></view>
-          <view class="ear ear-r"><image class="ear-img" src="/assets/icon/ear.png" mode="scaleToFill"></image></view>
-          <view class="cat-head">
-            <view class="eye eye-l"><view class="lid"></view><view class="pupil"></view></view>
-            <view class="eye eye-r"><view class="lid"></view><view class="pupil"></view></view>
-            <view class="blush blush-l"></view>
-            <view class="blush blush-r"></view>
-            <view class="mouth"></view>
-          </view>
-          <view class="bowl" aria-label="{{bowlFull ? '食盘（有食物）' : '食盘（空）'}}">
-            <view class="bowl-body"></view>
-            <view class="bowl-rim"></view>
-            <view class="bowl-well"></view>
-            <view wx:if="{{bowlFull}}" class="foods">
-              <view class="k k1"></view><view class="k k2"></view><view class="k k3"></view><view class="k k4"></view>
-              <view class="k k5"></view><view class="k k6"></view><view class="k k7"></view>
-              <view class="k k8"></view><view class="k k9"></view>
-            </view>
-          </view>
-          <view wx:if="{{showBag}}" class="bag">
-            <view class="bag-tie"></view>
-            <view class="bag-neck"></view>
-            <view class="bag-body"></view>
-          </view>
-          <view wx:if="{{emotion}}" class="emo"><text class="emo-text">{{emotion}}</text></view>
-        </view>
-        <view wx:if="{{recentPhoto}}" class="polaroid">
-          <view class="pin"><view class="pin-head"></view><view class="pin-needle"></view></view>
-          <image class="polaroid-photo" src="{{recentPhoto}}" mode="aspectFill"></image>
-        </view>
-      </view>
-
-      <view wx:else class="adopt" bindtap="goAdopt">
-        <view class="person">
-          <view class="person-head"></view>
-          <view class="person-body"></view>
-        </view>
-        <text class="adopt-label">领养</text>
-        <view wx:if="{{showBag}}" class="bag bag-stick">
-          <view class="bag-tie"></view>
-          <view class="bag-neck"></view>
-          <view class="bag-body"></view>
-        </view>
-      </view>
+  <view wx:if="{{petView !== 'pasture'}}" class="stage" style="transform: scale({{stageScale}});">
+    <view wx:if="{{showMemorial}}" class="memo-mark" catchtap="openMemorial">
+      <image class="album-img" src="/assets/icon/album.png" mode="aspectFit"></image>
     </view>
 
-    <view
-      class="cam {{hasCurrent ? 'cam-now' : ''}}"
-      hover-class="cam-press"
-      hover-stay-time="80"
-      bindtap="onCamera"
-      aria-label="拍照记录"
-    >
-      <view class="cam-body">
-        <view class="cam-bump"></view>
-        <view class="cam-lens"></view>
+    <block wx:if="{{petView === 'living'}}">
+      <image
+        class="pet-img {{species === 'cat' ? 'pet-img-cat' : ''}}"
+        src="{{petSrc}}"
+        mode="aspectFit"
+        bindtap="onPetTap"
+        bindlongpress="openPet"
+      ></image>
+      <view class="bowl" aria-label="{{bowlFill > 0 ? '食盘（有丸子）' : '食盘（空）'}}">
+        <image class="bowl-plate" src="/assets/icon/bowl-plate.png" mode="aspectFit"></image>
+        <image wx:if="{{bowlFill > 0}}" class="bowl-kibble" style="opacity: {{bowlOpacity}};" src="/assets/icon/bowl-kibble.png" mode="aspectFit"></image>
       </view>
+    </block>
+
+    <view wx:else class="adopt" bindtap="goAdopt">
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit"></image>
+      <text class="adopt-label">领养</text>
     </view>
+
+    <image wx:if="{{showBag}}" class="bag" src="/assets/icon/bag.png" mode="aspectFit"></image>
+
+    <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
+      <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
+      <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
+    </view>
+
+    <view class="cam" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
+      <image class="cam-img" src="{{cameraSrc}}" mode="aspectFit"></image>
+    </view>
+  </view>
   </view>
   </view>
 

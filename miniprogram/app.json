@@ -9,7 +9,7 @@
     "pages/memorial/detail",
     "pages/settings/meals/meals",
     "pages/settings/reminder/reminder",
-    "pages/settings/feedback/feedback",
+    "pages/settings/sound/sound",
     "pages/settings/about/about"
   ],
   "window": {

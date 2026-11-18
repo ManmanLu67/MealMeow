@@ -41,6 +41,62 @@ describe('home view', () => {
     assert.equal(view.levelText, '0')
     assert.equal(view.emotion, '饱足')
   })
+
+  it('keeps today\'s checked-in photo on the home page', async () => {
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'breakfast',
+      status: 'checked_in',
+      photos: ['morning'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    const view = await homeView(store, { userId: 'u' }, now)
+    assert.deepEqual(view.photos, [{ meal: 'breakfast', src: 'morning' }])
+    assert.equal(view.species, 'cat')
+  })
+
+  it('puts a full bowl on a check-in and lets it empty by the next meal', async () => {
+    const checked = new Date('2026-11-13T04:00:00.000Z')
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: checked.toISOString(),
+    }))
+    const full = await homeView(store, { userId: 'u' }, checked)
+    assert.equal(full.bowlFill, 100)
+    const mid = await homeView(store, { userId: 'u' }, new Date('2026-11-13T07:00:00.000Z'))
+    assert.equal(mid.bowlFill, 50)
+    const gone = await homeView(store, { userId: 'u' }, new Date('2026-11-13T10:00:00.000Z'))
+    assert.equal(gone.bowlFill, 0)
+  })
+
+  it('does not put meatballs in for a staple or a snack', async () => {
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'exempt',
+      checkinAt: now.toISOString(),
+      photos: [],
+      photoReviews: [],
+    }))
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: now.toISOString(),
+      photos: ['snack'],
+      photoReviews: ['passed'],
+      hidden: false,
+    })
+    const view = await homeView(store, { userId: 'u' }, now)
+    assert.equal(view.bowlFill, 0)
+  })
 })
 
 describe('gallery and adoption', () => {
@@ -170,5 +226,27 @@ describe('gallery and adoption', () => {
     assert.equal(yesterday.streak, 3)
     assert.equal(today.meals.find((meal) => meal.meal === 'dinner')?.photo, null)
     assert.equal(yesterday.meals.find((meal) => meal.meal === 'dinner')?.photo, 'night')
+  })
+
+  it('marks a partial day and stars a day when all three meals are checked in', async () => {
+    const store = await seededStore({}, { hunger: 0 })
+    await store.saveRecord(record({
+      date: '2026-11-11',
+      meal: 'breakfast',
+      photos: ['early'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    await markComplete(store, ['2026-11-12'])
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const view = await galleryView(store, { userId: 'u' }, now)
+    const wednesday = view.days.find((day) => day.key === '2026-11-11')
+    const thursday = view.days.find((day) => day.key === '2026-11-12')
+    assert.equal(wednesday?.marked, true)
+    assert.equal(wednesday?.star, false)
+    assert.equal(thursday?.marked, true)
+    assert.equal(thursday?.star, true)
+    assert.equal(view.meals.find((meal) => meal.meal === 'lunch')?.face, 'window')
+    assert.equal(view.meals.find((meal) => meal.meal === 'dinner')?.face, 'waiting')
   })
 })

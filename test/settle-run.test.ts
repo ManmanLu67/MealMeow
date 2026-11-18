@@ -178,6 +178,26 @@ describe('death, cooldown, and adoption', () => {
     assert.equal((await store.getSettlement('u', day, 'lunch'))?.hungerAfter, 0)
   })
 
+  it('stores the chosen species and defaults to the cat', async () => {
+    const store = await seededStore({}, null)
+    const chosen = await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), { species: 'parrot' })
+    assert.equal(chosen.ok, true)
+    assert.equal((await mustPet(store)).species, 'parrot')
+    const plain = await seededStore({}, null)
+    await adoptPet(plain, caller, new Date('2026-11-13T05:00:00.000Z'))
+    assert.equal((await mustPet(plain)).species, 'cat')
+  })
+
+  it('rejects a species that is not one of the four animals', async () => {
+    const store = await seededStore({}, null)
+    const rejected = await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), {
+      species: 'dragon' as never,
+    })
+    assert.equal(rejected.ok, false)
+    assert.equal(rejected.ok === false && rejected.error, '没有这种动物')
+    assert.equal(await store.getPet('u'), null)
+  })
+
   it('trims a chosen name and returns it to the caller', async () => {
     const store = await seededStore({}, null)
     const named = await adoptPet(store, caller, new Date('2026-11-13T05:00:00.000Z'), { name: '  咪咪 ' })
