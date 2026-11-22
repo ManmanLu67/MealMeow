@@ -2,19 +2,12 @@
 
 > Confirmed problems only. Remove an entry when fixed (note the commit).
 
-## 云函数没有数据层
+## 云函数还没在云端跑过
 
-- Symptom: `cloudfunctions/api` 和 `cloudfunctions/settle` 固定返回 `not_implemented`。
-- Reproduce: 调用这两个入口。
-- Tried: 未接数据库。这是还没做，不是规则冲突。
-- Status: open。第 5 份计划。
-
-## 页面没有在微信开发者工具里验收
-
-- Symptom: 页面读 `miniprogram/utils/preview.js` 的样例数据。还没有在微信开发者工具里打开过。
-- Reproduce: 用微信开发者工具打开。首页启动参数见本机 `docs/local/preview-states.md`。
-- Tried: 无。
-- Status: open
+- Symptom: 入口已经调用编译后的 `handle` 和 `runDueJobs`，但仓库里没有云环境 ID。页面仍读预览数据，没有打到这两个云函数。
+- Reproduce: 读 `miniprogram/utils/config.js` 的 `usePreviewData`，以及 `miniprogram/app.js` 的 `wx.cloud.init`。
+- Tried: 适配器和入口用假数据库测过。没有上传云函数，也没有建集合。
+- Status: open。有云环境后再接页面。
 
 ## 照片没有提交内容安全
 
