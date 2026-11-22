@@ -1,7 +1,7 @@
 <view class="nav">
   <view class="item {{selected === 0 ? 'item-on' : ''}}" data-index="0" bindtap="switchTab" hover-class="item-press" hover-stay-time="80">
     <view class="ico">
-      <view class="house"></view>
+      <image class="house" src="/assets/icon/tab-house.png" mode="aspectFit"></image>
       <view wx:if="{{badge}}" class="dot"></view>
     </view>
     <text class="label">首页</text>

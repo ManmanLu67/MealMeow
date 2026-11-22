@@ -66,16 +66,17 @@
   justify-content: center;
   pointer-events: none;
 }
-.pasture .adopt, .pasture .cam { pointer-events: auto; }
-.pasture .adopt { position: relative; left: auto; top: auto; width: auto; height: auto; margin-left: 0; }
-.pasture .cam { position: relative; left: auto; top: auto; margin-top: 48rpx; margin-left: 0; }
+.pasture .adopt { pointer-events: auto; position: relative; left: auto; top: auto; width: auto; height: auto; margin-left: 0; }
 .person { display: block; width: 204rpx; height: 333rpx; }
 .adopt-label { display: block; margin-top: 27rpx; padding: 14rpx 41rpx 14rpx 48rpx; background: #FFFFFF; border: 7rpx solid #1A1A1A; border-radius: 14rpx; font-size: 48rpx; font-weight: 800; line-height: 48rpx; letter-spacing: 0.14em; text-align: center; color: #1A1A1A; }
 
 .memo-mark { position: absolute; right: 0; top: 16rpx; z-index: 5; width: 174rpx; height: 158rpx; }
 .album-img { width: 174rpx; height: 158rpx; }
 
-.cam { position: absolute; left: 50%; top: 828rpx; z-index: 6; width: 168rpx; height: 168rpx; margin-left: -84rpx; }
+.cam-layer { z-index: 7; pointer-events: none; }
+.cam { position: absolute; left: 50%; top: 828rpx; z-index: 6; width: 168rpx; height: 168rpx; margin-left: -84rpx; overflow: visible; pointer-events: auto; }
+.cam-dog { width: 268rpx; margin-left: -184rpx; }
+.cam-dog .cam-img { width: 268rpx; height: 168rpx; }
 .cam-press { opacity: 0.72; }
 .cam-img { width: 168rpx; height: 168rpx; }
 

@@ -27,9 +27,6 @@
       <image class="person" src="/assets/icon/person.png" mode="aspectFit"></image>
       <text class="adopt-label">领养</text>
     </view>
-    <view class="cam" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
-      <image class="cam-img" src="{{cameraSrc}}" mode="aspectFit"></image>
-    </view>
   </view>
   <view wx:if="{{petView === 'pasture' && photos.length}}" class="stage" style="transform: scale({{stageScale}});">
     <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
@@ -68,8 +65,9 @@
       <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
       <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
     </view>
-
-    <view class="cam" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
+  </view>
+  <view class="stage cam-layer" style="transform: scale({{stageScale}});">
+    <view class="cam {{petView === 'living' && species === 'samoyed' ? 'cam-dog' : ''}}" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
       <image class="cam-img" src="{{cameraSrc}}" mode="aspectFit"></image>
     </view>
   </view>
