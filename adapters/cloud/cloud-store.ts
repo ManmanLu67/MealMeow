@@ -6,6 +6,7 @@ import type {
   SettlementDoc,
   SettlementJobDoc,
   SnackDoc,
+  TraceDoc,
   UserDoc,
 } from '../../app/types.ts'
 import type { CloudDb, CloudQuery } from './cloud-db.ts'
@@ -17,6 +18,7 @@ const SNACKS = 'snacks'
 const JOBS = 'settlement_jobs'
 const SETTLEMENTS = 'settlements'
 const LOCKS = 'locks'
+const TRACES = 'traces'
 const PAGE = 100
 const LOCK_MS = 15_000
 const WAIT_MS = 5_000
@@ -147,6 +149,12 @@ export function createCloudStore(db: CloudDb): Store {
     },
     async saveSettlement(doc) {
       await db.set(SETTLEMENTS, docId(doc.subjectId, doc.date, doc.meal), stored(doc))
+    },
+    async getTrace(traceId) {
+      return (await db.get(TRACES, docId(traceId))) as TraceDoc | null
+    },
+    async saveTrace(doc) {
+      await db.set(TRACES, docId(doc.traceId), stored(doc))
     },
   }
 }

@@ -10,6 +10,6 @@ One line per directory you have actually opened. Path, then what it is for. No f
 | `adapters/memory/` | `Store` 的内存实现，测试用。 |
 | `test/` | 领域规则和命令的测试。`fixtures.ts` 是共用夹具。 |
 | `miniprogram/` | 小程序页面壳。三个 Tab，另有打卡、领养、纪念册和设置页。动物图在 `utils/pets.js`。 |
-| `adapters/cloud/` | `Store` 的云数据库实现。测试传入假的数据库客户端。 |
-| `cloudfunctions/api/` | 页面云函数。取登录 openId，调用编译后的 `handle`。 |
+| `adapters/cloud/` | 云数据库上的 `Store`，以及微信内容安全的提交和签名校验。 |
+| `cloudfunctions/api/` | 页面云函数。取登录 openId 调 `handle`；内容安全回调按追踪号写回。 |
 | `cloudfunctions/settle/` | 每分钟结算。调用编译后的 `runDueJobs`。 |

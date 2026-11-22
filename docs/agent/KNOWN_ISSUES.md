@@ -9,12 +9,12 @@
 - Tried: 适配器和入口用假数据库测过。没有上传云函数，也没有建集合。
 - Status: open。有云环境后再接页面。
 
-## 照片没有提交内容安全
+## 内容安全还没在微信里跑过
 
-- Symptom: `finishCheckin` 写入的照片永远是 `pending`，没有代码把它提交审核，也没有回调入口。线上一餐的照片 2 小时后会进入 `manual_review`，宠物冻结。
-- Reproduce: 读 `app/checkin.ts` 的 `finishCheckin`；没有调用 `submitMedia` 或类似函数。
-- Tried: `applyReview` 已经能收回调，窗口结束前也能收。缺的是提交和回调入口，在第 5 份计划任务 4。
-- Status: open
+- Symptom: 提交和回调的代码已经有了，但云函数没上传，也没有配置 `MEAL_MEDIA_TOKEN`。没有这个令牌时，回调签名会被拒绝。
+- Reproduce: 读 `cloudfunctions/api/index.js`。令牌不在仓库里。
+- Tried: `test/media-check.test.ts` 用假的提交函数测过。没有请求微信。
+- Status: open。有云环境后再配令牌并上传。
 
 ## 没有 AppID 和云环境
 

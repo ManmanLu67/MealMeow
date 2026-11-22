@@ -17,6 +17,8 @@ export type MealRecordDoc = {
   photos: string[]
   /** 和 photos 一一对应。每张照片的内容安全结果。口粮没有照片，为空数组。 */
   photoReviews: PhotoReview[]
+  /** 和 photos 一一对应。空字符串表示这张还没提交成功。 */
+  traceIds?: string[]
   /** 整餐的审核结论。驳回的记录保留，页面按「没有打卡」处理。 */
   review: MealReview
   hidden: boolean
@@ -36,7 +38,19 @@ export type SnackDoc = {
   photos: string[]
   /** 和 photos 一一对应。零食也走内容安全，但结果不影响宠物，只决定这张图能不能留在图鉴里。 */
   photoReviews: PhotoReview[]
+  /** 和 photos 一一对应。空字符串表示这张还没提交成功。 */
+  traceIds?: string[]
   hidden: boolean
+}
+
+/** 内容安全的追踪号。回调只认这个号，不认事件体里的用户。 */
+export type TraceDoc = {
+  traceId: string
+  userId: string
+  date: string
+  photo: string
+  meal: MealType | null
+  startedAt: string | null
 }
 
 export type SettlementJobDoc = {

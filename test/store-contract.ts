@@ -124,6 +124,22 @@ export function runStoreContract(name: string, makeStore: () => Store): void {
       assert.equal((await store.listFrozenJobs('b')).length, 0)
     })
 
+    it('keeps one row per trace id', async () => {
+      const store = makeStore()
+      const trace = {
+        traceId: 't',
+        userId: 'u',
+        date: '2026-11-13',
+        photo: 'a',
+        meal: 'lunch' as const,
+        startedAt: null,
+      }
+      await store.saveTrace(trace)
+      await store.saveTrace({ ...trace, photo: 'b' })
+      assert.equal((await store.getTrace('t'))?.photo, 'b')
+      assert.equal(await store.getTrace('missing'), null)
+    })
+
     it('runExclusive runs the same subject one at a time', async () => {
       const store = makeStore()
       const order: string[] = []

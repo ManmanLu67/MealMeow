@@ -6,6 +6,7 @@ import type {
   SettlementDoc,
   SettlementJobDoc,
   SnackDoc,
+  TraceDoc,
   UserDoc,
 } from '../../app/types.ts'
 
@@ -32,6 +33,7 @@ export function createMemoryStore(): Store {
   const jobs = new Map<string, SettlementJobDoc>()
   const settlements = new Map<string, SettlementDoc>()
   const snacks = new Map<string, SnackDoc>()
+  const traces = new Map<string, TraceDoc>()
   const tails = new Map<string, Promise<unknown>>()
 
   return {
@@ -120,6 +122,12 @@ export function createMemoryStore(): Store {
     },
     async saveSettlement(doc) {
       settlements.set(subjectMealKey(doc.subjectId, doc.date, doc.meal), doc)
+    },
+    async getTrace(traceId) {
+      return traces.get(traceId) ?? null
+    },
+    async saveTrace(doc) {
+      traces.set(doc.traceId, doc)
     },
   }
 }

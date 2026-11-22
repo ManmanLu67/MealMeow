@@ -15,7 +15,7 @@ async function handleApi(event, deps) {
   if (typeof body.action !== 'string' || PAGE_ACTIONS.indexOf(body.action) === -1) {
     return { ok: false, error: 'unknown_action' }
   }
-  return handle(deps.store, caller, now, event)
+  return handle(deps.store, caller, now, event, deps.media)
 }
 
 module.exports = { handleApi }

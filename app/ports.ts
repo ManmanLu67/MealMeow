@@ -4,6 +4,7 @@ import type {
   SettlementDoc,
   SettlementJobDoc,
   SnackDoc,
+  TraceDoc,
   UserDoc,
 } from './types.ts'
 
@@ -42,4 +43,6 @@ export type Store = {
     meal: SettlementDoc['meal'],
   ): Promise<SettlementDoc | null>
   saveSettlement(doc: SettlementDoc): Promise<void>
+  getTrace(traceId: string): Promise<TraceDoc | null>
+  saveTrace(doc: TraceDoc): Promise<void>
 }

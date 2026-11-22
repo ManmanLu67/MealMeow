@@ -3,6 +3,7 @@ import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts
 import { recordSnack, removeSnack } from './snack.ts'
 import { syncUser } from './user.ts'
 import { adoptView, galleryView, homeView } from './views.ts'
+import { submitPhotos, submitSnackPhotos, type MediaChecker } from './media-check.ts'
 import type { Store } from './ports.ts'
 import type { MealClocks, MealType } from '../domain/index.ts'
 import type { PetSpecies } from './types.ts'
@@ -141,6 +142,7 @@ export async function handle(
   caller: Caller,
   now: Date,
   raw: unknown,
+  media?: MediaChecker,
 ): Promise<Response> {
   const request = parseRequest(raw)
   if (request === null) return { ok: false, error: 'bad_request' }
@@ -157,10 +159,16 @@ export async function handle(
     case 'checkin': {
       const date = await todayOf(store, caller, now)
       if (date === null) return { ok: false, error: 'no_user' }
-      return finishCheckin(store, caller, now, { date, meal: request.meal, photos: request.photos })
+      const result = await finishCheckin(store, caller, now, { date, meal: request.meal, photos: request.photos })
+      if (result.ok && media) await submitPhotos(store, media, caller, { date, meal: request.meal })
+      return result
     }
     case 'snack': {
       const result = await recordSnack(store, caller, now, { photos: request.photos })
+      if (result.ok && media) {
+        const date = await todayOf(store, caller, now)
+        if (date !== null) await submitSnackPhotos(store, media, caller, { date })
+      }
       return result.ok ? { ok: true, data: { merged: result.merged } } : result
     }
     case 'exempt': {
