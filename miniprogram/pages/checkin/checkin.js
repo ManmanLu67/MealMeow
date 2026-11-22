@@ -97,16 +97,20 @@ Page({
     }
     // 三餐传餐次，零食只传照片。日期和窗口由云端按设备时区判断。
     const action = this.data.mode === 'snack' ? 'snack' : 'checkin'
-    const payload = this.data.mode === 'snack'
-      ? { photos: this.data.photos }
-      : { meal: this.meal, photos: this.data.photos }
-    api.call(action, payload).then(function (res) {
-      if (!res.ok) {
-        wx.showToast({ title: res.error || '打卡失败，请重试', icon: 'none' })
+    uploadPhotos(this.data.photos).then(function (ids) {
+      const payload = self.data.mode === 'snack'
+        ? { photos: ids }
+        : { meal: self.meal, photos: ids }
+      return api.call(action, payload)
+    }).then(function (res) {
+      if (!res || !res.ok) {
+        wx.showToast({ title: (res && res.error) || '打卡失败，请重试', icon: 'none' })
         return
       }
       self.setData({ checked: true })
       wx.navigateBack({ fail() { wx.switchTab({ url: '/pages/home/home' }) } })
+    }).catch(function () {
+      wx.showToast({ title: '照片上传失败，请重试', icon: 'none' })
     })
   },
 
@@ -138,3 +142,18 @@ Page({
     })
   },
 })
+
+function uploadPhotos(paths) {
+  const stamp = Date.now()
+  return Promise.all(paths.map(function (path, index) {
+    if (typeof path === 'string' && path.indexOf('cloud://') === 0) return Promise.resolve(path)
+    if (!wx.cloud || !wx.cloud.uploadFile) return Promise.reject(new Error('no_cloud'))
+    return wx.cloud.uploadFile({
+      cloudPath: 'photos/' + stamp + '-' + index + '.jpg',
+      filePath: path,
+    }).then(function (res) {
+      if (!res || !res.fileID) throw new Error('no_file')
+      return res.fileID
+    })
+  }))
+}

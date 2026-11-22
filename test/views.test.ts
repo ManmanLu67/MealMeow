@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import type { Store } from '../app/ports.ts'
-import { adoptView, galleryView, homeView } from '../app/views.ts'
+import { adoptView, galleryView, homeView, meView, memorialView } from '../app/views.ts'
 import { MEALS } from '../domain/index.ts'
 import { record, seededStore } from './fixtures.ts'
 
@@ -248,5 +248,45 @@ describe('gallery and adoption', () => {
     assert.equal(thursday?.star, true)
     assert.equal(view.meals.find((meal) => meal.meal === 'lunch')?.face, 'window')
     assert.equal(view.meals.find((meal) => meal.meal === 'dinner')?.face, 'waiting')
+  })
+})
+
+describe('me and memorial', () => {
+  it('shows the nickname and a stable account id', async () => {
+    const store = await seededStore({ nickname: '' })
+    const view = await meView(store, { userId: 'u' })
+    assert.equal(view.nickname, '吃饭人')
+    const again = await meView(store, { userId: 'u' })
+    assert.equal(again.accountId, view.accountId)
+    assert.match(view.accountId, /^cf-\d{4}-\d{4}$/)
+  })
+
+  it('lists nobody until a pet has died', async () => {
+    const store = await seededStore()
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const home = await homeView(store, { userId: 'u' }, now)
+    assert.equal(home.petView, 'living')
+    const list = await memorialView(store, { userId: 'u' }, now)
+    assert.equal('pets' in list && list.pets.length, 0)
+  })
+
+  it('lists the dead pet without a portrait', async () => {
+    const store = await seededStore(
+      { diedOn: '2026-11-12', cooldownUntil: '2026-11-19T20:00:00.000Z' },
+      { alive: false, name: '小饭', adoptedOn: '2026-11-01', endedOn: '2026-11-12', companyDays: 12, mealsEaten: 30, hungerLog: [] },
+    )
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const home = await homeView(store, { userId: 'u' }, now)
+    assert.equal(home.petView, 'memorial')
+    const list = await memorialView(store, { userId: 'u' }, now)
+    assert.deepEqual(list, { pets: [{ id: '2026-11-01', name: '小饭', photo: '' }] })
+    const detail = await memorialView(store, { userId: 'u' }, now, '2026-11-01')
+    assert.equal('missing' in detail && detail.missing, false)
+    if ('missing' in detail && !detail.missing) {
+      assert.equal(detail.companyDays, 12)
+      assert.equal(detail.mealsEaten, 30)
+      assert.equal(detail.level, '16')
+      assert.equal(detail.photo, '')
+    }
   })
 })

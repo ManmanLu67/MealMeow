@@ -5,7 +5,7 @@
 
 ## 1. Current goal
 
-界面已锁定，并已在微信开发者工具里看过。照片会在打卡之后提交内容安全，回调按追踪号写回。页面仍用预览数据。下一步是有云环境后再把页面接到云函数。
+界面已锁定，并已在微信开发者工具里看过。预览关掉之后，用户页读 `me`，纪念册读 `memorial`，打卡先把照片传到云存储再提交。页面现在仍用预览数据。下一步是有云环境后配置令牌、上传云函数，再关预览。
 
 ## 2. Status
 
@@ -15,7 +15,7 @@
 
 ## 3. Completed and verified
 
-- `npm test`：147 项通过，0 失败。`npm run typecheck` 退出码 0。`npm run build:cloud` 生成 `cloudfunctions/lib/`，`git status` 不列出该目录。编译后的 `media-check.js` 能被 CommonJS 加载。
+- `npm test`：150 项通过，0 失败。`npm run typecheck` 退出码 0。`npm run build:cloud` 已重新生成 `cloudfunctions/lib/`，该目录被 gitignore，不入库。
 - 2026-11-22：锁定后的页面已在微信开发者工具里确认。
 - 首页：动物图、食盘、口袋、相册、三张拍立得和物种相机按稿子的位置摆。当天已打卡且未驳回的照片留在首页。
 - 图鉴：有吃到的日子是绿格；三餐都是打卡才有星。窗口内的空餐是白底，还没到窗口是灰底 `#F7F8F9`。空盘描边是同一张。口粮仍是刀叉格。
@@ -32,7 +32,10 @@
 ## 4. Current work
 
 - 打卡和零食成功后按张提交内容安全。签名不对的回调不改记录。追踪号对不上当前照片时拒绝。
-- 还没有云环境，云函数没有上传，`MEAL_MEDIA_TOKEN` 不在仓库里。页面没有改成读云端。
+- 用户页在预览关掉后调用 `me`，返回昵称和展示用账号 `cf-XXXX-XXXX`。空昵称显示「吃饭人」。
+- 纪念册在预览关掉后调用 `memorial`。没有死亡记录时列表为空。首页入口只在 `petView === 'memorial'`（当前宠物已死、冷却未结束）时出现，空列表不改首页。
+- 预览关掉后，打卡和零食在调用接口前用 `wx.cloud.uploadFile` 把临时路径换成云文件号。上传失败只提示，不打卡。预览路径不上传。
+- 还没有云环境，云函数没有上传，`MEAL_MEDIA_TOKEN` 不在仓库里。`usePreviewData` 仍为 true。
 
 ## 5. Decisions
 
@@ -53,7 +56,7 @@
 
 ## 7. Next actions
 
-1. 有云环境后，配置 `MEAL_MEDIA_TOKEN`，上传 `api` 和 `settle`，再把页面从预览数据换成云函数。现在不改界面。
+1. 有云环境后，配置 `MEAL_MEDIA_TOKEN`，上传 `api` 和 `settle`，再把 `usePreviewData` 改成 false。现在不关预览，不改界面。
 
 ## 8. References
 

@@ -108,6 +108,12 @@ describe('platform-neutral entry', () => {
     const adopt = await handle(store, who, now, { action: 'adoptView' })
     assert.equal(adopt.ok, true)
     if (adopt.ok) assert.equal((adopt.data as { canAdopt: boolean }).canAdopt, true)
+    const me = await handle(store, who, now, { action: 'me' })
+    assert.equal(me.ok, true)
+    if (me.ok) assert.match((me.data as { accountId: string }).accountId, /^cf-\d{4}-\d{4}$/)
+    const memorial = await handle(store, who, now, { action: 'memorial' })
+    assert.equal(memorial.ok, true)
+    if (memorial.ok) assert.deepEqual((memorial.data as { pets: unknown[] }).pets, [])
     assert.equal(parseRequest({ action: 'gallery', date: 'yesterday' }), null)
   })
 

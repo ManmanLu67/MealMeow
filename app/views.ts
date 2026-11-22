@@ -383,6 +383,107 @@ export async function galleryView(
   }
 }
 
+export type MeView = { nickname: string; accountId: string }
+
+/** 同一用户永远得到同一个展示用账号，不暴露登录号。 */
+export function displayAccountId(userId: string): string {
+  let hash = 2_166_136_261
+  for (let i = 0; i < userId.length; i += 1) {
+    hash ^= userId.charCodeAt(i)
+    hash = Math.imul(hash, 16_777_619)
+  }
+  const n = hash >>> 0
+  const left = String(n % 10000).padStart(4, '0')
+  const right = String(Math.floor(n / 10000) % 10000).padStart(4, '0')
+  return `cf-${left}-${right}`
+}
+
+export async function meView(store: Store, caller: Caller): Promise<MeView> {
+  const user = await requireUser(store, caller.userId)
+  const nickname = user.nickname.trim()
+  return { nickname: nickname || '吃饭人', accountId: displayAccountId(user.userId) }
+}
+
+export type MemorialCard = { id: string; name: string; photo: string }
+
+export type MemorialDetail = {
+  missing: false
+  name: string
+  photo: string
+  companyDays: number
+  mealsEaten: number
+  level: string
+  adoptedOn: string
+  diedOn: string
+  cooldownDays: number
+} | { missing: true }
+
+/**
+ * 没有死亡记录时列表是空的。首页只在冷却中的死亡态显示入口，空列表不改变首页。
+ * 当前这只已死的宠物还没写入 pastPets，所以和历史分开列。没有宠物肖像。
+ */
+export async function memorialView(
+  store: Store,
+  caller: Caller,
+  now: Date,
+  id?: string,
+): Promise<{ pets: MemorialCard[] } | MemorialDetail> {
+  const user = await requireUser(store, caller.userId)
+  const pet = await store.getPet(caller.userId)
+  const pets = memorialCards(user, pet)
+  if (id === undefined) return { pets }
+  return memorialDetail(user, pet, pets, id, now)
+}
+
+function memorialCards(user: UserDoc, pet: Awaited<ReturnType<Store['getPet']>>): MemorialCard[] {
+  const cards = user.pastPets.map((past) => ({
+    id: past.adoptedOn,
+    name: past.name || '小饭',
+    photo: '',
+  }))
+  if (pet && pet.alive === false && !cards.some((card) => card.id === pet.adoptedOn)) {
+    cards.push({ id: pet.adoptedOn, name: pet.name || '小饭', photo: '' })
+  }
+  return cards
+}
+
+function memorialDetail(
+  user: UserDoc,
+  pet: Awaited<ReturnType<Store['getPet']>>,
+  pets: readonly MemorialCard[],
+  id: string,
+  now: Date,
+): MemorialDetail {
+  if (!pets.some((card) => card.id === id)) return { missing: true }
+  const today = logicalDate(now, user.timeZone)
+  if (pet && pet.alive === false && pet.adoptedOn === id) {
+    return {
+      missing: false,
+      name: pet.name || '小饭',
+      photo: '',
+      companyDays: pet.companyDays,
+      mealsEaten: pet.mealsEaten,
+      level: String(petLevel(pet.companyDays * 24, pet.hungerLog ?? [])),
+      adoptedOn: pet.adoptedOn,
+      diedOn: pet.endedOn ?? user.diedOn ?? '',
+      cooldownDays: cooldownDaysLeft(user, today, now),
+    }
+  }
+  const past = user.pastPets.find((row) => row.adoptedOn === id)
+  if (!past) return { missing: true }
+  return {
+    missing: false,
+    name: past.name || '小饭',
+    photo: '',
+    companyDays: dayDistance(past.adoptedOn, past.diedOn) + 1,
+    mealsEaten: 0,
+    level: '—',
+    adoptedOn: past.adoptedOn,
+    diedOn: past.diedOn,
+    cooldownDays: 0,
+  }
+}
+
 /** 没有活着的宠物，并且冷却已经结束，才能领养。 */
 export async function adoptView(store: Store, caller: Caller, now: Date): Promise<AdoptView> {
   const user = await requireUser(store, caller.userId)

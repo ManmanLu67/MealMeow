@@ -2,7 +2,7 @@ import { adoptPet } from './settle.ts'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts'
 import { recordSnack, removeSnack } from './snack.ts'
 import { syncUser } from './user.ts'
-import { adoptView, galleryView, homeView } from './views.ts'
+import { adoptView, galleryView, homeView, meView, memorialView } from './views.ts'
 import { submitPhotos, submitSnackPhotos, type MediaChecker } from './media-check.ts'
 import type { Store } from './ports.ts'
 import type { MealClocks, MealType } from '../domain/index.ts'
@@ -30,6 +30,8 @@ export type Request =
   | { action: 'home' }
   | { action: 'gallery'; date?: string }
   | { action: 'adoptView' }
+  | { action: 'me' }
+  | { action: 'memorial'; id?: string }
 
 export type Response =
   | { ok: true; data?: unknown }
@@ -48,6 +50,8 @@ export const PAGE_ACTIONS = [
   'home',
   'gallery',
   'adoptView',
+  'me',
+  'memorial',
 ] as const
 
 function isMeal(value: unknown): value is MealType {
@@ -126,6 +130,11 @@ export function parseRequest(raw: unknown): Request | null {
       return { action: 'gallery', date: isDate(body.date) ? body.date : undefined }
     case 'adoptView':
       return { action: 'adoptView' }
+    case 'me':
+      return { action: 'me' }
+    case 'memorial':
+      if (body.id !== undefined && !isString(body.id)) return null
+      return { action: 'memorial', id: isString(body.id) ? body.id : undefined }
     default:
       return null
   }
@@ -192,10 +201,14 @@ export async function handle(
     }
     case 'home':
     case 'gallery':
-    case 'adoptView': {
+    case 'adoptView':
+    case 'me':
+    case 'memorial': {
       if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
       if (request.action === 'home') return { ok: true, data: await homeView(store, caller, now) }
       if (request.action === 'gallery') return { ok: true, data: await galleryView(store, caller, now, request.date) }
+      if (request.action === 'me') return { ok: true, data: await meView(store, caller) }
+      if (request.action === 'memorial') return { ok: true, data: await memorialView(store, caller, now, request.id) }
       return { ok: true, data: await adoptView(store, caller, now) }
     }
   }
