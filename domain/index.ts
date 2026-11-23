@@ -6,6 +6,7 @@ export {
   mealInstant,
   parseClock,
   canonicalTimeZone,
+  timeZoneError,
 } from './time.ts'
 export {
   MEALS,

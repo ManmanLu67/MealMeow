@@ -1,5 +1,5 @@
 import type { MealClocks } from '../domain/index.ts'
-import { STAPLE_PER_MONTH, canonicalTimeZone, stapleMonth } from '../domain/index.ts'
+import { STAPLE_PER_MONTH, canonicalTimeZone, stapleMonth, timeZoneError } from '../domain/index.ts'
 import { topUpJobs } from './schedule.ts'
 import type { Store } from './ports.ts'
 import type { UserDoc } from './types.ts'
@@ -27,7 +27,7 @@ export async function syncUser(
   input: { timeZone: string; nickname?: string },
 ): Promise<{ ok: true; created: boolean } | { ok: false; error: string }> {
   const timeZone = canonicalTimeZone(input.timeZone)
-  if (timeZone === null) return { ok: false, error: '时区无效' }
+  if (timeZone === null) return { ok: false, error: timeZoneError(input.timeZone) || 'tz_name' }
   let nickname: string | undefined
   if (input.nickname !== undefined) {
     nickname = input.nickname.trim()

@@ -19,6 +19,8 @@ import {
   inAnyWindow,
   jobReady,
   logicalDate,
+  canonicalTimeZone,
+  timeZoneError,
   mealInstant,
   mealWindow,
   mealAfter,
@@ -55,6 +57,25 @@ describe('logical day', () => {
   it('converts a New York wall clock', () => {
     const at = mealInstant('2026-11-13', '12:00', 'America/New_York')
     assert.equal(at.toISOString(), '2026-11-13T17:00:00.000Z')
+  })
+
+  it('uses a fixed offset the same way as Shanghai', () => {
+    assert.equal(canonicalTimeZone('UTC+08:00'), 'UTC+08:00')
+    assert.equal(logicalDate(new Date('2026-11-12T19:59:00Z'), 'UTC+08:00'), '2026-11-12')
+    assert.equal(logicalDate(new Date('2026-11-12T20:00:00Z'), 'UTC+08:00'), '2026-11-13')
+    assert.equal(mealInstant('2026-11-13', '03:00', 'UTC+08:00').toISOString(), '2026-11-13T19:00:00.000Z')
+  })
+
+  it('keeps the fixed offset when Intl is missing', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'Intl')
+    Object.defineProperty(globalThis, 'Intl', { value: undefined, configurable: true })
+    try {
+      assert.equal(canonicalTimeZone('UTC+08:00'), 'UTC+08:00')
+      assert.equal(canonicalTimeZone('UTC+8'), 'UTC+08:00')
+      assert.equal(timeZoneError('Asia/Shanghai'), 'tz_name:Asia/Shanghai')
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, 'Intl', descriptor)
+    }
   })
 })
 

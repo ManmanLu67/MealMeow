@@ -18,8 +18,17 @@ Page({
       wx.showToast({ title: '请设置你的昵称', icon: 'none' })
       return
     }
-    api.call('sync', { timeZone: timeZone(), nickname: nickname }).then(function (res) {
+    const sent = timeZone()
+    api.call('sync', { timeZone: sent, nickname: nickname }).then(function (res) {
       if (!res.ok) {
+        if (res.error === '时区无效' || (res.error && res.error.indexOf('tz_') === 0)) {
+          wx.showModal({
+            title: '时区无效',
+            content: res.error + '\n' + timeZoneOf.describe() + '\nsent=' + sent,
+            showCancel: false,
+          })
+          return
+        }
         wx.showToast({ title: res.error || '请设置你的昵称', icon: 'none' })
         return
       }

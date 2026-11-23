@@ -24,7 +24,25 @@ function deviceTimeZone() {
   if (named) return named
   const fromClock = canonicalTimeZone(offsetLabel())
   if (fromClock) return fromClock
-  return 'Asia/Shanghai'
+  return offsetLabel()
 }
 
-module.exports = { deviceTimeZone: deviceTimeZone }
+function describe() {
+  const lines = []
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    lines.push('reported=' + (typeof zone === 'string' ? zone : typeof zone))
+  } catch (err) {
+    lines.push('reported=' + (err && err.message ? err.message : 'throw'))
+  }
+  lines.push('offset=' + new Date().getTimezoneOffset())
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Shanghai' }).format(0)
+    lines.push('intl=ok')
+  } catch (err) {
+    lines.push('intl=' + (err && err.message ? err.message : 'throw'))
+  }
+  return lines.join('\n')
+}
+
+module.exports = { deviceTimeZone: deviceTimeZone, describe: describe }

@@ -15,6 +15,8 @@ export function addIsoDays(iso: string, days: number): string {
 }
 
 export function zonedParts(instant: Date, timeZone: string): WallClock {
+  const fixed = fixedOffsetMinutes(timeZone)
+  if (fixed !== null) return partsFromOffset(instant, fixed)
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',
@@ -120,24 +122,84 @@ const ZONE_NAMES: Record<string, string> = {
 
 /** 设备报上来的时区。IANA 名称原样留下，Windows 名称和 UTC+8 这种偏移改成 IANA。认不出就是 null。 */
 export function canonicalTimeZone(input: string): string | null {
+  return timeZoneError(input) === null ? canonicalName(input) : null
+}
+
+/**
+ * 认不出时的错误码。空是 tz_empty，名字不认识是 tz_name，偏移对不上是 tz_offset，
+ * Intl 拒绝目标时区是 tz_intl。能用时返回 null。
+ */
+export function timeZoneError(input: string): string | null {
   const raw = input.trim()
-  if (raw === '') return null
+  if (raw === '') return 'tz_empty'
+  if (acceptsTimeZone(raw)) return null
+  const named = ZONE_NAMES[raw]
+  if (named !== undefined) return acceptsTimeZone(named) ? null : 'tz_intl:' + named
+  const hours = offsetHours(raw)
+  if (hours === null) return 'tz_name:' + clipZone(raw)
+  const zone = zoneForOffset(hours)
+  if (zone === null) return 'tz_offset:' + clipZone(raw)
+  return acceptsTimeZone(zone) ? null : 'tz_intl:' + zone
+}
+
+function canonicalName(input: string): string {
+  const raw = input.trim()
   if (acceptsTimeZone(raw)) return raw
   const named = ZONE_NAMES[raw]
-  if (named !== undefined && acceptsTimeZone(named)) return named
-  const hours = offsetHours(raw)
-  if (hours === null) return null
-  const zone = zoneForOffset(hours)
-  return zone !== null && acceptsTimeZone(zone) ? zone : null
+  if (named !== undefined) return named
+  return zoneForOffset(offsetHours(raw) as number) as string
+}
+
+function clipZone(raw: string): string {
+  return raw.replace(/\s+/g, ' ').slice(0, 40)
 }
 
 export function acceptsTimeZone(timeZone: string): boolean {
+  if (fixedOffsetMinutes(timeZone) !== null) return true
+  if (!intlReady()) return false
   try {
     new Intl.DateTimeFormat('en-US', { timeZone }).format(0)
     return true
   } catch {
     return false
   }
+}
+
+function intlReady(): boolean {
+  return typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function'
+}
+
+function fixedOffsetMinutes(timeZone: string): number | null {
+  const matched = /^UTC([+-])(\d{2}):(\d{2})$/.exec(timeZone)
+  if (!matched) return null
+  const sign = matched[1] === '-' ? -1 : 1
+  const hour = Number(matched[2])
+  const minute = Number(matched[3])
+  if (hour > 14 || minute > 59) return null
+  const total = sign * (hour * 60 + minute)
+  if (total < -12 * 60 || total > 14 * 60) return null
+  return total
+}
+
+function partsFromOffset(instant: Date, offsetMinutes: number): WallClock {
+  const shifted = new Date(instant.getTime() + offsetMinutes * 60_000)
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+  }
+}
+
+function fixedLabel(hours: number): string | null {
+  if (hours < -12 || hours > 14) return null
+  const sign = hours >= 0 ? '+' : '-'
+  const abs = Math.abs(hours)
+  const hour = Math.floor(abs)
+  const minute = Math.round((abs - hour) * 60)
+  if (minute > 59) return null
+  return `UTC${sign}${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 function offsetHours(raw: string): number | null {
@@ -152,6 +214,7 @@ function offsetHours(raw: string): number | null {
 }
 
 function zoneForOffset(hours: number): string | null {
+  if (!intlReady()) return fixedLabel(hours)
   if (hours === 8) return 'Asia/Shanghai'
   if (hours === 0) return 'UTC'
   if (hours === 9) return 'Asia/Tokyo'
@@ -164,6 +227,8 @@ function zoneForOffset(hours: number): string | null {
 }
 
 function zoneOffsetMs(instant: Date, timeZone: string): number {
+  const fixed = fixedOffsetMinutes(timeZone)
+  if (fixed !== null) return fixed * 60_000
   const wall = zonedParts(instant, timeZone)
   const wallAsUtc = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, 0)
   return wallAsUtc - instant.getTime()
