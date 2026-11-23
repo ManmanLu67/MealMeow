@@ -194,7 +194,13 @@ Page({
     const meal = event.currentTarget.dataset.meal
     const chip = this.data.chips.filter(function (item) { return item.meal === meal })[0]
     if (!chip) return
-    if (chip.tone === 'now' || chip.tone === 'done' || chip.tone === 'staple') this.goCheckin(meal)
+    if (chip.tone === 'now') {
+      const action = this.data.camera
+      const meals = action && action.type === 'pick' ? action.meals : [{ meal: chip.meal, name: chip.name }]
+      this.setData({ sheet: 'pick', pickMeals: meals, showSnack: true })
+      return
+    }
+    if (chip.tone === 'done' || chip.tone === 'staple') this.goCheckin(meal)
   },
 
   onCamera() {

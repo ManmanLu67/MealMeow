@@ -80,6 +80,7 @@
 .cam-press { opacity: 0.72; }
 .cam-img { width: 168rpx; height: 168rpx; }
 
+.sheet-pick { padding-bottom: calc(176rpx + env(safe-area-inset-bottom)); }
 .pick-row { margin-top: 24rpx; }
 .kv { display: flex; align-items: center; justify-content: space-between; min-height: 96rpx; border-bottom: 2rpx solid #DFE4E1; }
 .sheet-note { display: block; margin-top: 24rpx; }

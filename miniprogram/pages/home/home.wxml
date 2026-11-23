@@ -23,9 +23,9 @@
 
   <view class="center">
   <view wx:if="{{petView === 'pasture'}}" class="pasture">
-    <view class="adopt" bindtap="goAdopt">
-      <image class="person" src="/assets/icon/person.png" mode="aspectFit"></image>
-      <text class="adopt-label">领养</text>
+    <view class="adopt">
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtap="onPetTap"></image>
+      <text class="adopt-label" bindtap="goAdopt">领养</text>
     </view>
   </view>
   <view wx:if="{{petView === 'pasture' && photos.length}}" class="stage" style="transform: scale({{stageScale}});">
@@ -54,9 +54,9 @@
       </view>
     </block>
 
-    <view wx:else class="adopt" bindtap="goAdopt">
-      <image class="person" src="/assets/icon/person.png" mode="aspectFit"></image>
-      <text class="adopt-label">领养</text>
+    <view wx:else class="adopt">
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtap="onPetTap"></image>
+      <text class="adopt-label" bindtap="goAdopt">领养</text>
     </view>
 
     <image wx:if="{{showBag}}" class="bag" src="/assets/icon/bag.png" mode="aspectFit"></image>
@@ -76,7 +76,7 @@
 
   <block wx:if="{{sheet === 'pick'}}">
     <view class="mask" bindtap="closeSheet"></view>
-    <view class="sheet">
+    <view class="sheet sheet-pick">
       <view class="sheet-grip"></view>
       <text class="t-title">选择打卡</text>
       <view
