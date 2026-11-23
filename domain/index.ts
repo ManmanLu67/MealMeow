@@ -5,6 +5,7 @@ export {
   logicalDayStart,
   mealInstant,
   parseClock,
+  canonicalTimeZone,
 } from './time.ts'
 export {
   MEALS,

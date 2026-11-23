@@ -1,6 +1,7 @@
 import { adoptPet } from './settle.ts'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts'
 import { recordSnack, removeSnack } from './snack.ts'
+import { closeAccount } from './backup.ts'
 import { syncUser } from './user.ts'
 import { adoptView, galleryView, homeView, meView, memorialView } from './views.ts'
 import { submitPhotos, submitSnackPhotos, type MediaChecker } from './media-check.ts'
@@ -32,6 +33,7 @@ export type Request =
   | { action: 'adoptView' }
   | { action: 'me' }
   | { action: 'memorial'; id?: string }
+  | { action: 'closeAccount' }
 
 export type Response =
   | { ok: true; data?: unknown }
@@ -52,6 +54,7 @@ export const PAGE_ACTIONS = [
   'adoptView',
   'me',
   'memorial',
+  'closeAccount',
 ] as const
 
 function isMeal(value: unknown): value is MealType {
@@ -142,6 +145,8 @@ export function parseRequest(raw: unknown): Request | null {
     case 'memorial':
       if (body.id !== undefined && !isString(body.id)) return null
       return { action: 'memorial', id: isString(body.id) ? body.id : undefined }
+    case 'closeAccount':
+      return { action: 'closeAccount' }
     default:
       return null
   }
@@ -208,6 +213,10 @@ export async function handle(
     case 'adopt': {
       const result = await adoptPet(store, caller, now, { name: request.name, species: request.species })
       return result.ok ? { ok: true, data: { name: result.name } } : result
+    }
+    case 'closeAccount': {
+      const result = await closeAccount(store, caller.userId)
+      return result.ok ? { ok: true, data: { photos: result.photos } } : result
     }
     case 'home':
     case 'gallery':

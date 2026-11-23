@@ -1,11 +1,8 @@
 const api = require('../../utils/api.js')
+const timeZoneOf = require('../../utils/time-zone.js')
 
 function timeZone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai'
-  } catch (err) {
-    return 'Asia/Shanghai'
-  }
+  return timeZoneOf.deviceTimeZone()
 }
 
 Page({

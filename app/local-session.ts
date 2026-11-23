@@ -42,6 +42,13 @@ function hideMissing(data: unknown, fileExists: (path: string) => boolean): unkn
   return body
 }
 
+function closedPhotos(result: Response): string[] {
+  if (!result.ok || typeof result.data !== 'object' || result.data === null) return []
+  const photos = (result.data as { photos?: unknown }).photos
+  if (!Array.isArray(photos)) return []
+  return photos.filter((item): item is string => typeof item === 'string')
+}
+
 function finish(result: Response, droppedPhotos: string[], fileExists?: (path: string) => boolean): LocalResponse {
   if (!result.ok) return result
   const data = fileExists && result.data !== undefined ? hideMissing(result.data, fileExists) : result.data
@@ -79,5 +86,8 @@ export async function openLocal(
   }
   await runDueJobs(store, now)
   const droppedPhotos = await clearExpiredPhotos(store, caller, now)
-  return finish(await handle(store, caller, now, raw), droppedPhotos, fileExists)
+  const result = await handle(store, caller, now, raw)
+  const extra = action === 'closeAccount' ? closedPhotos(result) : []
+  const shown = action === 'closeAccount' && result.ok ? { ok: true as const } : result
+  return finish(shown, [...droppedPhotos, ...extra], fileExists)
 }

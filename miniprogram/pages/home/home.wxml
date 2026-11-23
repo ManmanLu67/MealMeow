@@ -24,18 +24,18 @@
   <view class="center">
   <view wx:if="{{petView === 'pasture'}}" class="stage" style="transform: scale({{stageScale}});">
     <view class="adopt">
-      <image class="person" src="/assets/icon/person.webp" mode="aspectFit" bindtap="onPetTap"></image>
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtouchstart="onPetTouchStart" bindtouchend="onPetTouchEnd" bindtap="onPetTap"></image>
       <text class="adopt-label" bindtap="goAdopt">领养</text>
     </view>
     <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
-      <image class="polaroid-pin" src="/assets/icon/pin.webp" mode="aspectFit"></image>
+      <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
       <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
     </view>
   </view>
 
   <view wx:if="{{petView !== 'pasture'}}" class="stage" style="transform: scale({{stageScale}});">
     <view wx:if="{{showMemorial}}" class="memo-mark" catchtap="openMemorial">
-      <image class="album-img" src="/assets/icon/album.webp" mode="aspectFit"></image>
+      <image class="album-img" src="/assets/icon/album.png" mode="aspectFit"></image>
     </view>
 
     <block wx:if="{{petView === 'living'}}">
@@ -45,22 +45,24 @@
         mode="aspectFit"
         bindtap="onPetTap"
         bindlongpress="openPet"
+        bindtouchstart="onPetTouchStart"
+        bindtouchend="onPetTouchEnd"
       ></image>
       <view class="bowl" aria-label="{{bowlFill > 0 ? '食盘（有丸子）' : '食盘（空）'}}">
-        <image class="bowl-plate" src="/assets/icon/bowl-plate.webp" mode="aspectFit"></image>
-        <image wx:if="{{bowlFill > 0}}" class="bowl-kibble" style="opacity: {{bowlOpacity}};" src="/assets/icon/bowl-kibble.webp" mode="aspectFit"></image>
+        <image class="bowl-plate" src="/assets/icon/bowl-plate.png" mode="aspectFit"></image>
+        <image wx:if="{{bowlFill > 0}}" class="bowl-kibble" style="opacity: {{bowlOpacity}};" src="/assets/icon/bowl-kibble.png" mode="aspectFit"></image>
       </view>
     </block>
 
     <view wx:else class="adopt">
-      <image class="person" src="/assets/icon/person.webp" mode="aspectFit" bindtap="onPetTap"></image>
+      <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtouchstart="onPetTouchStart" bindtouchend="onPetTouchEnd" bindtap="onPetTap"></image>
       <text class="adopt-label" bindtap="goAdopt">领养</text>
     </view>
 
-    <image wx:if="{{showBag}}" class="bag" src="/assets/icon/bag.webp" mode="aspectFit"></image>
+    <image wx:if="{{showBag}}" class="bag" src="/assets/icon/bag.png" mode="aspectFit"></image>
 
     <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
-      <image class="polaroid-pin" src="/assets/icon/pin.webp" mode="aspectFit"></image>
+      <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
       <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
     </view>
   </view>

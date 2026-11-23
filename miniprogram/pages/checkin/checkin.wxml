@@ -10,11 +10,11 @@
   <view class="preview">
     <image wx:if="{{photos.length}}" class="preview-img" src="{{photos[0]}}" mode="aspectFill"></image>
     <block wx:elif="{{staple}}">
-      <image class="preview-icon" src="/assets/icon/cutlery.webp" mode="aspectFit"></image>
+      <image class="preview-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
       <text class="t-caption">本餐已用应急口粮，记录为空</text>
     </block>
     <block wx:else>
-      <image class="preview-icon" src="/assets/icon/camera-muted.webp" mode="aspectFit"></image>
+      <image class="preview-icon" src="/assets/icon/camera-muted.png" mode="aspectFit"></image>
       <text class="t-caption">{{mode === 'snack' ? '记录一份零食' : '拍一张今天的饭'}}</text>
     </block>
     <view wx:if="{{photos.length > 1}}" class="preview-count"><text class="t-caption count-text">共 {{photos.length}} 张</text></view>
@@ -68,6 +68,17 @@
       <view class="dialog-actions">
         <view class="btn btn-secondary dialog-actions-btn" bindtap="closeDialog" hover-class="btn-secondary-on"><text>取消</text></view>
         <view class="btn btn-primary dialog-actions-btn" bindtap="confirmStaple" hover-class="btn-primary-on"><text class="t-label">使用</text></view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{dialog === 'remind'}}">
+    <view class="mask"></view>
+    <view class="dialog">
+      <text class="t-title">是否订阅明天的打卡提醒？</text>
+      <view class="dialog-actions">
+        <view class="btn btn-secondary dialog-actions-btn" bindtap="declineRemind" hover-class="btn-secondary-on"><text>暂不</text></view>
+        <view class="btn btn-primary dialog-actions-btn" bindtap="acceptRemind" hover-class="btn-primary-on"><text class="t-label">订阅</text></view>
       </view>
     </view>
   </block>

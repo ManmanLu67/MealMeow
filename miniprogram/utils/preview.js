@@ -117,9 +117,9 @@ function homeView(name) {
     species: 'cat',
     // 当天打过卡、并且有照片的餐，留在首页对应的拍立得上。平时的 living 没有照片。
     photos: name === 'idle' ? [
-      { meal: 'breakfast', src: '/assets/preview/breakfast.webp' },
-      { meal: 'lunch', src: '/assets/preview/lunch.webp' },
-      { meal: 'dinner', src: '/assets/preview/lunch.webp' },
+      { meal: 'breakfast', src: '/assets/preview/breakfast.png' },
+      { meal: 'lunch', src: '/assets/preview/lunch.png' },
+      { meal: 'dinner', src: '/assets/preview/lunch.png' },
     ] : [],
     companyDays: memorial ? 12 : 18,
     mealsEaten: memorial ? 30 : 41,
@@ -165,30 +165,30 @@ const GALLERY_DAYS = [
 function galleryMeals(kind) {
   if (kind === 'today') {
     return [
-      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.webp', 'photo'),
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
       mealSlot('lunch', '午餐', '', 'window'),
       mealSlot('dinner', '晚餐', '', 'waiting'),
     ]
   }
   if (kind === 'partial') {
     return [
-      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.webp', 'photo'),
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
       mealSlot('lunch', '午餐', '', 'empty'),
       mealSlot('dinner', '晚餐', '', 'empty'),
     ]
   }
   if (kind === 'full') {
     return [
-      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.webp', 'photo'),
-      mealSlot('lunch', '午餐', '/assets/preview/lunch.webp', 'photo'),
-      mealSlot('dinner', '晚餐', '/assets/preview/lunch.webp', 'photo'),
+      mealSlot('breakfast', '早餐', '/assets/preview/breakfast.png', 'photo'),
+      mealSlot('lunch', '午餐', '/assets/preview/lunch.png', 'photo'),
+      mealSlot('dinner', '晚餐', '/assets/preview/lunch.png', 'photo'),
     ]
   }
   return EMPTY_MEALS
 }
 
 function gallerySnacks(show) {
-  return show ? [{ startedAt: '2026-11-13T06:00:00.000Z', photo: '/assets/preview/lunch.webp', count: 1 }] : []
+  return show ? [{ startedAt: '2026-11-13T06:00:00.000Z', photo: '/assets/preview/lunch.png', count: 1 }] : []
 }
 
 function galleryView(name) {
@@ -227,7 +227,7 @@ const MEMORIALS = [
   {
     id: 'fan',
     name: '小饭',
-    photo: '/assets/preview/lunch.webp',
+    photo: '/assets/preview/lunch.png',
     companyDays: 12,
     mealsEaten: 30,
     level: '1',
@@ -238,7 +238,7 @@ const MEMORIALS = [
   {
     id: 'tuan',
     name: '团团',
-    photo: '/assets/preview/breakfast.webp',
+    photo: '/assets/preview/breakfast.png',
     companyDays: 40,
     mealsEaten: 90,
     level: '3',

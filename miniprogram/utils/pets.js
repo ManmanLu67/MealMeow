@@ -4,32 +4,32 @@ const SPECIES = ['cat', 'samoyed', 'parrot', 'goldfish']
 const PETS = {
   cat: {
     name: '猫',
-    calm: '/assets/pet/cat.webp',
-    hungry: '/assets/pet/cat.webp',
-    critical: '/assets/pet/cat.webp',
-    camera: '/assets/pet/camera-cat.webp',
+    calm: '/assets/pet/cat.png',
+    hungry: '/assets/pet/cat.png',
+    critical: '/assets/pet/cat.png',
+    camera: '/assets/pet/camera-cat.png',
   },
   samoyed: {
     name: '狗',
-    calm: '/assets/pet/samoyed.webp',
-    hungry: '/assets/pet/samoyed-hungry.webp',
-    critical: '/assets/pet/samoyed-critical.webp',
-    camera: '/assets/pet/camera-samoyed.webp',
+    calm: '/assets/pet/samoyed.png',
+    hungry: '/assets/pet/samoyed-hungry.png',
+    critical: '/assets/pet/samoyed-critical.png',
+    camera: '/assets/pet/camera-samoyed.png',
   },
   parrot: {
     name: '鸟',
-    calm: '/assets/pet/parrot.webp',
-    hungry: '/assets/pet/parrot-hungry.webp',
-    critical: '/assets/pet/parrot-critical.webp',
-    camera: '/assets/pet/camera-parrot.webp',
+    calm: '/assets/pet/parrot.png',
+    hungry: '/assets/pet/parrot-hungry.png',
+    critical: '/assets/pet/parrot-critical.png',
+    camera: '/assets/pet/camera-parrot.png',
   },
   // 设计稿里金鱼没有「很饿」这一张，很饿沿用平时的鱼缸。
   goldfish: {
     name: '鱼',
-    calm: '/assets/pet/goldfish.webp',
-    hungry: '/assets/pet/goldfish.webp',
-    critical: '/assets/pet/goldfish-critical.webp',
-    camera: '/assets/pet/camera-goldfish.webp',
+    calm: '/assets/pet/goldfish.png',
+    hungry: '/assets/pet/goldfish.png',
+    critical: '/assets/pet/goldfish-critical.png',
+    camera: '/assets/pet/camera-goldfish.png',
   },
 }
 

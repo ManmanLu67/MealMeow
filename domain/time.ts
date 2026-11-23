@@ -103,6 +103,66 @@ export function minutesFromDayStart(clockMinutes: number): number {
   return (clockMinutes - DAY_START_MINUTES + 1440) % 1440
 }
 
+const ZONE_NAMES: Record<string, string> = {
+  中国标准时间: 'Asia/Shanghai',
+  'China Standard Time': 'Asia/Shanghai',
+  台北標準時間: 'Asia/Taipei',
+  'Taipei Standard Time': 'Asia/Taipei',
+  东京标准时间: 'Asia/Tokyo',
+  'Tokyo Standard Time': 'Asia/Tokyo',
+  太平洋标准时间: 'America/Los_Angeles',
+  'Pacific Standard Time': 'America/Los_Angeles',
+  东部标准时间: 'America/New_York',
+  'Eastern Standard Time': 'America/New_York',
+  格林威治标准时间: 'UTC',
+  'Coordinated Universal Time': 'UTC',
+}
+
+/** 设备报上来的时区。IANA 名称原样留下，Windows 名称和 UTC+8 这种偏移改成 IANA。认不出就是 null。 */
+export function canonicalTimeZone(input: string): string | null {
+  const raw = input.trim()
+  if (raw === '') return null
+  if (acceptsTimeZone(raw)) return raw
+  const named = ZONE_NAMES[raw]
+  if (named !== undefined && acceptsTimeZone(named)) return named
+  const hours = offsetHours(raw)
+  if (hours === null) return null
+  const zone = zoneForOffset(hours)
+  return zone !== null && acceptsTimeZone(zone) ? zone : null
+}
+
+export function acceptsTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone }).format(0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function offsetHours(raw: string): number | null {
+  const text = raw.replace(/\s+/g, '').toUpperCase()
+  const matched = /^(?:UTC|GMT)?([+-])(\d{1,2})(?::?(\d{2}))?$/.exec(text)
+  if (!matched) return null
+  const sign = matched[1] === '-' ? -1 : 1
+  const hour = Number(matched[2])
+  const minute = matched[3] === undefined ? 0 : Number(matched[3])
+  if (hour > 14 || minute > 59) return null
+  return sign * (hour + minute / 60)
+}
+
+function zoneForOffset(hours: number): string | null {
+  if (hours === 8) return 'Asia/Shanghai'
+  if (hours === 0) return 'UTC'
+  if (hours === 9) return 'Asia/Tokyo'
+  if (hours === 5.5) return 'Asia/Kolkata'
+  if (hours === -5) return 'America/New_York'
+  if (hours === -8) return 'America/Los_Angeles'
+  if (hours === 1) return 'Europe/Berlin'
+  if (!Number.isInteger(hours) || hours < -12 || hours > 14) return null
+  return `Etc/GMT${hours > 0 ? '-' : '+'}${Math.abs(hours)}`
+}
+
 function zoneOffsetMs(instant: Date, timeZone: string): number {
   const wall = zonedParts(instant, timeZone)
   const wallAsUtc = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, 0)

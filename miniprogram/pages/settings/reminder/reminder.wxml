@@ -11,6 +11,6 @@
   </view>
 
   <view class="notes">
-    <text class="t-caption">首页红点会在未打卡时提示。</text>
+    <text class="t-caption">这是一次性提醒，每次同意只收到一条。打卡成功后也会询问要不要订阅明天。首页红点仍会在未打卡时提示。</text>
   </view>
 </view>

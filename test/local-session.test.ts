@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
 import { openLocal } from '../app/local-session.ts'
-import { mustPet, seededStore, user } from './fixtures.ts'
+import { mustPet, record, seededStore, user } from './fixtures.ts'
 
 const inside = new Date('2026-11-13T04:10:00.000Z')
 const after = new Date('2026-11-13T05:00:00.000Z')
@@ -59,5 +59,15 @@ describe('local session', () => {
     assert.equal(imported.ok, true)
     assert.equal((await phone.getUser('phone'))?.nickname, '阿喵')
     assert.equal(await phone.getUser('other'), null)
+  })
+
+  it('deletes the account and hands its photos back for removal', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({ photos: ['wxfile://lunch.jpg'] }))
+    const result = await openLocal(store, caller, inside, { action: 'closeAccount' })
+    assert.equal(result.ok, true)
+    if (result.ok) assert.deepEqual(result.droppedPhotos, ['wxfile://lunch.jpg'])
+    assert.equal(await store.getUser('u'), null)
+    assert.equal(await store.getPet('u'), null)
   })
 })

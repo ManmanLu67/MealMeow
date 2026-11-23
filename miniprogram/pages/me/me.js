@@ -23,4 +23,25 @@ Page({
       self.setData({ nickname: nickname, initial: nickname.slice(0, 1), accountId: data.accountId || '' })
     })
   },
+
+  closeAccount() {
+    wx.showModal({
+      title: '注销账号',
+      content: '这台手机上的打卡、宠物和照片会删掉，不能恢复。',
+      confirmText: '注销',
+      confirmColor: '#B84E0C',
+      success(res) {
+        if (!res.confirm) return
+        api.call('closeAccount', {}).then(function (result) {
+          if (!result.ok) {
+            wx.showToast({ title: result.error || '注销失败', icon: 'none' })
+            return
+          }
+          wx.removeStorageSync('localUserId')
+          wx.removeStorageSync('subscribeState')
+          wx.reLaunch({ url: '/pages/start/start' })
+        })
+      },
+    })
+  },
 })

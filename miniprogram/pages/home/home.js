@@ -4,6 +4,8 @@ const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
 const labels = require('../../utils/labels.js')
 const pets = require('../../utils/pets.js')
+const feedback = require('../../utils/feedback.js')
+const timeZoneOf = require('../../utils/time-zone.js')
 
 const MEAL_META = {
   breakfast: { name: '早餐', time: '07:30' },
@@ -31,8 +33,8 @@ function toneOf(state) {
 Page({
   data: {
     padTop: 88,
-    hungerText: '—',
-    healthText: '—',
+    hungerText: '0%',
+    healthText: '100',
     levelText: '—',
     badge: false,
     chips: [],
@@ -103,7 +105,7 @@ Page({
         wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
         return null
       }
-      return api.call('sync', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(function () {
+      return api.call('sync', { timeZone: timeZoneOf.deviceTimeZone() }).then(function () {
         return api.call('home', {})
       })
     }).then(function (res) {
@@ -179,7 +181,7 @@ Page({
       bowlOpacity: bowlFill / 100,
       species: species,
       petSrc: pets.art(species, view.band),
-      cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.webp',
+      cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.png',
       photos: photosOf(view.photos),
       showBag: chips.some(function (chip) { return chip.tone === 'staple' }),
       showMemorial: showMemorial,
@@ -233,8 +235,26 @@ Page({
     wx.navigateTo({ url: '/pages/adopt/adopt' + (this.previewState ? '?state=' + this.previewState : '') })
   },
 
+  onPetTouchStart(event) {
+    const touch = event.touches && event.touches[0]
+    this.petTouchY = touch ? touch.clientY : 0
+    this.petSwiped = false
+  },
+
+  onPetTouchEnd(event) {
+    const touch = event.changedTouches && event.changedTouches[0]
+    const y = touch ? touch.clientY : this.petTouchY
+    if (typeof this.petTouchY === 'number' && this.petTouchY - y > 30) this.petSwiped = true
+  },
+
   onPetTap() {
-    if (wx.vibrateShort) wx.vibrateShort({ type: 'light' })
+    if (this.petSwiped) {
+      this.petSwiped = false
+      feedback.play('pet')
+    } else {
+      feedback.play('tap')
+    }
+    feedback.vibrate()
   },
 
   openPet() {

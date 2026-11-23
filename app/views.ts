@@ -103,7 +103,7 @@ function cameraOf(states: readonly ChipState[]): HomeCamera {
 
 const LEVEL_LOOKBACK_DAYS = 120
 
-/** 最近两天里最后一次算数的进食，回看期内最早的一次，以及最近一次真正的打卡。没有记录时饥饿按 100%。 */
+/** 最近两天里最后一次算数的进食，回看期内最早的一次，以及最近一次真正的打卡。还没吃过时饥饿是 0%。 */
 async function checkinSpan(
   store: Store,
   userId: string,
@@ -140,7 +140,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   const records = await store.listRecords(caller.userId, today)
   const states = chipStates(user, today, now, records)
   const span = await checkinSpan(store, caller.userId, today, records)
-  let hungerPercent = 100
+  let hungerPercent = 0
   if (span.latest) {
     const next = nextMealAt(
       span.latest.date,
@@ -191,7 +191,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     mealsEaten: pet?.mealsEaten ?? 0,
     cooldownDays: cooldownDaysLeft(user, today, now),
     hungerText: `${hungerPercent}%`,
-    healthText: pet ? String(healthScore(pet.hunger)) : '—',
+    healthText: String(healthScore(pet?.hunger ?? 0)),
     levelText: pet
       ? String(petLevel(hours, (pet.hungerLog ?? []).filter((day) => day.date < today)))
       : '—',

@@ -118,6 +118,28 @@ async function clearAccount(store: Store, userId: string): Promise<void> {
   await store.deleteUser(userId)
 }
 
+async function accountPhotos(store: Store, userId: string): Promise<string[]> {
+  const photos: string[] = []
+  for (const date of await store.listDates(userId)) {
+    for (const row of await store.listRecords(userId, date)) photos.push(...row.photos)
+    for (const snack of await store.listSnacks(userId, date)) photos.push(...snack.photos)
+  }
+  return photos
+}
+
+/** 注销：删掉这个用户的记录、宠物和账号。照片路径交给调用方删文件。 */
+export async function closeAccount(
+  store: Store,
+  userId: string,
+): Promise<{ ok: true; photos: string[] } | { ok: false; error: string }> {
+  return store.runExclusive(userId, async () => {
+    if ((await store.getUser(userId)) === null) return { ok: false, error: 'no_user' }
+    const photos = await accountPhotos(store, userId)
+    await clearAccount(store, userId)
+    return { ok: true, photos }
+  })
+}
+
 export async function exportBackup(store: Store, userId: string): Promise<LocalBackup> {
   return store.runExclusive(userId, async () => {
     const found = await store.getUser(userId)

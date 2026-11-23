@@ -38,7 +38,10 @@
 - 图鉴里没有照片、但已经打卡的格子（`kept`）不算空白。
 - 2026-11-23：微信开发者工具里已确认昵称、打卡、图鉴、备份、饭点选择和领养点击。云函数没有上传。
 - `app.json` 已打开 `__usePrivacyCheck__`。打卡页和关于页在调用相册、相机、聊天文件前弹出授权。后台的《隐私保护指引》仍要在公众平台填写。
-- 2026-11-23：代码质量三项。`project.config.json` 的 `minified` 改为 true（该文件不入库）。`app.json` 增加 `lazyCodeLoading: requiredComponents`。图片和音频按目录合计，原先 530KB，单项都不到 200KB 仍算未通过。除底栏 `assets/tab/*.png` 外，静态图改成无损 WebP，像素与原来一致，合计 160KB。底栏图标仍是 png。
+- 2026-11-23：代码质量三项。`project.config.json` 的 `minified` 改为 true（该文件不入库）。`app.json` 增加 `lazyCodeLoading: requiredComponents`。图片和音频按目录合计，原先 530KB，单项都不到 200KB 仍算未通过。静态图曾改成 WebP，开发者工具里不显示，已恢复原来的 PNG。音效四个短 wav 在 `miniprogram/assets/audio/`，默认关。
+- 2026-11-23：昵称页的「时区无效」是因为微信报上来的时区名不是 IANA。`中国标准时间`、`UTC+8` 会收成 `Asia/Shanghai`。认不出名字时按本机偏移再选一次。
+- 2026-11-23：还没吃过饭时，首页饥饿是 0%，健康是 100。没宠物也是这个数。漏餐之后仍按原规则涨。
+- 「我的」底部有「注销账号」。确认后删掉本机用户、宠物、打卡、零食和照片文件，回到昵称页。声音开关留在这台手机上。
 
 ## 5. Decisions
 
@@ -61,7 +64,8 @@
 
 ## 7. Next actions
 
-1. 在小程序后台的用户隐私保护指引里声明：相册、相机、选中的文件。然后决定 `feat/views` 上未提交的改动怎么收。云函数先不上传。
+1. 模板是一次性订阅，写在 `miniprogram/utils/config.js`。三餐打卡成功后询问是否订阅明天的提醒，点「订阅」才调用 `wx.requestSubscribeMessage`。真正发消息仍要云函数，这一版不下发。
+2. 在小程序后台的用户隐私保护指引里声明：相册、相机、选中的文件。然后决定 `feat/views` 上未提交的改动怎么收。云函数先不上传。
 
 ## 8. References
 

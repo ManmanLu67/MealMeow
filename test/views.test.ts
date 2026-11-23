@@ -14,6 +14,20 @@ async function markComplete(store: Store, dates: readonly string[]): Promise<voi
 }
 
 describe('home view', () => {
+  it('starts at 0% hunger and full health before any meal', async () => {
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const bare = await seededStore({}, null)
+    const empty = await homeView(bare, { userId: 'u' }, now)
+    assert.equal(empty.petView, 'pasture')
+    assert.equal(empty.hungerText, '0%')
+    assert.equal(empty.healthText, '100')
+
+    const adopted = await seededStore({}, { hunger: 0 })
+    const fresh = await homeView(adopted, { userId: 'u' }, now)
+    assert.equal(fresh.hungerText, '0%')
+    assert.equal(fresh.healthText, '100')
+  })
+
   it('a pending review is not a badge and does not change the band', async () => {
     const now = new Date('2026-11-13T04:10:00.000Z')
     const store = await seededStore({}, { hunger: 6 })

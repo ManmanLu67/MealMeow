@@ -103,6 +103,12 @@ describe('tasks exist for every meal', () => {
     const moved = await syncUser(store, caller, now, { timeZone: SH })
     assert.equal(moved.ok && moved.created, false)
     assert.equal((await store.getUser('u'))?.timeZone, SH)
+    const windows = await syncUser(store, { userId: 'win' }, now, { timeZone: '中国标准时间', nickname: '阿喵' })
+    assert.equal(windows.ok, true)
+    assert.equal((await store.getUser('win'))?.timeZone, SH)
+    const offset = await syncUser(store, { userId: 'off' }, now, { timeZone: 'UTC+8', nickname: '阿喵' })
+    assert.equal(offset.ok, true)
+    assert.equal((await store.getUser('off'))?.timeZone, SH)
   })
 })
 

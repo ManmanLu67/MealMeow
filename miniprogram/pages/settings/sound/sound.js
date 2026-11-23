@@ -1,3 +1,5 @@
+const feedback = require('../../../utils/feedback.js')
+
 // 声音与震动。音效默认关，震动默认开（DESIGN.md 7.5）。
 // 偏好存在本机，不上云：这是设备上的体验设置，不是产品规则。
 Page({
@@ -11,8 +13,10 @@ Page({
   },
 
   onSound(event) {
-    wx.setStorageSync('sound', event.detail.value)
-    this.setData({ sound: event.detail.value })
+    const on = !!event.detail.value
+    wx.setStorageSync('sound', on)
+    this.setData({ sound: on })
+    if (on) feedback.play('tap')
   },
 
   onHaptics(event) {

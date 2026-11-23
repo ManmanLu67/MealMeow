@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { handle, parseRequest, PAGE_ACTIONS } from '../app/handle.ts'
 import { syncUser } from '../app/user.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
-import { seededStore, SH } from './fixtures.ts'
+import { record, seededStore, SH } from './fixtures.ts'
 
 const now = new Date('2026-11-13T04:10:00.000Z') // 上海 12:10，午餐窗口内
 
@@ -19,6 +19,41 @@ describe('platform-neutral entry', () => {
     assert.equal(result.ok, true)
     assert.notEqual(await store.getRecord('self', '2026-11-13', 'lunch'), null)
     assert.equal(await store.getRecord('other', '2026-11-13', 'lunch'), null)
+  })
+
+  it('closes the account and returns the photo files to delete', async () => {
+    const store = await seededStore()
+    await store.saveUser({
+      userId: 'other',
+      nickname: '别人',
+      timeZone: SH,
+      meals: { breakfast: '07:30', lunch: '12:00', dinner: '18:00' },
+      pendingMeals: null,
+      stapleLeft: 2,
+      stapleMonth: '2026-11',
+      cooldownUntil: null,
+      adoptedOn: null,
+      diedOn: null,
+      pastPets: [],
+    })
+    await store.saveRecord(record({ photos: ['wxfile://lunch.jpg'] }))
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: '2026-11-13T01:00:00.000Z',
+      photos: ['wxfile://snack.jpg'],
+      photoReviews: ['pending'],
+      hidden: false,
+    })
+    const result = await handle(store, { userId: 'u' }, now, { action: 'closeAccount' })
+    assert.equal(result.ok, true)
+    if (result.ok) assert.deepEqual(result.data, { photos: ['wxfile://lunch.jpg', 'wxfile://snack.jpg'] })
+    assert.equal(await store.getUser('u'), null)
+    assert.equal(await store.getPet('u'), null)
+    assert.equal(await store.getRecord('u', '2026-11-13', 'lunch'), null)
+    assert.deepEqual(await store.listSnacks('u', '2026-11-13'), [])
+    assert.equal((await store.getUser('other'))?.nickname, '别人')
+    assert.equal(parseRequest({ action: 'closeAccount', userId: 'other' })?.action, 'closeAccount')
   })
 
   it('has no page action that can write a review result', () => {
