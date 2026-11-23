@@ -5,6 +5,7 @@ const config = require('../../utils/config.js')
 const feedback = require('../../utils/feedback.js')
 const preview = require('../../utils/preview.js')
 const labels = require('../../utils/labels.js')
+const remind = require('../../utils/remind.js')
 
 const MAX_PHOTOS = 9
 
@@ -51,10 +52,11 @@ Page({
     wx.navigateBack({ fail() { wx.switchTab({ url: '/pages/home/home' }) } })
   },
 
-  afterCheckin() {
+  afterCheckin(leave) {
     const ids = templateIds()
-    if (this.data.mode === 'snack' || !ids.length) {
-      if (!config.usePreviewData) this.close()
+    this.leaveAfterRemind = !!leave
+    if (this.data.mode === 'snack' || !ids.length || !remind.enabled()) {
+      if (leave && !config.usePreviewData) this.close()
       return
     }
     this.setData({ dialog: 'remind' })
@@ -69,16 +71,26 @@ Page({
     }
     wx.requestSubscribeMessage({
       tmplIds: ids.slice(0, 3),
+      success(res) {
+        const answer = res[ids[0]]
+        if (answer === 'accept' || answer === 'acceptWithAudio' || answer === 'acceptWithAlert') {
+          remind.armAfter(page.date, page.meal)
+        } else {
+          remind.clear()
+        }
+      },
+      fail() { remind.clear() },
       complete() {
         page.setData({ dialog: '' })
-        if (!config.usePreviewData) page.close()
+        if (page.leaveAfterRemind && !config.usePreviewData) page.close()
       },
     })
   },
 
   declineRemind() {
+    remind.clear()
     this.setData({ dialog: '' })
-    if (!config.usePreviewData) this.close()
+    if (this.leaveAfterRemind && !config.usePreviewData) this.close()
   },
 
   // 拍照和相册只往预览里加图，不写库。
@@ -125,7 +137,7 @@ Page({
       this.setData({ checked: true, checkedAt: '12:06' })
       feedback.play(this.data.mode === 'snack' ? 'checkin' : 'eat')
       wx.showToast({ title: this.data.mode === 'snack' ? '已记录零食' : '已打卡', icon: 'success' })
-      this.afterCheckin()
+      this.afterCheckin(true)
       return
     }
     // 三餐传餐次，零食只传照片。日期和窗口由本机按设备时区判断。
@@ -142,7 +154,7 @@ Page({
       }
       self.setData({ checked: true })
       feedback.play(self.data.mode === 'snack' ? 'checkin' : 'eat')
-      self.afterCheckin()
+      self.afterCheckin(true)
     }).catch(function () {
       wx.showToast({ title: '照片保存失败，请重试', icon: 'none' })
     })
@@ -153,13 +165,18 @@ Page({
   closeDialog() { this.setData({ dialog: '' }) },
 
   confirmStaple() {
+    const self = this
     this.setData({ dialog: '', staple: true, photos: [] })
     if (config.usePreviewData) {
       feedback.play('eat')
+      this.afterCheckin(false)
       return
     }
     api.call('exempt', { meal: this.meal }).then(function (res) {
-      if (res && res.ok) feedback.play('eat')
+      if (res && res.ok) {
+        feedback.play('eat')
+        self.afterCheckin(false)
+      }
     })
   },
 

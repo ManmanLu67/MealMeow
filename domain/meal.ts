@@ -155,3 +155,20 @@ export function canUseStaple(input: {
 export function tomorrowLogicalDate(logicalToday: string): string {
   return addIsoDays(logicalToday, 1)
 }
+
+/** 打完这一餐之后的下一餐。晚餐的下一餐是次日早餐。 */
+export function mealAfter(date: string, meal: MealType): { date: string; meal: MealType } {
+  const index = MEALS.indexOf(meal)
+  if (index >= 0 && index < MEALS.length - 1) return { date, meal: MEALS[index + 1] }
+  return { date: addIsoDays(date, 1), meal: 'breakfast' }
+}
+
+/** 开启提醒时的下一餐：今天还没到或正在窗口里的第一餐。都过了就是明天早餐。状态顺序与 MEALS 相同。 */
+export function firstRemindMeal(
+  date: string,
+  states: readonly ChipState[],
+): { date: string; meal: MealType } {
+  const index = states.findIndex((state) => state === 'due' || state === 'upcoming')
+  if (index >= 0 && index < MEALS.length) return { date, meal: MEALS[index] }
+  return { date: addIsoDays(date, 1), meal: 'breakfast' }
+}

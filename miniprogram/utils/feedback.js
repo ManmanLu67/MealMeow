@@ -9,6 +9,8 @@ const FILES = {
 let audio = null
 
 function play(name) {
+  // 这一版不播放。wav 和开关页留着，以后接回时删掉这一行。
+  return
   if (wx.getStorageSync('sound') !== true) return
   const src = FILES[name]
   if (!src || !wx.createInnerAudioContext) return

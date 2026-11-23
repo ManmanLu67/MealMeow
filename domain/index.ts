@@ -18,6 +18,8 @@ export {
   effectiveClocks,
   homeBadge,
   mealWindow,
+  mealAfter,
+  firstRemindMeal,
   openMeals,
   stapleMonth,
   tomorrowLogicalDate,

@@ -6,6 +6,7 @@ const labels = require('../../utils/labels.js')
 const pets = require('../../utils/pets.js')
 const feedback = require('../../utils/feedback.js')
 const timeZoneOf = require('../../utils/time-zone.js')
+const remind = require('../../utils/remind.js')
 
 const MEAL_META = {
   breakfast: { name: '早餐', time: '07:30' },
@@ -61,6 +62,8 @@ Page({
     showSnack: false,
     sheet: '',
     bandNote: '',
+    remindMeal: '',
+    remindName: '',
   },
 
   onLoad(query) {
@@ -161,6 +164,7 @@ Page({
     const showMemorial = view.petView === 'memorial'
     const species = speciesOverride || view.species || 'cat'
     const bowlFill = Math.max(0, Math.min(100, Number(view.bowlFill) || 0))
+    const due = remind.popup(view.date, chips)
     const self = this
     this.setData({
       date: view.date,
@@ -188,6 +192,8 @@ Page({
       hasCurrent: chips.some(function (chip) { return chip.tone === 'now' }),
       camera: view.camera,
       bandNote: labels.bandNote(view.band, view.petName),
+      remindMeal: due ? due.meal : '',
+      remindName: due ? due.name : '',
     }, function () { self.fitStage() })
     this.markTab()
   },
@@ -219,6 +225,18 @@ Page({
   pickMeal(event) {
     this.setData({ sheet: '' })
     this.goCheckin(event.currentTarget.dataset.meal)
+  },
+
+  dismissRemind() {
+    remind.markShown()
+    this.setData({ remindMeal: '' })
+  },
+
+  goRemindCheckin() {
+    const meal = this.data.remindMeal
+    remind.markShown()
+    this.setData({ remindMeal: '' })
+    if (meal) this.goCheckin(meal)
   },
 
   goCheckin(meal) {

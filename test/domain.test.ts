@@ -21,6 +21,8 @@ import {
   logicalDate,
   mealInstant,
   mealWindow,
+  mealAfter,
+  firstRemindMeal,
   nextHunger,
   openMeals,
   personalStreak,
@@ -404,5 +406,23 @@ describe('pet name', () => {
   it('rejects control characters and line breaks', () => {
     assert.equal(validatePetName('饭\n饭').ok, false)
     assert.equal(validatePetName('饭\t饭').ok, false)
+  })
+})
+
+describe('next meal reminder', () => {
+  it('follows breakfast with lunch and dinner with the next breakfast', () => {
+    assert.deepEqual(mealAfter('2026-11-23', 'breakfast'), { date: '2026-11-23', meal: 'lunch' })
+    assert.deepEqual(mealAfter('2026-11-23', 'dinner'), { date: '2026-11-24', meal: 'breakfast' })
+  })
+
+  it('picks the first meal that is still open today', () => {
+    assert.deepEqual(
+      firstRemindMeal('2026-11-23', ['missed', 'due', 'upcoming']),
+      { date: '2026-11-23', meal: 'lunch' },
+    )
+    assert.deepEqual(
+      firstRemindMeal('2026-11-23', ['checked_in', 'exempt', 'missed']),
+      { date: '2026-11-24', meal: 'breakfast' },
+    )
   })
 })
