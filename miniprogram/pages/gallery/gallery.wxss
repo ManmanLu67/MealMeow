@@ -2,11 +2,21 @@
 .gallery .t-title { font-weight: 800; color: #1A1A1A; }
 
 /* 日期条：7 格等宽，高 64px，选中为 brand-tint，今天下方一个小圆点。 */
+.month-row { display: flex; align-items: center; margin-top: 24rpx; }
+.month-arrow { display: flex; align-items: center; justify-content: center; width: 64rpx; height: 64rpx; }
+.month-label { margin-left: 0; }
+.chev-left { transform: rotate(-135deg); }
+.month-grid { display: flex; flex-wrap: wrap; margin-top: 8rpx; }
+.month-head { width: calc(100% / 7); height: 48rpx; line-height: 48rpx; text-align: center; color: #6F7A74; }
+.month-grid .day { width: calc(100% / 7); }
+.month-blank { background: transparent; border-color: transparent; }
+
 .strip { display: flex; justify-content: space-between; margin-top: 32rpx; }
 .day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; width: calc((100% - 48rpx) / 7); height: 112rpx; border: 4rpx solid transparent; border-radius: 8rpx; background: transparent; color: #D1D5DB; }
 .day-marked { background: #8F9E63; border-color: #1A1A1A; border-width: 2rpx; color: #1A1A1A; }
 .day-on { background: #FFC107; border-color: #1A1A1A; border-width: 4rpx; color: #1A1A1A; }
-.day-on .day-num, .day-on .day-week, .day-marked .day-num, .day-marked .day-week { color: #1A1A1A; }
+.day-picked { border-color: #1A1A1A; border-style: dashed; border-width: 4rpx; color: #1A1A1A; }
+.day-on .day-num, .day-on .day-week, .day-picked .day-num, .day-picked .day-week, .day-marked .day-num, .day-marked .day-week { color: #1A1A1A; }
 .day-star { position: absolute; left: 60rpx; top: -14rpx; width: 32rpx; height: 32rpx; }
 .day-hover { background: #F7F8F9; }
 .day-num { margin-top: 4rpx; font-weight: 800; }

@@ -194,7 +194,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     healthText: String(healthScore(pet?.hunger ?? 0)),
     levelText: pet
       ? String(petLevel(hours, (pet.hungerLog ?? []).filter((day) => day.date < today)))
-      : '—',
+      : '',
     emotion: emotionFromHunger(hungerPercent),
     camera: cameraOf(states),
     species: pet?.species ?? 'cat',
@@ -235,12 +235,30 @@ export type GalleryDay = {
   star: boolean
 }
 
+export type GalleryCalendarDay = {
+  key: string
+  day: number
+  marked: boolean
+  star: boolean
+  today: boolean
+}
+
+export type GalleryCalendar = {
+  key: string
+  label: string
+  leading: number
+  days: GalleryCalendarDay[]
+}
+
 export type GalleryView = {
   streak: number
   todayIndex: number
   days: GalleryDay[]
   meals: GalleryMeal[]
   snacks: GallerySnack[]
+  /** 最早一条打卡或零食所在的 YYYY-MM。没有记录就是 null。漏餐结算不算。 */
+  earliestMonth: string | null
+  calendar: GalleryCalendar | null
 }
 
 export type AdoptView = {
@@ -360,15 +378,17 @@ export async function galleryView(
   caller: Caller,
   now: Date,
   date?: string,
+  month?: string,
 ): Promise<GalleryView> {
   const user = await requireUser(store, caller.userId)
   const today = logicalDate(now, user.timeZone)
   const shown = date ?? today
   const week = weekOf(today)
-  const [streak, records, snacks] = await Promise.all([
+  const [streak, records, snacks, earliestMonth] = await Promise.all([
     streakOf(store, user, now),
     store.listRecords(caller.userId, shown),
     store.listSnacks(caller.userId, shown),
+    earliestRecordMonth(store, caller.userId),
   ])
   const days = await Promise.all(week.days.map(async (day) => {
     const rows = day.key === shown ? records : await store.listRecords(caller.userId, day.key)
@@ -381,6 +401,50 @@ export async function galleryView(
     days,
     meals: MEALS.map((meal) => mealFace(meal, records.find((row) => row.meal === meal), now, user, shown)),
     snacks: snackTiles(snacks),
+    earliestMonth,
+    calendar: month ? await monthCalendar(store, caller.userId, month, today) : null,
+  }
+}
+
+/** 从最早的日期往后找，第一条看得见的打卡或零食决定箭头范围。 */
+async function earliestRecordMonth(store: Store, userId: string): Promise<string | null> {
+  const dates = [...await store.listDates(userId)].sort()
+  for (const date of dates) {
+    const [records, snacks] = await Promise.all([
+      store.listRecords(userId, date),
+      store.listSnacks(userId, date),
+    ])
+    const eaten = MEALS.some((meal) => countsAsEaten(records.find((row) => row.meal === meal)) !== null)
+    if (eaten || snackTiles(snacks).length > 0) return date.slice(0, 7)
+  }
+  return null
+}
+
+async function monthCalendar(
+  store: Store,
+  userId: string,
+  month: string,
+  today: string,
+): Promise<GalleryCalendar> {
+  const [yearText, monthText] = month.split('-')
+  const year = Number(yearText)
+  const monthNumber = Number(monthText)
+  const weekday = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay()
+  const leading = (weekday + 6) % 7
+  const last = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()
+  const known = new Set(await store.listDates(userId))
+  const days: GalleryCalendarDay[] = []
+  for (let day = 1; day <= last; day += 1) {
+    const key = `${month}-${String(day).padStart(2, '0')}`
+    const rows = known.has(key) ? await store.listRecords(userId, key) : []
+    const eaten = MEALS.some((meal) => countsAsEaten(rows.find((row) => row.meal === meal)) !== null)
+    days.push({ key, day, marked: eaten, star: allCheckedIn(rows), today: key === today })
+  }
+  return {
+    key: month,
+    label: `${year}年${monthNumber}月`,
+    leading,
+    days,
   }
 }
 

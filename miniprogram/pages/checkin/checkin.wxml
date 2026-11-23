@@ -9,14 +9,14 @@
 
   <view class="preview">
     <image wx:if="{{photos.length}}" class="preview-img" src="{{photos[0]}}" mode="aspectFill"></image>
-    <block wx:elif="{{staple}}">
+    <view wx:elif="{{staple}}" class="preview-empty">
       <image class="preview-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
-      <text class="t-caption">本餐已用应急口粮，记录为空</text>
-    </block>
-    <block wx:else>
+      <text class="t-caption preview-caption">本餐已用应急口粮，记录为空</text>
+    </view>
+    <view wx:else class="preview-empty">
       <image class="preview-icon" src="/assets/icon/camera-muted.png" mode="aspectFit"></image>
-      <text class="t-caption">{{mode === 'snack' ? '记录一份零食' : '拍一张今天的饭'}}</text>
-    </block>
+      <text class="t-caption preview-caption">{{mode === 'snack' ? '记录一份零食' : '拍一张今天的饭'}}</text>
+    </view>
     <view wx:if="{{photos.length > 1}}" class="preview-count"><text class="t-caption count-text">共 {{photos.length}} 张</text></view>
   </view>
 
@@ -83,5 +83,16 @@
     </view>
   </block>
 
-  <privacy-popup id="privacy"></privacy-popup>
+  <block wx:if="{{dialog === 'privacy'}}">
+    <view class="mask" bindtap="refusePrivacy"></view>
+    <view class="dialog">
+      <text class="t-title">隐私保护指引</text>
+      <view class="dialog-body"><text class="t-body t-secondary">打卡要使用相册和相机。请先阅读并同意{{privacyName}}。照片只留在这台手机上。</text></view>
+      <view class="link" bindtap="openPrivacy"><text>查看{{privacyName}}</text></view>
+      <view class="dialog-actions">
+        <button class="btn btn-secondary privacy-btn" bindtap="refusePrivacy">拒绝</button>
+        <button id="agree-btn" class="btn btn-primary privacy-btn" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agreePrivacy">同意</button>
+      </view>
+    </view>
+  </block>
 </view>

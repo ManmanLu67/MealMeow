@@ -1,6 +1,3 @@
 {
-  "navigationBarTitleText": "隐私与关于",
-  "usingComponents": {
-    "privacy-popup": "/components/privacy-popup/privacy-popup"
-  }
+  "navigationBarTitleText": "隐私与关于"
 }

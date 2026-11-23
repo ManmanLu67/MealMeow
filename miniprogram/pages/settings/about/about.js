@@ -1,12 +1,18 @@
 const api = require('../../../utils/api.js')
 const timeZoneOf = require('../../../utils/time-zone.js')
+const privacy = require('../../../utils/privacy.js')
 
 function timeZone() {
   return timeZoneOf.deviceTimeZone()
 }
 
 Page({
-  data: { shareReady: false },
+  data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》' },
+
+  showPrivacy(resolve) { privacy.show(this, resolve) },
+  agreePrivacy() { privacy.agree(this) },
+  refusePrivacy() { privacy.refuse(this) },
+  openPrivacy() { privacy.openContract() },
 
   exportBackup() {
     const page = this

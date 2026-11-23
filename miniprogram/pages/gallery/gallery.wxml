@@ -1,11 +1,35 @@
 <view class="page gallery">
   <text class="t-title">连续打卡 {{streak}} 天</text>
 
-  <view class="strip">
+  <view class="month-row">
+    <view wx:if="{{showPrev}}" class="month-arrow" bindtap="onPrevMonth" hover-class="day-hover" hover-stay-time="120">
+      <view class="chev chev-left"></view>
+    </view>
+    <text class="t-body month-label" bindtap="toggleCalendar">{{monthLabel}}</text>
+    <view wx:if="{{showNext}}" class="month-arrow" bindtap="onNextMonth" hover-class="day-hover" hover-stay-time="120">
+      <view class="chev"></view>
+    </view>
+  </view>
+
+  <view wx:if="{{calendarOpen && calendarCells.length}}" class="month-grid">
+    <view wx:for="{{weekHeads}}" wx:key="*this" class="month-head"><text class="t-caption">{{item}}</text></view>
+    <view
+      wx:for="{{calendarCells}}"
+      wx:key="key"
+      class="day month-cell {{item.blank ? 'month-blank' : ''}} {{item.today ? 'day-on' : ''}} {{item.key === selectedKey && !item.today ? 'day-picked' : ''}} {{item.marked && !item.today ? 'day-marked' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="pickCalendarDay"
+    >
+      <image wx:if="{{item.star}}" class="day-star" src="/assets/icon/star.png" mode="aspectFit"></image>
+      <text wx:if="{{!item.blank}}" class="t-label day-num">{{item.day}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{!calendarOpen}}" class="strip">
     <view
       wx:for="{{days}}"
       wx:key="key"
-      class="day {{index === selected ? 'day-on' : ''}} {{item.marked && index !== selected ? 'day-marked' : ''}}"
+      class="day {{index === todayIndex ? 'day-on' : ''}} {{index === selected && index !== todayIndex ? 'day-picked' : ''}} {{item.marked && index !== todayIndex ? 'day-marked' : ''}}"
       data-index="{{index}}"
       bindtap="selectDay"
       hover-class="day-hover"

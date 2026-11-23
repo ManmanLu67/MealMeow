@@ -5,7 +5,9 @@ Component({
     open(resolve) {
       this.resolvePrivacy = resolve
       this.setData({ visible: true })
-      resolve({ event: 'exposureAuthorization' })
+      wx.nextTick(function () {
+        resolve({ event: 'exposureAuthorization' })
+      })
     },
 
     agree() {

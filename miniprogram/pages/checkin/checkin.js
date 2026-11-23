@@ -6,6 +6,7 @@ const feedback = require('../../utils/feedback.js')
 const preview = require('../../utils/preview.js')
 const labels = require('../../utils/labels.js')
 const remind = require('../../utils/remind.js')
+const privacy = require('../../utils/privacy.js')
 
 const MAX_PHOTOS = 9
 
@@ -22,6 +23,7 @@ Page({
     stapleLeft: 0,
     photos: [],
     dialog: '',
+    privacyName: '《隐私保护指引》',
   },
 
   onLoad(query) {
@@ -97,6 +99,11 @@ Page({
   takePhoto() { this.choose(['camera']) },
   pickAlbum() { this.choose(['album']) },
 
+  showPrivacy(resolve) { privacy.show(this, resolve) },
+  agreePrivacy() { privacy.agree(this) },
+  refusePrivacy() { privacy.refuse(this) },
+  openPrivacy() { privacy.openContract() },
+
   choose(sourceType) {
     const self = this
     const room = MAX_PHOTOS - this.data.photos.length
@@ -104,26 +111,32 @@ Page({
       wx.showToast({ title: '最多 ' + MAX_PHOTOS + ' 张', icon: 'none' })
       return
     }
-    wx.chooseMedia({
-      count: room,
-      mediaType: ['image'],
+    // 拍照一次一张。选图必须在这次点击里直接调用，实机才肯打开相机和相册。
+    const count = sourceType[0] === 'camera' ? 1 : room
+    wx.chooseImage({
+      count: count,
+      sizeType: ['compressed', 'original'],
       sourceType: sourceType,
       success(res) {
-        const added = res.tempFiles.map(function (f) { return f.tempFilePath })
-        self.setData({ photos: self.data.photos.concat(added) })
+        self.setData({ photos: self.data.photos.concat(res.tempFilePaths || []) })
       },
+      fail(err) { showPickError(self, err) },
     })
   },
 
   replacePhoto() {
     const self = this
-    wx.chooseMedia({
+    wx.chooseImage({
       count: 1,
-      mediaType: ['image'],
+      sizeType: ['compressed', 'original'],
+      sourceType: ['album', 'camera'],
       success(res) {
-        self.setData({ photos: [res.tempFiles[0].tempFilePath] })
+        const path = res.tempFilePaths && res.tempFilePaths[0]
+        if (!path) return
+        self.setData({ photos: [path] })
         wx.showToast({ title: '已替换，重新审核', icon: 'none' })
       },
+      fail(err) { showPickError(self, err) },
     })
   },
 
@@ -199,6 +212,35 @@ Page({
     })
   },
 })
+
+function showPickError(page, err) {
+  const msg = (err && err.errMsg) || ''
+  if (!msg || msg.indexOf('cancel') >= 0) return
+  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0 || msg.indexOf('privacy api banned') >= 0)) {
+    wx.showModal({
+      title: '打不开隐私指引',
+      content: '后台的《用户隐私保护指引》还没声明相册或相机，微信不会出现同意页。',
+      confirmText: '查看指引',
+      success(res) { if (res.confirm) privacy.openContract() },
+    })
+    return
+  }
+  if (msg.indexOf('privacy') >= 0 || msg.indexOf('隐私') >= 0) {
+    if (page && typeof page.showPrivacy === 'function') page.showPrivacy()
+    else wx.showToast({ title: '请先同意隐私指引', icon: 'none' })
+    return
+  }
+  if (msg.indexOf('auth') >= 0 || msg.indexOf('deny') >= 0 || msg.indexOf('permission') >= 0) {
+    wx.showModal({
+      title: '无法打开',
+      content: '请允许微信使用相机和相册。',
+      confirmText: '去设置',
+      success(res) { if (res.confirm && wx.openSetting) wx.openSetting({}) },
+    })
+    return
+  }
+  wx.showToast({ title: '无法打开相机或相册', icon: 'none' })
+}
 
 function templateIds() {
   const ids = config.subscribeTmplIds

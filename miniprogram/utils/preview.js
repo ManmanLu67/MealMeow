@@ -111,7 +111,7 @@ function homeView(name) {
     emotion: sceneEmotion(name),
     hungerText: sceneHunger(name),
     healthText: scene.pet === 'pasture' ? '—' : (scene.pet === 'memorial' ? '0' : HEALTH[scene.band]),
-    levelText: scene.pet === 'pasture' ? '—' : '1',
+    levelText: scene.pet === 'pasture' ? '' : '1',
     bowlFill: sceneBowl(name),
     recentPhoto: '',
     species: 'cat',

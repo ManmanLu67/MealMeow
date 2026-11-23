@@ -21,11 +21,13 @@ describe('home view', () => {
     assert.equal(empty.petView, 'pasture')
     assert.equal(empty.hungerText, '0%')
     assert.equal(empty.healthText, '100')
+    assert.equal(empty.levelText, '')
 
     const adopted = await seededStore({}, { hunger: 0 })
     const fresh = await homeView(adopted, { userId: 'u' }, now)
     assert.equal(fresh.hungerText, '0%')
     assert.equal(fresh.healthText, '100')
+    assert.equal(fresh.levelText, '0')
   })
 
   it('a pending review is not a badge and does not change the band', async () => {
@@ -254,6 +256,8 @@ describe('gallery and adoption', () => {
     await markComplete(store, ['2026-11-12'])
     const now = new Date('2026-11-13T04:10:00.000Z')
     const view = await galleryView(store, { userId: 'u' }, now)
+    assert.equal(view.calendar, null)
+    assert.equal(view.earliestMonth, '2026-11')
     const wednesday = view.days.find((day) => day.key === '2026-11-11')
     const thursday = view.days.find((day) => day.key === '2026-11-12')
     assert.equal(wednesday?.marked, true)
@@ -262,6 +266,49 @@ describe('gallery and adoption', () => {
     assert.equal(thursday?.star, true)
     assert.equal(view.meals.find((meal) => meal.meal === 'lunch')?.face, 'window')
     assert.equal(view.meals.find((meal) => meal.meal === 'dinner')?.face, 'waiting')
+  })
+
+  it('returns one month of days without changing the week strip', async () => {
+    const store = await seededStore({}, { hunger: 0 })
+    await store.saveRecord(record({
+      date: '2026-10-02',
+      meal: 'breakfast',
+      photos: ['oct'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const view = await galleryView(store, { userId: 'u' }, now, undefined, '2026-10')
+    assert.equal(view.calendar?.label, '2026年10月')
+    assert.equal(view.calendar?.leading, 3)
+    assert.equal(view.calendar?.days.find((day) => day.key === '2026-10-02')?.marked, true)
+    assert.equal(view.days.some((day) => day.key.startsWith('2026-10')), false)
+    assert.equal(view.earliestMonth, '2026-10')
+  })
+
+  it('starts month arrows at the earliest visible check-in or snack', async () => {
+    const store = await seededStore({}, { hunger: 0 })
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, null)
+    await store.saveSettlement({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: '2026-09-02',
+      meal: 'lunch',
+      outcome: 'starved',
+      hungerBefore: 4,
+      hungerAfter: 5,
+    })
+    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, null)
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-08-03',
+      startedAt: '2026-08-03T04:00:00.000Z',
+      photos: ['s'],
+      photoReviews: ['passed'],
+      hidden: false,
+    })
+    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, '2026-08')
   })
 })
 

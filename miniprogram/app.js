@@ -5,9 +5,7 @@ App({
     wx.onNeedPrivacyAuthorization(function (resolve) {
       const pages = getCurrentPages()
       const page = pages[pages.length - 1]
-      const popup = page && page.selectComponent && page.selectComponent('#privacy')
-      if (popup) popup.open(resolve)
-      else resolve({ event: 'disagree' })
+      if (page && typeof page.showPrivacy === 'function') page.showPrivacy(resolve)
     })
   },
 })

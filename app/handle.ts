@@ -29,7 +29,7 @@ export type Request =
   | { action: 'deleteSnack'; date: string; startedAt: string }
   | { action: 'adopt'; name?: string; species?: PetSpecies }
   | { action: 'home' }
-  | { action: 'gallery'; date?: string }
+  | { action: 'gallery'; date?: string; month?: string }
   | { action: 'adoptView' }
   | { action: 'me' }
   | { action: 'memorial'; id?: string }
@@ -71,6 +71,12 @@ function isString(value: unknown): value is string {
 
 function isDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
+function isMonth(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}$/.test(value)) return false
+  const month = Number(value.slice(5))
+  return month >= 1 && month <= 12
 }
 
 function parsePhotos(value: unknown): string[] | null {
@@ -137,7 +143,12 @@ export function parseRequest(raw: unknown): Request | null {
       return { action: 'home' }
     case 'gallery':
       if (body.date !== undefined && !isDate(body.date)) return null
-      return { action: 'gallery', date: isDate(body.date) ? body.date : undefined }
+      if (body.month !== undefined && !isMonth(body.month)) return null
+      return {
+        action: 'gallery',
+        date: isDate(body.date) ? body.date : undefined,
+        month: isMonth(body.month) ? body.month : undefined,
+      }
     case 'adoptView':
       return { action: 'adoptView' }
     case 'me':
@@ -225,7 +236,9 @@ export async function handle(
     case 'memorial': {
       if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
       if (request.action === 'home') return { ok: true, data: await homeView(store, caller, now) }
-      if (request.action === 'gallery') return { ok: true, data: await galleryView(store, caller, now, request.date) }
+      if (request.action === 'gallery') {
+        return { ok: true, data: await galleryView(store, caller, now, request.date, request.month) }
+      }
       if (request.action === 'me') return { ok: true, data: await meView(store, caller) }
       if (request.action === 'memorial') return { ok: true, data: await memorialView(store, caller, now, request.id) }
       return { ok: true, data: await adoptView(store, caller, now) }

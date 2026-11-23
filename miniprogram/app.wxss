@@ -32,6 +32,8 @@
 .dialog { position: fixed; left: 64rpx; right: 64rpx; top: 50%; z-index: 101; box-sizing: border-box; padding: 48rpx 40rpx 32rpx; background: var(--surface); border-radius: var(--radius-lg); transform: translateY(-50%); }
 .dialog-actions { display: flex; justify-content: space-between; margin-top: 40rpx; }
 .dialog-actions-btn { width: calc((100% - 16rpx) / 2); }
+button.privacy-btn { width: calc((100% - 16rpx) / 2); height: 96rpx; margin: 0; padding: 0; line-height: 96rpx; font-size: 28rpx; font-weight: 500; }
+button.privacy-btn::after { border: none; }
 
 /* 宠物状态标签：展示字体加状态底色。四档对应 DESIGN.md 1.4。 */
 .status-tag { display: inline-block; padding: 8rpx 32rpx; border-radius: var(--radius-pill); }

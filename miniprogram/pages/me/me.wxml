@@ -3,7 +3,7 @@
     <view class="avatar"><text class="t-title avatar-text">{{initial}}</text></view>
     <view class="profile-text">
       <text class="t-title">{{nickname}}</text>
-      <text class="t-caption">账号 ID：{{accountId}}（仅自己可见）</text>
+      <text class="t-caption">账号 ID：{{accountId}}</text>
     </view>
   </view>
 
