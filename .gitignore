@@ -80,3 +80,6 @@ docs/agent/session-last.md
 
 # 本机调试备忘，不入库。
 docs/local/
+
+# 小程序里编译出来的本机规则。由 npm run build:local 重新生成。
+miniprogram/generated/

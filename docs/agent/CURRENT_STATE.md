@@ -1,21 +1,21 @@
 # Current Project State
 
-> Last updated: 2026-11-22
+> Last updated: 2026-11-23
 > Keep under ~2 pages. Record verified facts only. Update when status or findings materially change.
 
 ## 1. Current goal
 
-界面已锁定，并已在微信开发者工具里看过。预览关掉之后，用户页读 `me`，纪念册读 `memorial`，打卡先把照片传到云存储再提交。页面现在仍用预览数据。下一步是有云环境后配置令牌、上传云函数，再关预览。
+这一版在手机上跑：页面调用 `openLocal`，不接云、不上传、不走内容安全。云函数和审核代码保留。`usePreviewData` 为 false。第一次打开要设置昵称。照片压完存在本地文件，只留本月和上月。导出的 JSON 不带照片。
 
 ## 2. Status
 
-- Stage: 云函数入口已接 `handle` / `runDueJobs`。页面仍是预览数据
+- Stage: 本机存储和页面入口已接上。还没在微信开发者工具里点过这一版
 - Branch: feat/views
-- Overall: `config.usePreviewData` 为 true，页面打开时读 `preview.js`
+- Overall: `config.usePreviewData` 为 false，页面走 `openLocal`
 
 ## 3. Completed and verified
 
-- `npm test`：150 项通过，0 失败。`npm run typecheck` 退出码 0。`npm run build:cloud` 已重新生成 `cloudfunctions/lib/`，该目录被 gitignore，不入库。
+- `npm test`：184 项通过，0 失败。`npm run typecheck` 退出码 0。`npm run build:local` 退出码 0。生成物在 `miniprogram/generated/`，已 gitignore。
 - 2026-11-22：锁定后的页面已在微信开发者工具里确认。
 - 首页：动物图、食盘、口袋、相册、三张拍立得和物种相机按稿子的位置摆。当天已打卡且未驳回的照片留在首页。
 - 图鉴：有吃到的日子是绿格；三餐都是打卡才有星。窗口内的空餐是白底，还没到窗口是灰底 `#F7F8F9`。空盘描边是同一张。口粮仍是刀叉格。
@@ -31,11 +31,12 @@
 
 ## 4. Current work
 
-- 打卡和零食成功后按张提交内容安全。签名不对的回调不改记录。追踪号对不上当前照片时拒绝。
-- 用户页在预览关掉后调用 `me`，返回昵称和展示用账号 `cf-XXXX-XXXX`。空昵称显示「吃饭人」。
-- 纪念册在预览关掉后调用 `memorial`。没有死亡记录时列表为空。首页入口只在 `petView === 'memorial'`（当前宠物已死、冷却未结束）时出现，空列表不改首页。
-- 预览关掉后，打卡和零食在调用接口前用 `wx.cloud.uploadFile` 把临时路径换成云文件号。上传失败只提示，不打卡。预览路径不上传。
-- 还没有云环境，云函数没有上传，`MEAL_MEDIA_TOKEN` 不在仓库里。`usePreviewData` 仍为 true。
+- 页面走 `openLocal`。打卡先把当天照片标成通过，再按窗口结算。打开页面时先结算，再清掉上上个月之前的照片文件。
+- 导入把文件里的用户号改成本机的 `localUserId`，并删掉文件里那个旧账号。没有宠物的备份会删掉本机宠物。缺字段的 version 1 文件不写入。只有结算、没有打卡的日子也进备份，导入后不会把那一餐再结算一次。
+- 导出先写 `吃饭喵-备份.json`，再点「发送到聊天」才调用 `wx.shareFileMessage`。
+- 本机只建一个 store，同一份存储上的锁跨实例串行。
+- 图鉴里没有照片、但已经打卡的格子（`kept`）不算空白。
+- 还没有在微信开发者工具里点过这一版。云函数没有上传。
 
 ## 5. Decisions
 
@@ -48,15 +49,17 @@
 - 2026-11-18：饭点里点相机，可选还没打的那一餐，也可以另记零食。零食不代替这一餐。没有待打的餐时，相机直接记零食。
 - 2026-11-18：三餐打卡时间不能重合。窗口仍是饭点前后 1 小时、左闭右开，恰好隔 2 小时允许。见 ADR-0003。
 - 2026-11-22：云数据库集合是 `users`、`pets`、`meal_records`、`snacks`、`settlement_jobs`、`settlements`、`locks`、`traces`。零食是计划写成之后才有的，所以单独一个集合。同一用户的写用 `locks` 文档串行，锁带过期时间。内容安全回调的签名令牌是云函数环境变量 `MEAL_MEDIA_TOKEN`，不入库。
+- 2026-11-23：本机版导出 JSON 不嵌入照片。换机只恢复记录，照片留在原手机。要简单，不为备份再打包图片。
+- 2026-11-23：本地打卡马上算吃到，不等内容审核。宠物仍按原规则在本机结算。照片只保留本月和上月。更早的日子仍显示打卡痕迹，只是没有照片。连续天数仍按打卡记录计算。
 
 ## 6. Blockers
 
-- 没有云环境 ID，云函数还没在云端执行。`MEAL_MEDIA_TOKEN` 还没配置。
-- `usePreviewData` 仍为 true。有云环境之前不关预览。
+- 本机版已按 `docs/superpowers/plans/2026-11-23-local-mvp.md` 接上。微信开发者工具里还没点过昵称、打卡、备份。
+- 云环境仍没有。这一版不依赖它。
 
 ## 7. Next actions
 
-1. 有云环境后，配置 `MEAL_MEDIA_TOKEN`，上传 `api` 和 `settle`，再把 `usePreviewData` 改成 false。现在不关预览，不改界面。
+1. 在微信开发者工具里走一遍：设昵称、打卡、图鉴、导出。云函数先不上传。
 
 ## 8. References
 

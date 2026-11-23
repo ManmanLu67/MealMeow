@@ -1,0 +1,5 @@
+<view class="page start">
+  <text class="t-title">请设置你的昵称</text>
+  <input class="name" value="{{nickname}}" maxlength="20" placeholder="你的昵称" bindinput="onInput" />
+  <view class="go" bindtap="confirm"><text class="t-body">确定</text></view>
+</view>

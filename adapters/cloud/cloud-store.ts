@@ -87,6 +87,9 @@ export function createCloudStore(db: CloudDb): Store {
     async saveUser(doc) {
       await db.set(USERS, docId(doc.userId), stored(doc))
     },
+    async deleteUser(userId) {
+      await db.remove(USERS, docId(userId))
+    },
     async listUserIds() {
       const rows = await collect(db, USERS, {})
       return rows.map((row) => (row as UserDoc).userId)
@@ -97,6 +100,9 @@ export function createCloudStore(db: CloudDb): Store {
     },
     async savePet(doc) {
       await db.set(PETS, docId(doc.userId), stored(doc))
+    },
+    async deletePet(userId) {
+      await db.remove(PETS, docId(userId))
     },
 
     async getRecord(userId, date, meal) {
@@ -111,6 +117,18 @@ export function createCloudStore(db: CloudDb): Store {
     async listRecords(userId, date) {
       const rows = await collect(db, RECORDS, { userId, date })
       return rows as MealRecordDoc[]
+    },
+    async listDates(userId) {
+      const meals = (await collect(db, RECORDS, { userId })) as MealRecordDoc[]
+      const snacks = (await collect(db, SNACKS, { userId })) as SnackDoc[]
+      const jobs = (await collect(db, JOBS, { subjectId: userId })) as SettlementJobDoc[]
+      const settlements = (await collect(db, SETTLEMENTS, { subjectId: userId })) as SettlementDoc[]
+      return [...new Set([
+        ...meals.map((row) => row.date),
+        ...snacks.map((row) => row.date),
+        ...jobs.map((row) => row.date),
+        ...settlements.map((row) => row.date),
+      ])]
     },
 
     async listSnacks(userId, date) {
@@ -129,6 +147,9 @@ export function createCloudStore(db: CloudDb): Store {
     },
     async saveJob(doc) {
       await db.set(JOBS, docId(doc.subjectId, doc.date, doc.meal), stored(doc))
+    },
+    async deleteJob(subjectId, date, meal) {
+      await db.remove(JOBS, docId(subjectId, date, meal))
     },
     async listPendingJobs(nowIso) {
       const rows = await collect(db, JOBS, { status: 'pending', windowEndAt: { lte: nowIso } })
@@ -149,6 +170,9 @@ export function createCloudStore(db: CloudDb): Store {
     },
     async saveSettlement(doc) {
       await db.set(SETTLEMENTS, docId(doc.subjectId, doc.date, doc.meal), stored(doc))
+    },
+    async deleteSettlement(subjectId, date, meal) {
+      await db.remove(SETTLEMENTS, docId(subjectId, date, meal))
     },
     async getTrace(traceId) {
       return (await db.get(TRACES, docId(traceId))) as TraceDoc | null

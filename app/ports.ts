@@ -20,19 +20,24 @@ export type Store = {
   runExclusive<T>(subjectId: string, fn: () => Promise<T>): Promise<T>
   getUser(userId: string): Promise<UserDoc | null>
   saveUser(doc: UserDoc): Promise<void>
+  deleteUser(userId: string): Promise<void>
   listUserIds(): Promise<string[]>
   getPet(userId: string): Promise<PetDoc | null>
   savePet(doc: PetDoc): Promise<void>
+  deletePet(userId: string): Promise<void>
   getRecord(userId: string, date: string, meal: MealRecordDoc['meal']): Promise<MealRecordDoc | null>
   saveRecord(doc: MealRecordDoc): Promise<void>
   deleteRecord(userId: string, date: string, meal: MealRecordDoc['meal']): Promise<void>
   listRecords(userId: string, date: string): Promise<MealRecordDoc[]>
+  /** 有打卡、零食、结算任务或结算结果的逻辑日，去重，不保证顺序。 */
+  listDates(userId: string): Promise<string[]>
   /** 某个逻辑日的零食，按起点时间排序。 */
   listSnacks(userId: string, date: string): Promise<SnackDoc[]>
   saveSnack(doc: SnackDoc): Promise<void>
   deleteSnack(userId: string, date: string, startedAt: string): Promise<void>
   getJob(subjectId: string, date: string, meal: SettlementJobDoc['meal']): Promise<SettlementJobDoc | null>
   saveJob(doc: SettlementJobDoc): Promise<void>
+  deleteJob(subjectId: string, date: string, meal: SettlementJobDoc['meal']): Promise<void>
   listPendingJobs(nowIso: string): Promise<SettlementJobDoc[]>
   listHeldJobs(nowIso: string): Promise<SettlementJobDoc[]>
   /** 这个主体名下仍在等审核的任务。有它在，活着的宠物整体冻结。 */
@@ -43,6 +48,7 @@ export type Store = {
     meal: SettlementDoc['meal'],
   ): Promise<SettlementDoc | null>
   saveSettlement(doc: SettlementDoc): Promise<void>
+  deleteSettlement(subjectId: string, date: string, meal: SettlementDoc['meal']): Promise<void>
   getTrace(traceId: string): Promise<TraceDoc | null>
   saveTrace(doc: TraceDoc): Promise<void>
 }

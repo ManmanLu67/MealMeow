@@ -97,11 +97,19 @@ Page({
       this.apply(view, chosen)
       return
     }
-    api.call('sync', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(function () {
-      return api.call('home', {})
+    api.call('home', {}).then(function (res) {
+      if (!res.ok && res.error === 'no_user') return null
+      if (!res.ok) {
+        wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
+        return null
+      }
+      return api.call('sync', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(function () {
+        return api.call('home', {})
+      })
     }).then(function (res) {
+      if (!res) return
       if (res.ok) self.apply(res.data)
-      else wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
+      else if (res.error !== 'no_user') wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
     })
   },
 

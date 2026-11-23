@@ -95,9 +95,9 @@ Page({
       wx.showToast({ title: this.data.mode === 'snack' ? '已记录零食' : '已打卡', icon: 'success' })
       return
     }
-    // 三餐传餐次，零食只传照片。日期和窗口由云端按设备时区判断。
+    // 三餐传餐次，零食只传照片。日期和窗口由本机按设备时区判断。
     const action = this.data.mode === 'snack' ? 'snack' : 'checkin'
-    uploadPhotos(this.data.photos).then(function (ids) {
+    savePhotos(this.data.photos).then(function (ids) {
       const payload = self.data.mode === 'snack'
         ? { photos: ids }
         : { meal: self.meal, photos: ids }
@@ -110,7 +110,7 @@ Page({
       self.setData({ checked: true })
       wx.navigateBack({ fail() { wx.switchTab({ url: '/pages/home/home' }) } })
     }).catch(function () {
-      wx.showToast({ title: '照片上传失败，请重试', icon: 'none' })
+      wx.showToast({ title: '照片保存失败，请重试', icon: 'none' })
     })
   },
 
@@ -143,17 +143,22 @@ Page({
   },
 })
 
-function uploadPhotos(paths) {
-  const stamp = Date.now()
+function savePhotos(paths) {
+  const root = wx.env.USER_DATA_PATH + '/photos'
+  const fs = wx.getFileSystemManager()
+  try { fs.mkdirSync(root, true) } catch (err) { /* 目录已在 */ }
   return Promise.all(paths.map(function (path, index) {
-    if (typeof path === 'string' && path.indexOf('cloud://') === 0) return Promise.resolve(path)
-    if (!wx.cloud || !wx.cloud.uploadFile) return Promise.reject(new Error('no_cloud'))
-    return wx.cloud.uploadFile({
-      cloudPath: 'photos/' + stamp + '-' + index + '.jpg',
-      filePath: path,
-    }).then(function (res) {
-      if (!res || !res.fileID) throw new Error('no_file')
-      return res.fileID
+    if (typeof path === 'string' && path.indexOf(root + '/') === 0) return Promise.resolve(path)
+    return wx.compressImage({ src: path, quality: 20 }).then(function (res) {
+      const dest = root + '/' + Date.now() + '-' + index + '.jpg'
+      return new Promise(function (resolve, reject) {
+        fs.saveFile({
+          tempFilePath: res.tempFilePath,
+          filePath: dest,
+          success() { resolve(dest) },
+          fail: reject,
+        })
+      })
     })
   }))
 }

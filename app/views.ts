@@ -211,7 +211,7 @@ function keptPhoto(record: MealRecordDoc | null): string | null {
   return firstShown(record.photos, record.photoReviews)
 }
 
-export type GalleryFace = 'photo' | 'staple' | 'window' | 'waiting' | 'empty'
+export type GalleryFace = 'photo' | 'staple' | 'window' | 'waiting' | 'empty' | 'kept'
 
 export type GalleryMeal = {
   meal: MealType
@@ -294,6 +294,7 @@ function mealFace(
   const tile = mealTile(meal, record)
   if (tile.photo) return { ...tile, face: 'photo' }
   if (tile.exempt) return { ...tile, face: 'staple' }
+  if (countsAsEaten(record)?.status === 'checked_in') return { ...tile, face: 'kept' }
   const clocks = clocksOn(user, shown)
   const state = chipState(now, mealWindow(shown, clocks[meal], user.timeZone), null)
   if (state === 'due') return { ...tile, face: 'window' }

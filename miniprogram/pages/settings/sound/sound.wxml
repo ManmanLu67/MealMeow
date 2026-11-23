@@ -3,17 +3,17 @@
     <view class="list-row">
       <view class="row-text">
         <text class="t-body">音效</text>
-        <text class="t-caption">点宠物、摸头、进食、打卡成功。很短，很轻。</text>
+        <text class="t-caption">点宠物、摸头、进食、打卡成功发出短促音效。</text>
       </view>
       <switch checked="{{sound}}" color="#B84E0C" bindchange="onSound"></switch>
     </view>
     <view class="list-row list-row-last">
       <view class="row-text">
         <text class="t-body">触感震动</text>
-        <text class="t-caption">点宠物时轻轻震一下。</text>
+        <text class="t-caption">点宠物时轻震。</text>
       </view>
       <switch checked="{{haptics}}" color="#B84E0C" bindchange="onHaptics"></switch>
     </view>
   </view>
-  <view class="note"><text class="t-caption">默认静音。系统静音开关打开时，也不会出声。</text></view>
+  <view class="note"><text class="t-caption">默认静音。系统静音时无声。</text></view>
 </view>

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { handle, parseRequest, PAGE_ACTIONS } from '../app/handle.ts'
+import { syncUser } from '../app/user.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
-import { seededStore } from './fixtures.ts'
+import { seededStore, SH } from './fixtures.ts'
 
 const now = new Date('2026-11-13T04:10:00.000Z') // 上海 12:10，午餐窗口内
 
@@ -115,6 +116,22 @@ describe('platform-neutral entry', () => {
     assert.equal(memorial.ok, true)
     if (memorial.ok) assert.deepEqual((memorial.data as { pets: unknown[] }).pets, [])
     assert.equal(parseRequest({ action: 'gallery', date: 'yesterday' }), null)
+  })
+
+  it('stores a trimmed nickname and rejects a blank one', async () => {
+    const store = await seededStore()
+    const blank = await syncUser(store, { userId: 'new' }, now, { timeZone: SH, nickname: '  ' })
+    assert.deepEqual(blank, { ok: false, error: '请设置你的昵称' })
+    assert.equal(await store.getUser('new'), null)
+    const named = await syncUser(store, { userId: 'new' }, now, { timeZone: SH, nickname: ' 阿喵 ' })
+    assert.equal(named.ok, true)
+    assert.equal((await store.getUser('new'))?.nickname, '阿喵')
+    const through = await handle(store, { userId: 'other' }, now, { action: 'sync', timeZone: SH, nickname: '阿喵' })
+    assert.equal(through.ok, true)
+    assert.equal((await store.getUser('other'))?.nickname, '阿喵')
+    const again = await syncUser(store, { userId: 'new' }, now, { timeZone: SH })
+    assert.equal(again.ok, true)
+    assert.equal((await store.getUser('new'))?.nickname, '阿喵')
   })
 
   it('answers no_user when the time zone was never synced', async () => {

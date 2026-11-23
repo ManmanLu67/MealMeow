@@ -5,7 +5,7 @@ const preview = require('../../utils/preview.js')
 
 function filled(meals, snacks) {
   const shown = (meals || []).some(function (item) {
-    return item.photo || item.exempt || item.face === 'window' || item.face === 'waiting'
+    return item.photo || item.exempt || item.face === 'window' || item.face === 'waiting' || item.face === 'kept'
   })
   return shown || (snacks || []).length > 0
 }

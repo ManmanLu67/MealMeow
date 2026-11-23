@@ -1,5 +1,4 @@
-// 页面设计阶段的开关。云函数 api 接上视图模型之前保持 true。
-// 接上之后改成 false，并删掉 utils/preview.js。
+// 本机版直接读写手机。预览样例只在这个开关打开时使用。
 module.exports = {
-  usePreviewData: true,
+  usePreviewData: false,
 }

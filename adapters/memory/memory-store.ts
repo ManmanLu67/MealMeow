@@ -49,6 +49,9 @@ export function createMemoryStore(): Store {
     async saveUser(doc) {
       users.set(doc.userId, doc)
     },
+    async deleteUser(userId) {
+      users.delete(userId)
+    },
     async listUserIds() {
       return [...users.keys()]
     },
@@ -57,6 +60,9 @@ export function createMemoryStore(): Store {
     },
     async savePet(doc) {
       pets.set(doc.userId, doc)
+    },
+    async deletePet(userId) {
+      pets.delete(userId)
     },
     async getRecord(userId, date, meal) {
       return records.get(recordKey(userId, date, meal)) ?? null
@@ -73,6 +79,22 @@ export function createMemoryStore(): Store {
         if (doc.userId === userId && doc.date === date) out.push(doc)
       }
       return out
+    },
+    async listDates(userId) {
+      const dates = new Set<string>()
+      for (const doc of records.values()) {
+        if (doc.userId === userId) dates.add(doc.date)
+      }
+      for (const doc of snacks.values()) {
+        if (doc.userId === userId) dates.add(doc.date)
+      }
+      for (const doc of jobs.values()) {
+        if (doc.subjectId === userId) dates.add(doc.date)
+      }
+      for (const doc of settlements.values()) {
+        if (doc.subjectId === userId) dates.add(doc.date)
+      }
+      return [...dates]
     },
     async listSnacks(userId, date) {
       const out: SnackDoc[] = []
@@ -92,6 +114,9 @@ export function createMemoryStore(): Store {
     },
     async saveJob(doc) {
       jobs.set(subjectMealKey(doc.subjectId, doc.date, doc.meal), doc)
+    },
+    async deleteJob(subjectId, date, meal) {
+      jobs.delete(subjectMealKey(subjectId, date, meal))
     },
     async listPendingJobs(nowIso) {
       const out: SettlementJobDoc[] = []
@@ -122,6 +147,9 @@ export function createMemoryStore(): Store {
     },
     async saveSettlement(doc) {
       settlements.set(subjectMealKey(doc.subjectId, doc.date, doc.meal), doc)
+    },
+    async deleteSettlement(subjectId, date, meal) {
+      settlements.delete(subjectMealKey(subjectId, date, meal))
     },
     async getTrace(traceId) {
       return traces.get(traceId) ?? null

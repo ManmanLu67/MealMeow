@@ -10,7 +10,8 @@
     "pages/settings/meals/meals",
     "pages/settings/reminder/reminder",
     "pages/settings/sound/sound",
-    "pages/settings/about/about"
+    "pages/settings/about/about",
+    "pages/start/start"
   ],
   "window": {
     "navigationBarTitleText": "吃饭喵",

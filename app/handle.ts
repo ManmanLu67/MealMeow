@@ -19,7 +19,7 @@ import { MEALS, logicalDate } from '../domain/index.ts'
 export type Caller = { userId: string }
 
 export type Request =
-  | { action: 'sync'; timeZone: string }
+  | { action: 'sync'; timeZone: string; nickname?: string }
   | { action: 'saveMeals'; clocks: MealClocks }
   | { action: 'checkin'; meal: MealType; photos: string[] }
   | { action: 'snack'; photos: string[] }
@@ -87,8 +87,15 @@ export function parseRequest(raw: unknown): Request | null {
   if (typeof raw !== 'object' || raw === null) return null
   const body = raw as Record<string, unknown>
   switch (body.action) {
-    case 'sync':
-      return isString(body.timeZone) ? { action: 'sync', timeZone: body.timeZone } : null
+    case 'sync': {
+      if (!isString(body.timeZone)) return null
+      if (body.nickname !== undefined && typeof body.nickname !== 'string') return null
+      return {
+        action: 'sync',
+        timeZone: body.timeZone,
+        nickname: typeof body.nickname === 'string' ? body.nickname : undefined,
+      }
+    }
     case 'saveMeals': {
       const clocks = parseClocks(body.clocks)
       return clocks === null ? null : { action: 'saveMeals', clocks }
@@ -158,7 +165,10 @@ export async function handle(
 
   switch (request.action) {
     case 'sync': {
-      const result = await syncUser(store, caller, now, { timeZone: request.timeZone })
+      const result = await syncUser(store, caller, now, {
+        timeZone: request.timeZone,
+        nickname: request.nickname,
+      })
       return result.ok ? { ok: true, data: { created: result.created } } : result
     }
     case 'saveMeals': {

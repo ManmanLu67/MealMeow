@@ -23,20 +23,20 @@ domain/             纯规则。只依赖自己
 
 换平台时要写的只有三样：一个新的 `Store` 实现，一个把平台请求变成 `app/handle.ts` 的 `Request` 的入口，一个新的界面。规则、命令和测试不动。`app/handle.ts` 是与平台无关的入口，调用者 ID 只来自平台的登录态，请求体里的 `userId` 一律忽略，审核结果没有对应的页面动作。
 
-手机端会遇到的差别，现在先写下来，不在这一版实现：
+手机端这一版已经在小程序里跑起来，不连云：
 
-- 手机本地库没有云端定时器。结算要在 App 启动、回到前台和后台任务里调用 `runDueJobs`，用同一个函数。
-- 内容安全在手机上要调后端接口，回调改成轮询或推送，最终都落到 `applyReview`。
-- 时区取设备时区，和现在一致。
-- 要换到多设备同步时，需要后端存储和账号，`Store` 的云实现可以直接复用。
+- 页面经 `openLocal` 调用现有命令。存储是 `adapters/local/`。云函数、云数据库和内容安全代码保留，这一版不调用。
+- 没有云端定时器。打开页面时在本机调用 `runDueJobs`。本地打卡写入后立刻标为通过，不等内容安全。
+- 照片用 `wx.compressImage` 存在本地文件里。记录只存路径。本月和上月以外的照片删掉，打卡记录留下。
+- 时区仍取设备时区。换机用「隐私与关于」里的 JSON 备份，备份不含照片。
 
 ## Components
 
 - `domain/` 纯规则。不依赖微信、云开发、数据库。
-- `miniprogram/` 三个 Tab：首页、图鉴、我的。全屏页：打卡、领养、纪念册、饭点、提醒、声音与震动（`pages/settings/sound`）、关于。没有 `/pet`。页面外观已锁定，以这些页面为准；`DESIGN.md` 开头的锁定说明优先于后面的旧稿。页面只渲染读模型，不重算规则。数据经 `miniprogram/utils/api.js` 这一个入口调用云函数。`config.usePreviewData` 为 true 时页面读 `preview.js`。
+- `miniprogram/` 三个 Tab：首页、图鉴、我的。全屏页：打卡、领养、纪念册、饭点、提醒、声音与震动（`pages/settings/sound`）、关于、第一次设置昵称。没有 `/pet`。页面外观已锁定，以这些页面为准；`DESIGN.md` 开头的锁定说明优先于后面的旧稿。页面只渲染读模型，不重算规则。数据经 `miniprogram/utils/api.js` 调用本机的 `openLocal`。`config.usePreviewData` 为 false。云函数入口仍留在 `cloudfunctions/`。
 - `cloudfunctions/api` 用登录 openId 调 `handle`。有库时认识全部页面动作，包括 `me` 和 `memorial`。没有库时只替换 `home` / `sync`，其余返回 `unknown_action`。内容安全回调先验签名，再按追踪号写回。`cloudfunctions/settle` 每分钟调 `runDueJobs`。页面动作不拆成多个云函数。
 - `app/` 是对 `Store` 的命令：`handle.ts` 与平台无关的入口，写命令是用户同步、打卡、口粮、零食、删除、领养，读命令是 `home`、`gallery`、`adoptView`、`me`、`memorial`。`views.ts` 只读。`user.ts` 同步用户和时区，`checkin.ts` 饭点、打卡、口粮、删除，`snack.ts` 零食，`settle.ts` 结算、审核回调、领养，`schedule.ts` 补结算任务，`media-check.ts` 提交照片并接收回调，`ports.ts` 存储接口。同一用户的写命令走 `Store.runExclusive` 串行。
-- `adapters/memory/` 内存存储，测试用。`adapters/cloud/` 是同一套 `Store` 的云数据库实现，另有微信内容安全的提交和签名校验。
+- `adapters/memory/` 内存存储，测试用。`adapters/cloud/` 是同一套 `Store` 的云数据库实现，另有微信内容安全的提交和签名校验。`adapters/local/` 是小程序本机缓存上的同一套 `Store`。
 - 当前主体是个人。`subjectId` 只能等于本人 `userId`。
 
 ## Data flow

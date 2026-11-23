@@ -4,16 +4,28 @@
       <text class="t-body">可见范围</text>
       <text class="t-body t-secondary">仅自己</text>
     </view>
-    <view class="list-row list-row-last">
+    <view class="list-row">
       <text class="t-body">版本</text>
       <text class="t-body t-secondary">0.1.0</text>
     </view>
+    <view class="list-row" bindtap="exportBackup">
+      <text class="t-body">导出备份</text>
+    </view>
+    <view class="list-row" wx:if="{{shareReady}}" bindtap="sendBackup">
+      <text class="t-body">发送到聊天</text>
+    </view>
+    <view class="list-row list-row-last" bindtap="importBackup">
+      <text class="t-body">导入备份</text>
+    </view>
   </view>
 
-  <view class="body">
-    <text class="t-title">隐私</text>
-    <text class="t-body para">你的照片和打卡记录只有你自己能看到，没有分享、没有小组、没有别人开放给你的内容。</text>
-    <text class="t-body para">上传的照片会经过微信内容安全检查。检查不判断照片是不是一顿饭，只判断内容是否合规。</text>
-    <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物会饿死，死亡不可恢复。</text>
-  </view>
+<view class="body">
+  <text class="t-title">隐私</text>
+  <text class="t-body para">照片与打卡记录仅留在本机。备份不含照片，换机保留仅连续打卡时间。</text>
+  <text class="t-body para">照片的素材化处理全在设备本地完成，不上传云端，也不接入任何外部 AI 接口。</text>
+  
+  <text class="t-title" style="margin-top: 40rpx;">关于</text>
+  <text class="t-body para">界面中的宠物形象及部分视觉元素由 AI 辅助生成，仅作静态展示。</text>
+  <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物死亡，死亡不可恢复。</text>
+</view>
 </view>

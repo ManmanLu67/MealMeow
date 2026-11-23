@@ -140,6 +140,36 @@ export function runStoreContract(name: string, makeStore: () => Store): void {
       assert.equal(await store.getTrace('missing'), null)
     })
 
+    it('lists dates that have a meal or a snack', async () => {
+      const store = makeStore()
+      await store.saveUser(user())
+      await store.saveRecord(record({ date: '2026-09-02' }))
+      await store.saveSnack({
+        userId: 'u',
+        date: '2026-11-13',
+        startedAt: '2026-11-13T05:30:00.000Z',
+        photos: ['a'],
+        photoReviews: ['pending'],
+        hidden: false,
+      })
+      const dates = await store.listDates('u')
+      assert.deepEqual(dates.slice().sort(), ['2026-09-02', '2026-11-13'])
+    })
+
+    it('lists a date that only has a settlement', async () => {
+      const store = makeStore()
+      await store.saveSettlement({
+        subjectType: 'personal',
+        subjectId: 'u',
+        date: '2026-11-01',
+        meal: 'breakfast',
+        outcome: 'starved',
+        hungerBefore: 4,
+        hungerAfter: 5,
+      })
+      assert.deepEqual(await store.listDates('u'), ['2026-11-01'])
+    })
+
     it('runExclusive runs the same subject one at a time', async () => {
       const store = makeStore()
       const order: string[] = []

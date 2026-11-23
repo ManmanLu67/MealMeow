@@ -1,6 +1,5 @@
 App({
   onLaunch() {
-    if (!wx.cloud) return
-    wx.cloud.init({ traceUser: true })
-  }
+    // 这一版不连云。云函数还在仓库里，页面不调用。
+  },
 })

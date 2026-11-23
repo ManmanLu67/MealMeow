@@ -33,16 +33,21 @@ export async function syncUser(
   store: Store,
   caller: { userId: string },
   now: Date,
-  input: { timeZone: string },
+  input: { timeZone: string; nickname?: string },
 ): Promise<{ ok: true; created: boolean } | { ok: false; error: string }> {
   if (!validTimeZone(input.timeZone)) return { ok: false, error: '时区无效' }
+  let nickname: string | undefined
+  if (input.nickname !== undefined) {
+    nickname = input.nickname.trim()
+    if (nickname.length === 0) return { ok: false, error: '请设置你的昵称' }
+  }
 
   const found = await store.getUser(caller.userId)
   const created = found === null
   const user: UserDoc = found === null
     ? {
         userId: caller.userId,
-        nickname: '',
+        nickname: nickname ?? '',
         timeZone: input.timeZone,
         meals: DEFAULT_MEALS,
         pendingMeals: null,
@@ -53,7 +58,7 @@ export async function syncUser(
         diedOn: null,
         pastPets: [],
       }
-    : { ...found, timeZone: input.timeZone }
+    : { ...found, timeZone: input.timeZone, ...(nickname !== undefined ? { nickname } : {}) }
 
   await store.saveUser(user)
   await topUpJobs(store, user, now, { refresh: true })
