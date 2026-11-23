@@ -10,11 +10,11 @@
   <view class="preview">
     <image wx:if="{{photos.length}}" class="preview-img" src="{{photos[0]}}" mode="aspectFill"></image>
     <block wx:elif="{{staple}}">
-      <image class="preview-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+      <image class="preview-icon" src="/assets/icon/cutlery.webp" mode="aspectFit"></image>
       <text class="t-caption">本餐已用应急口粮，记录为空</text>
     </block>
     <block wx:else>
-      <image class="preview-icon" src="/assets/icon/camera-muted.png" mode="aspectFit"></image>
+      <image class="preview-icon" src="/assets/icon/camera-muted.webp" mode="aspectFit"></image>
       <text class="t-caption">{{mode === 'snack' ? '记录一份零食' : '拍一张今天的饭'}}</text>
     </block>
     <view wx:if="{{photos.length > 1}}" class="preview-count"><text class="t-caption count-text">共 {{photos.length}} 张</text></view>

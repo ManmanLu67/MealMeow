@@ -27,7 +27,7 @@
 
   <block wx:else>
     <view class="cool">
-      <image class="cool-img" src="/assets/pet/cat.png" mode="aspectFit"></image>
+      <image class="cool-img" src="/assets/pet/cat.webp" mode="aspectFit"></image>
       <text class="t-title cool-title">还在冷却中</text>
       <text class="t-display cool-days">{{cooldownDays}} 天</text>
       <text class="t-caption">冷却结束的那天凌晨 4 点，可以领养新宠物。</text>

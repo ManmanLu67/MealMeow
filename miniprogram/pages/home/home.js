@@ -179,7 +179,7 @@ Page({
       bowlOpacity: bowlFill / 100,
       species: species,
       petSrc: pets.art(species, view.band),
-      cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.png',
+      cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.webp',
       photos: photosOf(view.photos),
       showBag: chips.some(function (chip) { return chip.tone === 'staple' }),
       showMemorial: showMemorial,

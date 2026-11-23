@@ -41,7 +41,7 @@ Page({
         checked: view.checked,
         staple: view.staple,
         stapleLeft: view.stapleLeft,
-        photos: view.checked ? ['/assets/preview/lunch.png'] : [],
+        photos: view.checked ? ['/assets/preview/lunch.webp'] : [],
       })
     }
   },

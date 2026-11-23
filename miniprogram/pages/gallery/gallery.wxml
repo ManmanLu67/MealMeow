@@ -11,14 +11,14 @@
       hover-class="day-hover"
       hover-stay-time="120"
     >
-      <image wx:if="{{item.star}}" class="day-star" src="/assets/icon/star.png" mode="aspectFit"></image>
+      <image wx:if="{{item.star}}" class="day-star" src="/assets/icon/star.webp" mode="aspectFit"></image>
       <text class="t-caption day-week">{{item.week}}</text>
       <text class="t-label day-num">{{item.day}}</text>
       <view class="day-dot {{index === todayIndex ? 'day-dot-today' : ''}}"></view>
     </view>
   </view>
 
-  <view class="tiles">
+  <view wx:if="{{meals.length}}" class="tiles">
     <view
       wx:for="{{meals}}"
       wx:key="meal"
@@ -29,12 +29,12 @@
       <image wx:if="{{item.photo}}" class="tile-img" src="{{item.photo}}" mode="aspectFill"></image>
       <block wx:elif="{{item.exempt}}">
         <view class="tile-staple">
-          <image class="tile-icon" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+          <image class="tile-icon" src="/assets/icon/cutlery.webp" mode="aspectFit"></image>
           <text class="t-caption">口粮</text>
         </view>
       </block>
-      <image wx:elif="{{item.face === 'window' || item.face === 'waiting'}}" class="tile-plate" src="/assets/icon/plate.png" mode="aspectFit"></image>
-      <image wx:else class="tile-corner" src="/assets/icon/cutlery.png" mode="aspectFit"></image>
+      <image wx:elif="{{item.face === 'window' || item.face === 'waiting'}}" class="tile-plate" src="/assets/icon/plate.webp" mode="aspectFit"></image>
+      <image wx:else class="tile-corner" src="/assets/icon/cutlery.webp" mode="aspectFit"></image>
       <view class="tile-name"><text class="t-caption tile-name-text">{{item.name}}</text></view>
     </view>
   </view>
@@ -54,8 +54,6 @@
       </view>
     </view>
   </block>
-
-  <view wx:if="{{isEmpty}}" class="empty"><text class="t-caption">今天还没有记录</text></view>
 
   <view wx:if="{{viewer}}" class="viewer" bindtap="closeViewer">
     <image class="viewer-img" src="{{viewer}}" mode="aspectFit"></image>
