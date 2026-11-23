@@ -71,4 +71,6 @@
       </view>
     </view>
   </block>
+
+  <privacy-popup id="privacy"></privacy-popup>
 </view>

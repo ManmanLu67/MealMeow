@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "打卡"
+  "navigationBarTitleText": "打卡",
+  "usingComponents": {
+    "privacy-popup": "/components/privacy-popup/privacy-popup"
+  }
 }

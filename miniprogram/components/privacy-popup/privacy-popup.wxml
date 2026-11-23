@@ -1,0 +1,14 @@
+<block wx:if="{{visible}}">
+  <view class="mask"></view>
+  <view class="dialog">
+    <text class="t-title">隐私保护指引</text>
+    <view class="dialog-body">
+      <text class="t-body t-secondary">打卡会使用相册和相机。导入备份会读取你选中的聊天文件。照片和文件只留在这台手机上。</text>
+    </view>
+    <text class="contract" bindtap="openContract">查看《隐私保护指引》</text>
+    <view class="dialog-actions">
+      <button class="btn btn-secondary privacy-btn" bindtap="refuse">拒绝</button>
+      <button id="agree-btn" class="btn btn-primary privacy-btn" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agree">同意</button>
+    </view>
+  </view>
+</block>

@@ -1,5 +1,13 @@
 App({
   onLaunch() {
     // 这一版不连云。云函数还在仓库里，页面不调用。
+    if (!wx.onNeedPrivacyAuthorization) return
+    wx.onNeedPrivacyAuthorization(function (resolve) {
+      const pages = getCurrentPages()
+      const page = pages[pages.length - 1]
+      const popup = page && page.selectComponent && page.selectComponent('#privacy')
+      if (popup) popup.open(resolve)
+      else resolve({ event: 'disagree' })
+    })
   },
 })

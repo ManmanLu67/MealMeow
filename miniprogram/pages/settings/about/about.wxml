@@ -29,3 +29,4 @@
   <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物死亡，死亡不可恢复。</text>
 </view>
 </view>
+<privacy-popup id="privacy"></privacy-popup>
