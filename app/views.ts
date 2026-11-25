@@ -59,6 +59,8 @@ export type HomeView = {
   photos: { meal: MealType; src: string }[]
   /** 0 是空盘，100 是稿子里那盘丸子。只跟着最近一次打卡，到下一顿饭点变成 0。 */
   bowlFill: number
+  /** 点开左上角状态板时列出的当天变化。 */
+  statChanges: string[]
 }
 
 type Caller = { userId: string }
@@ -103,7 +105,7 @@ function cameraOf(states: readonly ChipState[]): HomeCamera {
 
 const LEVEL_LOOKBACK_DAYS = 120
 
-/** 最近两天里最后一次算数的进食，回看期内最早的一次，以及最近一次真正的打卡。还没吃过时饥饿是 0%。 */
+/** 回看期内最后一次算数的进食、最早的一次，以及最近两天里最近一次真正的打卡。还没吃过时饥饿是 0%。 */
 async function checkinSpan(
   store: Store,
   userId: string,
@@ -114,6 +116,7 @@ async function checkinSpan(
   const recent = [...yesterday, ...todayRecords].filter((row) => countsAsEaten(row) !== null)
   recent.sort((a, b) => a.checkinAt.localeCompare(b.checkinAt))
   const bowlFrom = recent.filter((row) => row.status === 'checked_in').at(-1) ?? null
+  let latest = recent[recent.length - 1] ?? null
   let earliestAt = recent[0]?.checkinAt ?? null
   let cursor = addIsoDays(today, -2)
   const stop = addIsoDays(today, -LEVEL_LOOKBACK_DAYS)
@@ -122,10 +125,11 @@ async function checkinSpan(
     for (const row of rows) {
       if (countsAsEaten(row) === null) continue
       if (earliestAt === null || row.checkinAt < earliestAt) earliestAt = row.checkinAt
+      if (latest === null || row.checkinAt > latest.checkinAt) latest = row
     }
     cursor = addIsoDays(cursor, -1)
   }
-  return { latest: recent[recent.length - 1] ?? null, earliestAt, bowlFrom }
+  return { latest, earliestAt, bowlFrom }
 }
 
 /**
@@ -168,6 +172,14 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     )
     bowl = bowlFill(now, new Date(span.bowlFrom.checkinAt), next)
   }
+  const statChanges = await todayStatChanges(
+    store,
+    caller.userId,
+    today,
+    records,
+    span.latest,
+    hungerPercent,
+  )
   const alive = pet?.alive === true
   const dead = pet !== null && !pet.alive
   const cooldownOver = canAdopt(user.cooldownUntil ? new Date(user.cooldownUntil) : null, now)
@@ -203,7 +215,41 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
       return src === null ? [] : [{ meal, src }]
     }),
     bowlFill: bowl,
+    statChanges,
   }
+}
+
+/** 状态板浮窗里的当天变化。百分比跟着最近一餐，健康跟着今天已经结算的饥饿档。 */
+async function todayStatChanges(
+  store: Store,
+  userId: string,
+  today: string,
+  records: readonly MealRecordDoc[],
+  latest: MealRecordDoc | null,
+  percent: number,
+): Promise<string[]> {
+  const lines: string[] = []
+  if (!latest) lines.push('还没吃过，饥饿是 0%')
+  else if (latest.date === today) {
+    const name = MEAL_NAME[latest.meal]
+    lines.push(latest.status === 'exempt'
+      ? `${name}口粮后，饥饿从 10% 涨到现在的 ${percent}%`
+      : `${name}打卡后，饥饿从 0% 涨到现在的 ${percent}%`)
+  } else if (percent >= 100) lines.push('上一餐之后没再吃，饥饿停在 100%')
+
+  for (const meal of MEALS) {
+    const settlement = await store.getSettlement(userId, today, meal)
+    if (!settlement) continue
+    const record = records.find((row) => row.meal === meal)
+    const verb = settlement.outcome === 'starved'
+      ? '漏餐'
+      : record?.status === 'exempt' ? '口粮' : '吃到'
+    const before = healthScore(settlement.hungerBefore)
+    const after = healthScore(settlement.hungerAfter)
+    lines.push(`${MEAL_NAME[meal]}${verb}：漏了 ${settlement.hungerBefore} 餐，变成 ${settlement.hungerAfter} 餐，健康 ${before} → ${after}`)
+  }
+  if (lines.length === 0) lines.push('今天还没有打卡或结算')
+  return lines
 }
 
 function keptPhoto(record: MealRecordDoc | null): string | null {

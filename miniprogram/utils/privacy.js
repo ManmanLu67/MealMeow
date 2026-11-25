@@ -4,6 +4,7 @@
 function show(page, resolve) {
   if (resolve) page.privacyResolve = resolve
   page.setData({ dialog: 'privacy' })
+  if (resolve) resolve({ event: 'exposureAuthorization' })
   if (!wx.getPrivacySetting) return
   wx.getPrivacySetting({
     success(res) {

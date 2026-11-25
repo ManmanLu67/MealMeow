@@ -30,8 +30,15 @@ function play(name) {
 }
 
 function vibrate() {
+  // 这一版不震动、也不显示开关。页面和下面的实现留着，接回时删掉这一行。
+  return
   if (wx.getStorageSync('haptics') === false) return
-  if (wx.vibrateShort) wx.vibrateShort({ type: 'light' })
+  if (!wx.vibrateShort) return
+  // 部分安卓机不认 type，传入后这次调用直接失败，手机会完全不震。
+  wx.vibrateShort({
+    type: 'medium',
+    fail() { wx.vibrateShort() },
+  })
 }
 
 module.exports = { play: play, vibrate: vibrate }

@@ -61,6 +61,7 @@ Page({
     pickMeals: [],
     showSnack: false,
     sheet: '',
+    statChanges: [],
     bandNote: '',
     remindMeal: '',
     remindName: '',
@@ -187,6 +188,7 @@ Page({
       petSrc: pets.art(species, view.band),
       cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.png',
       photos: photosOf(view.photos),
+      statChanges: view.statChanges || [],
       showBag: chips.some(function (chip) { return chip.tone === 'staple' }),
       showMemorial: showMemorial,
       hasCurrent: chips.some(function (chip) { return chip.tone === 'now' }),
@@ -283,6 +285,10 @@ Page({
   openMemorial() {
     const state = this.previewState ? '?state=' + this.previewState : ''
     wx.navigateTo({ url: '/pages/memorial/list' + state })
+  },
+
+  openStat() {
+    this.setData({ sheet: 'stat' })
   },
 
   closeSheet() {

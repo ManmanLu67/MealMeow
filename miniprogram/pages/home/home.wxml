@@ -1,7 +1,7 @@
 <view class="page home" style="padding-top: {{padTop}}px">
   <view class="home-body">
   <view class="top">
-    <view class="stat">
+    <view class="stat" bindtap="openStat">
       <view class="stat-row"><text class="stat-k">饥饿</text><text class="stat-v">{{hungerText}}</text></view>
       <view class="stat-row"><text class="stat-k">健康</text><text class="stat-v">{{healthText}}</text></view>
       <view class="stat-row"><text class="stat-k">等级</text><text class="stat-v">{{levelText}}</text></view>
@@ -103,6 +103,23 @@
       <view class="kv"><text class="t-body">陪伴</text><text class="t-title">{{companyDays}} 天</text></view>
       <view class="kv"><text class="t-body">共吃</text><text class="t-title">{{mealsEaten}} 餐</text></view>
       <text class="t-caption sheet-note">{{bandNote}}</text>
+    </view>
+  </block>
+
+  <block wx:if="{{sheet === 'stat'}}">
+    <view class="mask" bindtap="closeSheet"></view>
+    <view class="stat-float">
+      <scroll-view scroll-y class="stat-scroll">
+        <text class="stat-h">今日状态</text>
+        <text wx:for="{{statChanges}}" wx:key="*this" class="stat-line">{{item}}</text>
+        <text class="stat-h">计算方法</text>
+        <text class="stat-kicker">饥饿</text>
+        <text class="stat-line">正餐打卡后恢复为 0%，在下餐前随时间升至 100%。漏餐停在 100%，直到下一次打卡。食用口粮减少 90% 饥饿。零食不记入。</text>
+        <text class="stat-kicker">健康</text>
+        <text class="stat-line">与饥饿值无关。初始/为漏餐为 0 档（健康 100），每漏一餐档位加 1（健康约减 11 分），漏满 9 档宠物死亡。进食分段恢复：漏 1~2 餐吃完回 0 档（100），漏 3~5 餐回 2 档（78），漏 6~8 餐回 5 档（44）。</text>
+        <text class="stat-kicker">宠物等级</text>
+        <text class="stat-line">等级随时间增长。漏餐会扣除宠物等级，健康值越低扣得更多。最低降为 0 级。</text>
+      </scroll-view>
     </view>
   </block>
 

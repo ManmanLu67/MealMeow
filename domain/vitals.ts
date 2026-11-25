@@ -19,8 +19,8 @@ export function bowlFill(now: Date, checkinAt: Date, nextAt: Date): number {
 }
 
 /**
- * 打卡之后饥饿从 0% 涨到下一餐的饭点。口粮不跟着涨，停在 10%。
- * 到了饭点或已经过了，就是 100%。
+ * 打卡之后饥饿从 0% 涨到下一餐的饭点。口粮先回到 10%，再同样涨到下一餐。
+ * 到了饭点或已经过了，停在 100%，直到下一次打卡或口粮。
  */
 export function feedingHungerPercent(
   now: Date,
@@ -28,11 +28,11 @@ export function feedingHungerPercent(
   nextAt: Date,
   staple: boolean,
 ): number {
-  if (staple) return 10
+  const floor = staple ? 10 : 0
   const span = nextAt.getTime() - checkinAt.getTime()
   if (span <= 0) return 100
-  const raw = ((now.getTime() - checkinAt.getTime()) / span) * 100
-  if (raw <= 0) return 0
+  const raw = floor + ((now.getTime() - checkinAt.getTime()) / span) * (100 - floor)
+  if (raw <= floor) return floor
   if (raw >= 100) return 100
   return Math.round(raw)
 }

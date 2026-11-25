@@ -26,6 +26,17 @@ Page({
     privacyName: '《隐私保护指引》',
   },
 
+  onShow() {
+    const page = this
+    if (!wx.getPrivacySetting) return
+    wx.getPrivacySetting({
+      success(res) {
+        page.needPrivacy = !!res.needAuthorization
+        if (res.privacyContractName) page.setData({ privacyName: res.privacyContractName })
+      },
+    })
+  },
+
   onLoad(query) {
     this.previewState = query.state || ''
     this.date = query.date || ''
@@ -100,17 +111,38 @@ Page({
   pickAlbum() { this.choose(['album']) },
 
   showPrivacy(resolve) { privacy.show(this, resolve) },
-  agreePrivacy() { privacy.agree(this) },
-  refusePrivacy() { privacy.refuse(this) },
+  agreePrivacy() {
+    privacy.agree(this)
+    const pending = this.pendingPick
+    this.pendingPick = null
+    if (!pending) return
+    this.needPrivacy = false
+    this.openPicker(pending)
+  },
+  refusePrivacy() {
+    this.pendingPick = null
+    privacy.refuse(this)
+  },
   openPrivacy() { privacy.openContract() },
 
   choose(sourceType) {
-    const self = this
     const room = MAX_PHOTOS - this.data.photos.length
     if (room <= 0) {
       wx.showToast({ title: '最多 ' + MAX_PHOTOS + ' 张', icon: 'none' })
       return
     }
+    if (this.needPrivacy === true) {
+      this.pendingPick = sourceType
+      privacy.show(this)
+      return
+    }
+    this.openPicker(sourceType)
+  },
+
+  openPicker(sourceType) {
+    const self = this
+    const room = MAX_PHOTOS - this.data.photos.length
+    if (room <= 0) return
     // 拍照一次一张。选图必须在这次点击里直接调用，实机才肯打开相机和相册。
     const count = sourceType[0] === 'camera' ? 1 : room
     wx.chooseImage({
@@ -118,7 +150,9 @@ Page({
       sizeType: ['compressed', 'original'],
       sourceType: sourceType,
       success(res) {
-        self.setData({ photos: self.data.photos.concat(res.tempFilePaths || []) })
+        const paths = res.tempFilePaths || []
+        self.setData({ photos: self.data.photos.concat(paths) })
+        if (sourceType.length === 1 && sourceType[0] === 'camera') paths.forEach(saveToAlbum)
       },
       fail(err) { showPickError(self, err) },
     })
@@ -216,12 +250,20 @@ Page({
 function showPickError(page, err) {
   const msg = (err && err.errMsg) || ''
   if (!msg || msg.indexOf('cancel') >= 0) return
-  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0 || msg.indexOf('privacy api banned') >= 0)) {
+  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
     wx.showModal({
-      title: '打不开隐私指引',
-      content: '后台的《用户隐私保护指引》还没声明相册或相机，微信不会出现同意页。',
+      title: '还不能选照片',
+      content: '拍照和相册要另勾「收集你选中的照片或视频信息」。已勾的摄像头、写入相册、选中的文件都不管这一项。补上后大约 5 分钟生效，再从最近使用里删掉小程序重进。',
       confirmText: '查看指引',
       success(res) { if (res.confirm) privacy.openContract() },
+    })
+    return
+  }
+  if (msg.indexOf('privacy api banned') >= 0) {
+    wx.showModal({
+      title: '还不能拍照',
+      content: '这次提审勾了「未采集隐私」，或指引还没声明选照片和摄像头，微信停用了这两个接口。',
+      showCancel: false,
     })
     return
   }
@@ -240,6 +282,58 @@ function showPickError(page, err) {
     return
   }
   wx.showToast({ title: '无法打开相机或相册', icon: 'none' })
+}
+
+function saveToAlbum(filePath) {
+  const write = function () {
+    wx.saveImageToPhotosAlbum({
+      filePath: filePath,
+      success() { wx.showToast({ title: '已存入相册', icon: 'none' }) },
+      fail(err) { showAlbumError(err) },
+    })
+  }
+  if (!wx.getSetting) {
+    write()
+    return
+  }
+  wx.getSetting({
+    success(res) {
+      const allowed = res.authSetting && res.authSetting['scope.writePhotosAlbum']
+      if (allowed === false) {
+        askAlbumSetting()
+        return
+      }
+      write()
+    },
+    fail: write,
+  })
+}
+
+function askAlbumSetting() {
+  wx.showModal({
+    title: '无法存入相册',
+    content: '请允许保存到系统相册，拍下的照片才会留在相机相册里。',
+    confirmText: '去设置',
+    success(res) { if (res.confirm && wx.openSetting) wx.openSetting({}) },
+  })
+}
+
+function showAlbumError(err) {
+  const msg = (err && err.errMsg) || ''
+  if (!msg || msg.indexOf('cancel') >= 0) return
+  if (msg.indexOf('auth') >= 0 || msg.indexOf('deny') >= 0 || msg.indexOf('authorize') >= 0) {
+    askAlbumSetting()
+    return
+  }
+  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
+    wx.showModal({
+      title: '无法存入相册',
+      content: '指引里要有「相册（仅写入）」。补上后大约 5 分钟生效。',
+      showCancel: false,
+    })
+    return
+  }
+  wx.showToast({ title: '没能存入相册', icon: 'none' })
 }
 
 function templateIds() {

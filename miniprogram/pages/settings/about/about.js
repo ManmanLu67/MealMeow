@@ -9,9 +9,29 @@ function timeZone() {
 Page({
   data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》' },
 
+  onShow() {
+    const page = this
+    if (!wx.getPrivacySetting) return
+    wx.getPrivacySetting({
+      success(res) {
+        page.needPrivacy = !!res.needAuthorization
+        if (res.privacyContractName) page.setData({ privacyName: res.privacyContractName })
+      },
+    })
+  },
+
   showPrivacy(resolve) { privacy.show(this, resolve) },
-  agreePrivacy() { privacy.agree(this) },
-  refusePrivacy() { privacy.refuse(this) },
+  agreePrivacy() {
+    privacy.agree(this)
+    if (!this.pendingImport) return
+    this.pendingImport = false
+    this.needPrivacy = false
+    this.openImport()
+  },
+  refusePrivacy() {
+    this.pendingImport = false
+    privacy.refuse(this)
+  },
   openPrivacy() { privacy.openContract() },
 
   exportBackup() {
@@ -43,10 +63,20 @@ Page({
   },
 
   importBackup() {
+    if (this.needPrivacy === true) {
+      this.pendingImport = true
+      privacy.show(this)
+      return
+    }
+    this.openImport()
+  },
+
+  openImport() {
     wx.chooseMessageFile({
       count: 1,
       type: 'file',
       extension: ['json'],
+      fail(err) { showImportError(err) },
       success(chosen) {
         const file = chosen.tempFiles && chosen.tempFiles[0]
         if (!file) return
@@ -71,3 +101,17 @@ Page({
     })
   },
 })
+
+function showImportError(err) {
+  const msg = (err && err.errMsg) || ''
+  if (!msg || msg.indexOf('cancel') >= 0) return
+  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
+    wx.showModal({
+      title: '还不能导入',
+      content: '导入备份要勾「收集你选中的文件」。若已经勾了，等大约 5 分钟，再从最近使用里删掉小程序重进。这一项和选照片不是同一项。',
+      showCancel: false,
+    })
+    return
+  }
+  wx.showToast({ title: '无法打开文件', icon: 'none' })
+}

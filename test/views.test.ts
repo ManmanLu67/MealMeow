@@ -74,6 +74,62 @@ describe('home view', () => {
     assert.equal(view.species, 'cat')
   })
 
+  it('keeps hunger at 100% after a missed meal until the next check-in', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'breakfast',
+      status: 'checked_in',
+      checkinAt: '2026-11-12T23:30:00.000Z',
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    const later = await homeView(store, { userId: 'u' }, new Date('2026-11-16T02:00:00.000Z'))
+    assert.equal(later.hungerText, '100%')
+  })
+
+  it('lists today\'s hunger and health changes on the status sheet', async () => {
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const store = await seededStore({}, { hunger: 1 })
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: now.toISOString(),
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    await store.saveSettlement({
+      subjectType: 'personal',
+      subjectId: 'u',
+      date: '2026-11-13',
+      meal: 'breakfast',
+      outcome: 'starved',
+      hungerBefore: 0,
+      hungerAfter: 1,
+    })
+    const view = await homeView(store, { userId: 'u' }, now)
+    assert.ok(view.statChanges.some((line) => line.includes('午餐打卡后') && line.includes('现在的 0%')))
+    assert.ok(view.statChanges.some((line) => line.includes('早餐漏餐') && line.includes('漏了 0 餐，变成 1 餐') && line.includes('健康 100 → 89')))
+  })
+
+  it('lets a staple fall to 10% and rise again toward the next meal', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'exempt',
+      checkinAt: '2026-11-13T04:00:00.000Z',
+      photos: [],
+      photoReviews: [],
+      review: 'passed',
+    }))
+    const used = await homeView(store, { userId: 'u' }, new Date('2026-11-13T04:00:00.000Z'))
+    assert.equal(used.hungerText, '10%')
+    const dinner = await homeView(store, { userId: 'u' }, new Date('2026-11-13T10:00:00.000Z'))
+    assert.equal(dinner.hungerText, '100%')
+  })
+
   it('puts a full bowl on a check-in and lets it empty by the next meal', async () => {
     const checked = new Date('2026-11-13T04:00:00.000Z')
     const store = await seededStore()

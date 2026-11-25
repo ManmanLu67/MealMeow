@@ -30,8 +30,12 @@ describe('feeding hunger', () => {
     assert.equal(feedingHungerPercent(mid, start, next, false), 50)
   })
 
-  it('stays at 10 when the meal was a staple', () => {
-    assert.equal(feedingHungerPercent(next, start, next, true), 10)
+  it('drops to 10 at a staple and climbs to 100 by the next meal', () => {
+    assert.equal(feedingHungerPercent(start, start, next, true), 10)
+    const mid = new Date(start.getTime() + (next.getTime() - start.getTime()) / 2)
+    assert.equal(feedingHungerPercent(mid, start, next, true), 55)
+    assert.equal(feedingHungerPercent(next, start, next, true), 100)
+    assert.equal(feedingHungerPercent(new Date(next.getTime() + 60_000), start, next, true), 100)
   })
 
   it('fills the bowl at a check-in and empties it at the next meal time', () => {
