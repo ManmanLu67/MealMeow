@@ -17,16 +17,18 @@ export {
   chipState,
   deleteCheckin,
   effectiveClocks,
+  effectiveStapleLeft,
   homeBadge,
   mealWindow,
   mealAfter,
   firstRemindMeal,
   openMeals,
   stapleMonth,
+  stapleTap,
   tomorrowLogicalDate,
   validateMealClocks,
 } from './meal.ts'
-export type { ChipState, MealClocks, MealType, MealWindow, RecordedStatus } from './meal.ts'
+export type { ChipState, MealClocks, MealType, MealWindow, RecordedStatus, StapleTapResult } from './meal.ts'
 export type { CameraAction } from './meal.ts'
 export {
   DEFAULT_PET_NAME,

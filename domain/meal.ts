@@ -138,6 +138,35 @@ export function stapleMonth(instant: Date, timeZone: string): string {
   return logicalDate(instant, timeZone).slice(0, 7)
 }
 
+/** 换月后剩余回到每月额度。月份还是当月时，用库里剩下的次数。 */
+export function effectiveStapleLeft(
+  now: Date,
+  timeZone: string,
+  storedMonth: string,
+  storedLeft: number,
+): number {
+  return stapleMonth(now, timeZone) === storedMonth ? storedLeft : STAPLE_PER_MONTH
+}
+
+export type StapleTapResult =
+  | { action: 'block'; message: '当前未在打卡时间' | '已打卡' | '已用完' }
+  | { action: 'use'; meal: MealType }
+
+/** 首页确认口粮之后选句子。窗口判断用 inWindow，不用格子是不是 due。 */
+export function stapleTap(
+  chips: readonly { meal: MealType; state: ChipState; inWindow: boolean }[],
+  stapleLeft: number,
+): StapleTapResult {
+  const open = chips.filter((chip) => chip.inWindow)
+  if (open.length !== 1) return { action: 'block', message: '当前未在打卡时间' }
+  const meal = open[0]
+  if (meal.state === 'checked_in' || meal.state === 'exempt') {
+    return { action: 'block', message: '已打卡' }
+  }
+  if (stapleLeft <= 0) return { action: 'block', message: '已用完' }
+  return { action: 'use', meal: meal.meal }
+}
+
 export function canUseStaple(input: {
   livingPet: boolean
   inWindow: boolean

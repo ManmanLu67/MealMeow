@@ -13,6 +13,7 @@ import {
   daysBetweenInclusive,
   deleteCheckin,
   effectiveClocks,
+  effectiveStapleLeft,
   evaluateFeeding,
   homeBadge,
   homePetView,
@@ -34,6 +35,7 @@ import {
   settlementOutcome,
   snackMergeTarget,
   stapleMonth,
+  stapleTap,
   streakAnchor,
   streakEndingAt,
   validateMealClocks,
@@ -178,6 +180,51 @@ describe('staple, gallery delete, streak', () => {
   it('rolls the staple month at 04:00 on the 1st', () => {
     assert.equal(stapleMonth(new Date('2026-09-30T19:59:00Z'), SH), '2026-09')
     assert.equal(stapleMonth(new Date('2026-09-30T20:00:00Z'), SH), '2026-10')
+  })
+
+  it('resets staple left when the stored month is over', () => {
+    assert.equal(effectiveStapleLeft(new Date('2026-09-30T20:00:00Z'), SH, '2026-09', 0), 2)
+    assert.equal(effectiveStapleLeft(new Date('2026-09-30T19:59:00Z'), SH, '2026-09', 0), 0)
+  })
+
+  it('chooses the staple sentence before calling the command', () => {
+    const lunch = { meal: 'lunch' as const, state: 'due' as const, inWindow: true }
+    const missed = { meal: 'breakfast' as const, state: 'missed' as const, inWindow: false }
+    const later = { meal: 'dinner' as const, state: 'upcoming' as const, inWindow: false }
+    assert.deepEqual(stapleTap([missed, lunch, later], 2), { action: 'use', meal: 'lunch' })
+    assert.deepEqual(stapleTap([missed, lunch, later], 0), { action: 'block', message: '已用完' })
+    assert.deepEqual(
+      stapleTap([
+        { meal: 'breakfast', state: 'checked_in', inWindow: false },
+        { meal: 'lunch', state: 'checked_in', inWindow: false },
+        later,
+      ], 0),
+      { action: 'block', message: '当前未在打卡时间' },
+    )
+    assert.deepEqual(
+      stapleTap([
+        missed,
+        { meal: 'lunch', state: 'checked_in', inWindow: true },
+        later,
+      ], 0),
+      { action: 'block', message: '已打卡' },
+    )
+    assert.deepEqual(
+      stapleTap([
+        missed,
+        { meal: 'lunch', state: 'exempt', inWindow: true },
+        later,
+      ], 2),
+      { action: 'block', message: '已打卡' },
+    )
+    assert.deepEqual(
+      stapleTap([
+        { meal: 'breakfast', state: 'due', inWindow: true },
+        { meal: 'lunch', state: 'due', inWindow: true },
+        later,
+      ], 2),
+      { action: 'block', message: '当前未在打卡时间' },
+    )
   })
 
   it('hides staple when there is no living pet', () => {
