@@ -169,6 +169,24 @@ describe('home view', () => {
     const view = await homeView(store, { userId: 'u' }, now)
     assert.equal(view.bowlFill, 0)
   })
+
+  it('reports staple left for this month and whether the window is open', async () => {
+    const now = new Date('2026-11-13T04:00:00.000Z')
+    const store = await seededStore({ stapleMonth: '2026-10', stapleLeft: 0 })
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      review: 'passed',
+      photoReviews: ['passed'],
+      checkinAt: now.toISOString(),
+    }))
+    const view = await homeView(store, { userId: 'u' }, now)
+    assert.equal(view.stapleLeft, 2)
+    assert.equal(view.chips.find((chip) => chip.meal === 'lunch')?.state, 'checked_in')
+    assert.equal(view.chips.find((chip) => chip.meal === 'lunch')?.inWindow, true)
+    assert.equal(view.chips.find((chip) => chip.meal === 'breakfast')?.inWindow, false)
+  })
 })
 
 describe('gallery and adoption', () => {

@@ -7,6 +7,7 @@ import {
   canAdopt,
   chipLabel,
   chipState,
+  effectiveStapleLeft,
   homeBadge,
   homePetView,
   emotionFromHunger,
@@ -41,7 +42,7 @@ export type HomeCamera =
 export type HomeView = {
   date: string
   dateLabel: string
-  chips: { meal: MealType; name: string; time: string; label: string; state: ChipState }[]
+  chips: { meal: MealType; name: string; time: string; label: string; state: ChipState; inWindow: boolean }[]
   badge: boolean
   petView: 'pasture' | 'living' | 'memorial'
   petName: string
@@ -61,6 +62,8 @@ export type HomeView = {
   bowlFill: number
   /** 点开左上角状态板时列出的当天变化。 */
   statChanges: string[]
+  /** 本月还剩几次口粮。换月后回到 2，不沿用上个月剩下的。 */
+  stapleLeft: number
 }
 
 type Caller = { userId: string }
@@ -187,13 +190,17 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   return {
     date: today,
     dateLabel: dateLabel(today),
-    chips: MEALS.map((meal, index) => ({
-      meal,
-      name: MEAL_NAME[meal],
-      time: clocks[meal],
-      state: states[index],
-      label: chipLabel(meal, states[index]),
-    })),
+    chips: MEALS.map((meal, index) => {
+      const window = mealWindow(today, clocks[meal], user.timeZone)
+      return {
+        meal,
+        name: MEAL_NAME[meal],
+        time: clocks[meal],
+        state: states[index],
+        label: chipLabel(meal, states[index]),
+        inWindow: now >= window.start && now < window.end,
+      }
+    }),
     badge: homeBadge(states),
     petView: homePetView(alive ? 'alive' : dead ? 'dead' : 'none', cooldownOver),
     petName: pet?.name || '小饭',
@@ -216,6 +223,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     }),
     bowlFill: bowl,
     statChanges,
+    stapleLeft: effectiveStapleLeft(now, user.timeZone, user.stapleMonth, user.stapleLeft),
   }
 }
 
