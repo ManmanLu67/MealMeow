@@ -2,6 +2,7 @@
 const { createLocalStore } = require('../generated/adapters/local/local-store.js')
 const { openLocal } = require('../generated/app/local-session.js')
 const timeZoneOf = require('./time-zone.js')
+const report = require('./report.js')
 
 function storage() {
   return {
@@ -54,9 +55,12 @@ function dispatch(action, payload) {
     .then(function (res) {
       const dropped = res && res.droppedPhotos ? res.droppedPhotos : []
       dropped.forEach(unlinkQuiet)
-      return res || { ok: false, error: 'empty' }
+      const result = res || { ok: false, error: 'empty' }
+      if (result.ok === false && result.error && result.error !== 'no_user') report.report(action, result.error)
+      return result
     })
-    .catch(function () {
+    .catch(function (err) {
+      report.report(action, err)
       return { ok: false, error: '本机保存失败' }
     })
 }

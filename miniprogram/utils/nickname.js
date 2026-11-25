@@ -2,6 +2,7 @@
 const api = require('./api.js')
 const config = require('./config.js')
 const timeZoneOf = require('./time-zone.js')
+const report = require('./report.js')
 
 function storedNickname() {
   try {
@@ -12,6 +13,7 @@ function storedNickname() {
     const doc = typeof raw === 'string' ? JSON.parse(raw) : raw
     return doc && typeof doc.nickname === 'string' ? doc.nickname.trim() : ''
   } catch (err) {
+    report.report('nickname.read', err)
     return ''
   }
 }

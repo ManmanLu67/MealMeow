@@ -8,6 +8,7 @@ const labels = require('../../utils/labels.js')
 const remind = require('../../utils/remind.js')
 const privacy = require('../../utils/privacy.js')
 const nickname = require('../../utils/nickname.js')
+const report = require('../../utils/report.js')
 
 const MAX_PHOTOS = 9
 
@@ -223,7 +224,8 @@ Page({
       self.setData({ checked: true })
       feedback.play(self.data.mode === 'snack' ? 'checkin' : 'eat')
       self.afterCheckin(true)
-    }).catch(function () {
+    }).catch(function (err) {
+      report.report('checkin.photo', err)
       wx.showToast({ title: '照片保存失败，请重试', icon: 'none' })
     })
   },
@@ -271,6 +273,7 @@ Page({
 function showPickError(page, err) {
   const msg = (err && err.errMsg) || ''
   if (!msg || msg.indexOf('cancel') >= 0) return
+  report.report('checkin.pick', err)
   if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
     wx.showModal({
       title: '还不能选照片',
@@ -342,6 +345,7 @@ function askAlbumSetting() {
 function showAlbumError(err) {
   const msg = (err && err.errMsg) || ''
   if (!msg || msg.indexOf('cancel') >= 0) return
+  report.report('checkin.album', err)
   if (msg.indexOf('auth') >= 0 || msg.indexOf('deny') >= 0 || msg.indexOf('authorize') >= 0) {
     askAlbumSetting()
     return

@@ -2,6 +2,7 @@ const api = require('../../../utils/api.js')
 const timeZoneOf = require('../../../utils/time-zone.js')
 const privacy = require('../../../utils/privacy.js')
 const guide = require('../../../utils/guide.js')
+const report = require('../../../utils/report.js')
 
 function timeZone() {
   return timeZoneOf.deviceTimeZone()
@@ -88,6 +89,7 @@ Page({
         page.setData({ shareReady: true })
         wx.showToast({ title: '再点一次发送到聊天', icon: 'none' })
       } catch (err) {
+        report.report('about.export', err)
         wx.showToast({ title: '无法导出', icon: 'none' })
       }
     })
@@ -98,7 +100,12 @@ Page({
     wx.shareFileMessage({
       filePath: this.backupPath,
       fileName: '吃饭喵-备份.json',
-      fail() { wx.showToast({ title: '无法发送', icon: 'none' }) },
+      fail(err) {
+        const msg = (err && err.errMsg) || ''
+        if (msg.indexOf('cancel') >= 0) return
+        report.report('about.send', err)
+        wx.showToast({ title: '无法发送', icon: 'none' })
+      },
     })
   },
 
@@ -125,7 +132,10 @@ Page({
           encoding: 'utf8',
           success(read) {
             let backup = null
-            try { backup = JSON.parse(read.data) } catch (err) { backup = null }
+            try { backup = JSON.parse(read.data) } catch (err) {
+              report.report('about.import', 'invalid json')
+              backup = null
+            }
             if (!backup) {
               wx.showToast({ title: '无法导入', icon: 'none' })
               return
@@ -135,7 +145,10 @@ Page({
               if (res.ok) api.call('sync', { timeZone: timeZone() })
             })
           },
-          fail() { wx.showToast({ title: '无法导入', icon: 'none' }) },
+          fail(err) {
+            report.report('about.read', err)
+            wx.showToast({ title: '无法导入', icon: 'none' })
+          },
         })
       },
     })
@@ -145,6 +158,7 @@ Page({
 function showImportError(err) {
   const msg = (err && err.errMsg) || ''
   if (!msg || msg.indexOf('cancel') >= 0) return
+  report.report('about.file', err)
   if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
     wx.showModal({
       title: '还不能导入',

@@ -1,4 +1,5 @@
 // 第一次打开时，在真实页面上挖洞高亮。看完才记 done。注销后从头再看。
+const report = require('./report.js')
 const KEY = 'guideStep'
 
 const STEPS = {
@@ -23,7 +24,7 @@ const STEPS = {
     selector: '.adopt-label',
     icon: '/assets/icon/person.png',
     lead: '第三步：点这里领养你的宠物。',
-    rest: '注：界面宠物形象及部分视觉元素由 AI 辅助生成',
+    rest: '注：界面宠物形象及部分视觉元素由 AI 辅助生成。',
     next: '下一步',
   },
   backup: {
@@ -43,6 +44,7 @@ function read() {
     const saved = wx.getStorageSync(KEY)
     if (ORDER.indexOf(saved) >= 0 || saved === 'done') return saved
   } catch (err) {
+    report.report('guide.read', err)
     return ''
   }
   return ''
@@ -77,6 +79,7 @@ function reset() {
     wx.removeStorageSync(KEY)
   } catch (err) {
     // 清掉进度失败时，下次仍按存储里的值走。
+    report.report('guide.reset', err)
   }
 }
 

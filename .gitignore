@@ -27,6 +27,7 @@ private.*.key
 *.keystore
 *.jks
 # 云函数部署密钥和各平台服务账号
+.cloudbase*.json
 cloudbase*.json
 tcb*.json
 serviceAccount*.json
