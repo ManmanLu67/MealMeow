@@ -1,34 +1,47 @@
-// 第一次打开时，按真实页面走三段说明。看完才记 done。注销后从头再看。
+// 第一次打开时，在真实页面上挖洞高亮。看完才记 done。注销后从头再看。
 const KEY = 'guideStep'
 
 const STEPS = {
   meals: {
     id: 'meals',
-    title: '欢迎使用，先定个饭点吧',
-    line: '在【用户】中的【饭点设置】中设置每日的三餐时间，点右上角的餐卡进入。按时拍照打卡，用下面的相机记录你的每一餐。',
-    note: '照片和记录仅保存在你的手机本地，不上传云端。',
+    selector: '.meals',
+    icon: '/assets/icon/setting-meals.png',
+    lead: '第一步：点击这里设置饭点。',
+    rest: '在【用户】中也可以随时修改哦。',
+    next: '下一步',
+  },
+  camera: {
+    id: 'camera',
+    selector: '.cam',
+    icon: '/assets/icon/camera.png',
+    lead: '第二步：按时点这里拍照打卡。',
+    rest: '照片仅存手机本地，不上传云端。',
     next: '下一步',
   },
   adopt: {
     id: 'adopt',
-    title: '好好吃饭，养活这只小家伙',
-    line: '点「领养」带它回家。你的每一次按时打卡，都会让它健康成长。如果连续漏餐，它会衰弱，甚至死亡。',
-    note: '注：界面中的宠物形象由 AI 辅助生成。',
+    selector: '.adopt-label',
+    icon: '/assets/icon/person.png',
+    lead: '第三步：点这里领养你的宠物。',
+    rest: '注：界面素材由AI生成',
     next: '下一步',
   },
   backup: {
     id: 'backup',
-    title: '记得常回来看看',
-    line: '数据保存在本机。如果更换手机，或者清理了微信缓存，打卡记录和宠物可能会丢失。',
-    note: '建议定期在这一页使用「导出备份」，再发送到微信聊天框保存。',
+    selector: '.guide-export',
+    icon: '/assets/icon/setting-privacy.png',
+    lead: '点这里导出备份。',
+    rest: '换手机或清理了微信缓存，记录和宠物可能会丢失。',
     next: '知道了',
   },
 }
 
+const ORDER = ['meals', 'camera', 'adopt', 'backup']
+
 function read() {
   try {
     const saved = wx.getStorageSync(KEY)
-    if (saved === 'done' || saved === 'meals' || saved === 'adopt' || saved === 'backup') return saved
+    if (ORDER.indexOf(saved) >= 0 || saved === 'done') return saved
   } catch (err) {
     return ''
   }
@@ -53,7 +66,8 @@ function beginIfNew(created) {
 }
 
 function advance(id) {
-  const next = id === 'meals' ? 'adopt' : id === 'adopt' ? 'backup' : 'done'
+  const index = ORDER.indexOf(id)
+  const next = index >= 0 && index < ORDER.length - 1 ? ORDER[index + 1] : 'done'
   wx.setStorageSync(KEY, next)
   return next
 }
@@ -66,4 +80,29 @@ function reset() {
   }
 }
 
-module.exports = { current: current, view: view, beginIfNew: beginIfNew, advance: advance, reset: reset }
+/** 洞对准目标，气泡避开洞。目标偏下时气泡放上面。 */
+function spotlight(rect, winW, winH) {
+  const pad = 8
+  const left = Math.max(0, rect.left - pad)
+  const top = Math.max(0, rect.top - pad)
+  const width = rect.width + pad * 2
+  const height = rect.height + pad * 2
+  const hole = { left: left, top: top, width: width, height: height, right: left + width, bottom: top + height }
+  const bubbleWidth = Math.max(160, winW - 32)
+  const bubbleHeight = 210
+  const below = hole.bottom + 16
+  let bubbleTop = below
+  if (hole.top > winH * 0.42 || below + bubbleHeight > winH - 12) bubbleTop = hole.top - 16 - bubbleHeight
+  if (bubbleTop < 12) bubbleTop = 12
+  if (bubbleTop + bubbleHeight > winH - 12) bubbleTop = Math.max(12, winH - 12 - bubbleHeight)
+  return { hole: hole, bubble: { left: 16, top: bubbleTop, width: bubbleWidth } }
+}
+
+module.exports = {
+  current: current,
+  view: view,
+  beginIfNew: beginIfNew,
+  advance: advance,
+  reset: reset,
+  spotlight: spotlight,
+}

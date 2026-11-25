@@ -8,7 +8,7 @@
       <text class="t-body">版本</text>
       <text class="t-body t-secondary">1.3.0</text>
     </view>
-    <view class="list-row {{guideId === 'backup' ? 'guide-target' : ''}}" bindtap="exportBackup">
+    <view class="list-row guide-export" bindtap="exportBackup">
       <text class="t-body">导出备份</text>
     </view>
     <view class="list-row" wx:if="{{shareReady}}" bindtap="sendBackup">
@@ -28,14 +28,16 @@
   <text class="t-body para">界面中的宠物形象及部分视觉元素由 AI 辅助生成，仅作静态展示。</text>
   <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物死亡，死亡不可恢复。</text>
 </view>
-  <block wx:if="{{guide}}">
-    <view class="guide-card guide-backup">
-      <text class="guide-title">{{guide.title}}</text>
-      <text class="guide-line">{{guide.line}}</text>
-      <text class="guide-note">{{guide.note}}</text>
-      <view class="btn btn-primary guide-next" bindtap="finishGuide" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">{{guide.next}}</text></view>
-    </view>
-  </block>
+  <guide-spot
+    wx:if="{{guide && hole}}"
+    hole="{{hole}}"
+    bubble="{{bubble}}"
+    icon="{{guide.icon}}"
+    lead="{{guide.lead}}"
+    rest="{{guide.rest}}"
+    next="{{guide.next}}"
+    bindnext="finishGuide"
+  ></guide-spot>
 
   <block wx:if="{{dialog === 'privacy'}}">
     <view class="mask" bindtap="refusePrivacy"></view>

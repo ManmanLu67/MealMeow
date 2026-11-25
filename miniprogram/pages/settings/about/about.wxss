@@ -1,11 +1,3 @@
 .about { padding-top: 24rpx; }
-.guide-target { box-shadow: inset 0 0 0 8rpx #FFC107; }
-.guide-card { position: fixed; left: 32rpx; right: 32rpx; z-index: 80; box-sizing: border-box; padding: 28rpx 28rpx 24rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
-.guide-backup { bottom: calc(48rpx + env(safe-area-inset-bottom)); }
-.guide-title { display: block; font-size: 40rpx; line-height: 56rpx; font-weight: 800; color: #1A1A1A; }
-.guide-line { display: block; margin-top: 16rpx; font-size: 32rpx; line-height: 48rpx; color: #1A1A1A; }
-.guide-note { display: block; margin-top: 16rpx; font-size: 26rpx; line-height: 36rpx; font-weight: 800; color: #1A1A1A; }
-.guide-next { margin-top: 28rpx; }
-.guide-next .t-button { color: #FFFFFF; }
 .body { display: flex; flex-direction: column; margin-top: 48rpx; padding: 0 8rpx; }
 .para { margin-top: 24rpx; }

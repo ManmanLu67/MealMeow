@@ -72,7 +72,8 @@ Page({
     remindName: '',
     guideId: '',
     guide: null,
-    guideTop: 240,
+    hole: null,
+    bubble: null,
     nicknameOpen: false,
     nicknameDraft: '',
   },
@@ -142,15 +143,35 @@ Page({
       })
       return
     }
-    if (step === 'meals' || step === 'adopt') {
-      this.setData({
-        guideId: step,
-        guide: guide.view(step),
-        guideTop: (this.data.padTop || 88) + 148,
-      })
+    if (step === 'meals' || step === 'camera' || step === 'adopt') {
+      const page = this
+      this.setData({ guideId: step, guide: guide.view(step) }, function () { page.placeGuide() })
       return
     }
-    this.setData({ guideId: '', guide: null })
+    this.setData({ guideId: '', guide: null, hole: null, bubble: null })
+  },
+
+  placeGuide(attempt) {
+    const step = guide.view(this.data.guideId)
+    if (!step) return
+    const page = this
+    this.createSelectorQuery().select(step.selector).boundingClientRect(function (rect) {
+      if (!rect || !rect.width) {
+        if ((attempt || 0) < 6) setTimeout(function () { page.placeGuide((attempt || 0) + 1) }, 40)
+        return
+      }
+      let winW = 375
+      let winH = 667
+      try {
+        const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
+        if (info && info.windowWidth) winW = info.windowWidth
+        if (info && info.windowHeight) winH = info.windowHeight
+      } catch (err) {
+        winW = 375
+      }
+      const spot = guide.spotlight(rect, winW, winH)
+      page.setData({ hole: spot.hole, bubble: spot.bubble })
+    }).exec()
   },
 
   nextGuide() {
@@ -158,14 +179,17 @@ Page({
     if (next === 'backup') {
       this._openingBackup = true
       const page = this
-      this.setData({ guideId: '', guide: null })
+      this.setData({ guideId: '', guide: null, hole: null, bubble: null })
       wx.navigateTo({
         url: '/pages/settings/about/about',
         complete() { page._openingBackup = false },
       })
       return
     }
-    this.setData({ guideId: next, guide: guide.view(next) })
+    const page = this
+    this.setData({ guideId: next, guide: guide.view(next), hole: null, bubble: null }, function () {
+      page.placeGuide()
+    })
   },
 
   chosenSpecies() {
@@ -195,7 +219,8 @@ Page({
       const design = 996 * (width / 750)
       const scale = Math.min(1, rect.height / design)
       const next = Math.round(scale * 1000) / 1000
-      if (next !== self.data.stageScale) self.setData({ stageScale: next })
+      if (next !== self.data.stageScale) self.setData({ stageScale: next }, function () { if (self.data.guideId) self.placeGuide() })
+      else if (self.data.guideId) self.placeGuide()
     }).exec()
   },
 

@@ -1,0 +1,16 @@
+.spot { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 160; pointer-events: none; }
+.dim { position: absolute; background: rgba(26, 26, 26, 0.72); pointer-events: auto; }
+.dim-top { left: 0; right: 0; top: 0; }
+.dim-left { left: 0; }
+.dim-right { right: 0; }
+.dim-bottom { left: 0; right: 0; bottom: 0; }
+.ring { position: absolute; box-sizing: border-box; border: 6rpx solid #FFC107; border-radius: 16rpx; pointer-events: none; }
+.bubble { position: absolute; z-index: 2; box-sizing: border-box; padding: 32rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 16rpx; pointer-events: auto; }
+.row { display: flex; align-items: flex-start; }
+.icon { width: 88rpx; height: 88rpx; margin-right: 20rpx; flex-shrink: 0; }
+.copy { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.lead { font-size: 32rpx; line-height: 48rpx; font-weight: 800; color: #1A1A1A; }
+.rest { margin-top: 8rpx; font-size: 28rpx; line-height: 44rpx; color: #59645E; }
+.go { display: flex; align-items: center; justify-content: center; height: 88rpx; margin-top: 32rpx; background: #FFC107; border: 4rpx solid #1A1A1A; border-radius: 999rpx; }
+.go-on { background: #E6AC00; }
+.go-text { font-size: 32rpx; line-height: 44rpx; font-weight: 800; color: #1A1A1A; }

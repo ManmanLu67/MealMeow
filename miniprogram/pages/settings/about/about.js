@@ -8,7 +8,7 @@ function timeZone() {
 }
 
 Page({
-  data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》', guideId: '', guide: null },
+  data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》', guideId: '', guide: null, hole: null, bubble: null },
 
   onShow() {
     this.syncGuide()
@@ -25,15 +25,38 @@ Page({
   syncGuide() {
     const step = guide.current()
     if (step !== 'backup') {
-      this.setData({ guideId: '', guide: null })
+      this.setData({ guideId: '', guide: null, hole: null, bubble: null })
       return
     }
-    this.setData({ guideId: 'backup', guide: guide.view('backup') })
+    const page = this
+    this.setData({ guideId: 'backup', guide: guide.view('backup') }, function () { page.placeGuide() })
+  },
+
+  placeGuide(attempt) {
+    const step = guide.view('backup')
+    const page = this
+    this.createSelectorQuery().select(step.selector).boundingClientRect(function (rect) {
+      if (!rect || !rect.width) {
+        if ((attempt || 0) < 6) setTimeout(function () { page.placeGuide((attempt || 0) + 1) }, 40)
+        return
+      }
+      let winW = 375
+      let winH = 667
+      try {
+        const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
+        if (info && info.windowWidth) winW = info.windowWidth
+        if (info && info.windowHeight) winH = info.windowHeight
+      } catch (err) {
+        winW = 375
+      }
+      const spot = guide.spotlight(rect, winW, winH)
+      page.setData({ hole: spot.hole, bubble: spot.bubble })
+    }).exec()
   },
 
   finishGuide() {
     guide.advance('backup')
-    this.setData({ guideId: '', guide: null })
+    this.setData({ guideId: '', guide: null, hole: null, bubble: null })
     wx.navigateBack()
   },
 
@@ -125,7 +148,7 @@ function showImportError(err) {
   if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
     wx.showModal({
       title: '还不能导入',
-      content: '导入备份要勾「收集你选中的文件」。若已经勾了，等大约 5 分钟，再从最近使用里删掉小程序重进。这一项和选照片不是同一项。',
+      content: '导入备份要勾「收集你选中的文件」。若已经勾了，等大约 5 分钟，再从最近使用里删掉小程序重进。',
       showCancel: false,
     })
     return

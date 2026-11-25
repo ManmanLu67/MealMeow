@@ -1,0 +1,17 @@
+<view wx:if="{{hole && bubble}}" class="spot">
+  <view class="dim dim-top" style="height: {{hole.top}}px;" catchtap="hold" catchtouchmove="hold"></view>
+  <view class="dim dim-left" style="top: {{hole.top}}px; width: {{hole.left}}px; height: {{hole.height}}px;" catchtap="hold" catchtouchmove="hold"></view>
+  <view class="dim dim-right" style="top: {{hole.top}}px; left: {{hole.right}}px; height: {{hole.height}}px;" catchtap="hold" catchtouchmove="hold"></view>
+  <view class="dim dim-bottom" style="top: {{hole.bottom}}px;" catchtap="hold" catchtouchmove="hold"></view>
+  <view class="ring" style="left: {{hole.left}}px; top: {{hole.top}}px; width: {{hole.width}}px; height: {{hole.height}}px;"></view>
+  <view class="bubble" style="left: {{bubble.left}}px; top: {{bubble.top}}px; width: {{bubble.width}}px;" catchtap="hold">
+    <view class="row">
+      <image class="icon" src="{{icon}}" mode="aspectFit"></image>
+      <view class="copy">
+        <text class="lead">{{lead}}</text>
+        <text class="rest">{{rest}}</text>
+      </view>
+    </view>
+    <view class="go" bindtap="onNext" hover-class="go-on" hover-stay-time="120"><text class="go-text">{{next}}</text></view>
+  </view>
+</view>
