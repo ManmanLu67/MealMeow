@@ -1,0 +1,12 @@
+.mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 200; background: rgba(34, 41, 38, 0.4); }
+.dialog { position: fixed; left: 64rpx; right: 64rpx; top: 50%; z-index: 201; box-sizing: border-box; padding: 48rpx 40rpx 32rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 16rpx; transform: translateY(-50%); }
+.t-title { font-size: 40rpx; line-height: 56rpx; font-weight: 800; color: #1A1A1A; }
+.name { margin-top: 32rpx; padding: 24rpx; border: 4rpx solid #1A1A1A; border-radius: 8rpx; background: #FFFFFF; font-size: 32rpx; }
+.dialog-actions { display: flex; justify-content: space-between; margin-top: 40rpx; }
+.dialog-actions-btn { width: calc((100% - 16rpx) / 2); }
+.btn { display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-radius: 999rpx; }
+.btn-primary { height: 96rpx; background: #B84E0C; color: #FFFFFF; }
+.btn-primary-on { background: #9C420A; }
+.btn-secondary { height: 96rpx; background: #FFFFFF; border: 2rpx solid #1A1A1A; color: #1A1A1A; }
+.btn-secondary-on { background: #F7F8F9; }
+.t-label { font-size: 28rpx; line-height: 40rpx; font-weight: 600; color: #FFFFFF; }

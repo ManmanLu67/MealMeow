@@ -37,6 +37,8 @@
     </view>
   </block>
 
+  <nickname-dialog show="{{nicknameOpen}}" value="{{nicknameDraft}}" bindconfirm="onNicknameConfirm" bindcancel="onNicknameCancel"></nickname-dialog>
+
   <block wx:if="{{dialog}}">
     <view class="mask" bindtap="closeDialog"></view>
     <view class="dialog">

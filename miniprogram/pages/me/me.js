@@ -1,9 +1,11 @@
 const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
+const nickname = require('../../utils/nickname.js')
+const guide = require('../../utils/guide.js')
 
 Page({
-  data: { nickname: '', initial: '', accountId: '' },
+  data: { nickname: '', nicknameSet: false, initial: '', accountId: '', nicknameOpen: false, nicknameDraft: '' },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
@@ -12,16 +14,39 @@ Page({
     // 昵称和账号 ID 由云端按登录态返回。账号 ID 只展示，不提供搜索、邀请、复制入口。
     const view = config.usePreviewData ? preview.meView() : null
     if (view) {
-      const nickname = view.nickname || '吃饭人'
-      this.setData({ nickname: nickname, initial: nickname.slice(0, 1), accountId: view.accountId })
+      const shown = nickname.shown(view.nickname)
+      this.setData({ nickname: shown.nickname, nicknameSet: shown.nicknameSet, initial: shown.initial, accountId: view.accountId })
       return
     }
     const self = this
     api.call('me', {}).then(function (res) {
       const data = res.ok && res.data ? res.data : {}
-      const nickname = data.nickname || '吃饭人'
-      self.setData({ nickname: nickname, initial: nickname.slice(0, 1), accountId: data.accountId || '' })
+      const shown = nickname.shown(data.nickname)
+      self.setData({ nickname: shown.nickname, nicknameSet: shown.nicknameSet, initial: shown.initial, accountId: data.accountId || '' })
     })
+  },
+
+  editNickname() {
+    const self = this
+    this._nicknameSyncFirst = true
+    this._afterNickname = function () { self.onShow() }
+    this.setData({
+      nicknameOpen: true,
+      nicknameDraft: this.data.nicknameSet ? this.data.nickname : '',
+    })
+  },
+
+  onNicknameConfirm(event) {
+    if (config.usePreviewData) {
+      const shown = nickname.shown(event.detail.nickname)
+      this.setData({ nicknameOpen: false, nickname: shown.nickname, nicknameSet: shown.nicknameSet, initial: shown.initial })
+      return
+    }
+    nickname.save(this, event.detail.nickname)
+  },
+
+  onNicknameCancel() {
+    nickname.cancel(this)
   },
 
   closeAccount() {
@@ -39,7 +64,8 @@ Page({
           }
           wx.removeStorageSync('localUserId')
           wx.removeStorageSync('subscribeState')
-          wx.reLaunch({ url: '/pages/start/start' })
+          guide.reset()
+          wx.switchTab({ url: '/pages/home/home' })
         })
       },
     })

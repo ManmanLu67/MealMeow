@@ -2,9 +2,10 @@ const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
 const pets = require('../../utils/pets.js')
+const nickname = require('../../utils/nickname.js')
 
 Page({
-  data: { canAdopt: true, cooldownDays: 0, dialog: false, name: '', species: 'cat', looks: [] },
+  data: { canAdopt: true, cooldownDays: 0, dialog: false, name: '', species: 'cat', looks: [], nicknameOpen: false, nicknameDraft: '' },
 
   onLoad(query) {
     this.previewState = query.state || ''
@@ -34,7 +35,16 @@ Page({
   ask() {
     // 冷却中页面不给出可点的领养按钮，这里再挡一层。
     if (!this.data.canAdopt) return
-    this.setData({ dialog: true })
+    const self = this
+    nickname.gate(this, function () { self.setData({ dialog: true }) })
+  },
+
+  onNicknameConfirm(event) {
+    nickname.save(this, event.detail.nickname)
+  },
+
+  onNicknameCancel() {
+    nickname.cancel(this)
   },
 
   closeDialog() { this.setData({ dialog: false }) },

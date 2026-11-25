@@ -1,5 +1,5 @@
 <view class="page me">
-  <view class="profile">
+  <view class="profile" bindtap="editNickname" hover-class="profile-on">
     <view class="avatar"><text class="t-title avatar-text">{{initial}}</text></view>
     <view class="profile-text">
       <text class="t-title">{{nickname}}</text>
@@ -19,6 +19,8 @@
       <view class="chev"></view>
     </navigator>
   </view>
+
+  <nickname-dialog show="{{nicknameOpen}}" value="{{nicknameDraft}}" bindconfirm="onNicknameConfirm" bindcancel="onNicknameCancel"></nickname-dialog>
 
   <view class="close" bindtap="closeAccount" hover-class="setting-card-on">
     <text class="close-text">注销账号</text>

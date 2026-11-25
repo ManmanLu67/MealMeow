@@ -1,5 +1,6 @@
 .page.me { padding-top: 32rpx; padding-bottom: calc(160rpx + env(safe-area-inset-bottom)); background: #F7F8F9; color: #1A1A1A; }
 .profile { display: flex; align-items: center; margin-bottom: 48rpx; }
+.profile-on { opacity: 0.72; }
 .avatar { display: flex; align-items: center; justify-content: center; width: 112rpx; height: 112rpx; border: 4rpx solid #1A1A1A; border-radius: 50%; background: #FFC107; }
 .avatar-text { color: #1A1A1A; font-weight: 800; }
 .profile-text { display: flex; flex-direction: column; margin-left: 24rpx; }

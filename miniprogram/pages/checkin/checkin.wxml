@@ -83,6 +83,8 @@
     </view>
   </block>
 
+  <nickname-dialog show="{{nicknameOpen}}" value="{{nicknameDraft}}" bindconfirm="onNicknameConfirm" bindcancel="onNicknameCancel"></nickname-dialog>
+
   <block wx:if="{{dialog === 'privacy'}}">
     <view class="mask" bindtap="refusePrivacy"></view>
     <view class="dialog">

@@ -1,0 +1,11 @@
+<block wx:if="{{show}}">
+  <view class="mask" bindtap="cancel"></view>
+  <view class="dialog" catchtap="hold">
+    <text class="t-title">{{value ? '修改昵称' : '填写昵称'}}</text>
+    <input class="name" value="{{draft}}" maxlength="20" placeholder="你的昵称" bindinput="onInput" focus="{{show}}" />
+    <view class="dialog-actions">
+      <view class="btn btn-secondary dialog-actions-btn" bindtap="cancel" hover-class="btn-secondary-on"><text>取消</text></view>
+      <view class="btn btn-primary dialog-actions-btn" bindtap="confirm" hover-class="btn-primary-on"><text class="t-label">确定</text></view>
+    </view>
+  </view>
+</block>

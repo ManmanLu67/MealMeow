@@ -7,6 +7,7 @@ const preview = require('../../utils/preview.js')
 const labels = require('../../utils/labels.js')
 const remind = require('../../utils/remind.js')
 const privacy = require('../../utils/privacy.js')
+const nickname = require('../../utils/nickname.js')
 
 const MAX_PHOTOS = 9
 
@@ -24,6 +25,8 @@ Page({
     photos: [],
     dialog: '',
     privacyName: '《隐私保护指引》',
+    nicknameOpen: false,
+    nicknameDraft: '',
   },
 
   onShow() {
@@ -107,8 +110,21 @@ Page({
   },
 
   // 拍照和相册只往预览里加图，不写库。
-  takePhoto() { this.choose(['camera']) },
-  pickAlbum() { this.choose(['album']) },
+  takePhoto() {
+    const self = this
+    nickname.gate(this, function () { self.choose(['camera']) })
+  },
+  pickAlbum() {
+    const self = this
+    nickname.gate(this, function () { self.choose(['album']) })
+  },
+
+  onNicknameConfirm(event) {
+    nickname.save(this, event.detail.nickname)
+  },
+  onNicknameCancel() {
+    nickname.cancel(this)
+  },
 
   showPrivacy(resolve) { privacy.show(this, resolve) },
   agreePrivacy() {
@@ -159,6 +175,11 @@ Page({
   },
 
   replacePhoto() {
+    const self = this
+    nickname.gate(this, function () { self.openReplace() })
+  },
+
+  openReplace() {
     const self = this
     wx.chooseImage({
       count: 1,

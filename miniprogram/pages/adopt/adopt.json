@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "领养"
+  "navigationBarTitleText": "领养",
+  "usingComponents": {
+    "nickname-dialog": "/components/nickname-dialog/nickname-dialog"
+  }
 }

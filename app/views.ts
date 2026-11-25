@@ -520,7 +520,7 @@ export function displayAccountId(userId: string): string {
 export async function meView(store: Store, caller: Caller): Promise<MeView> {
   const user = await requireUser(store, caller.userId)
   const nickname = user.nickname.trim()
-  return { nickname: nickname || '吃饭人', accountId: displayAccountId(user.userId) }
+  return { nickname, accountId: displayAccountId(user.userId) }
 }
 
 export type MemorialCard = { id: string; name: string; photo: string }

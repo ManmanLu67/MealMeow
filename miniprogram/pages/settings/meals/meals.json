@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "饭点设置"
+  "navigationBarTitleText": "饭点设置",
+  "usingComponents": {
+    "nickname-dialog": "/components/nickname-dialog/nickname-dialog"
+  }
 }

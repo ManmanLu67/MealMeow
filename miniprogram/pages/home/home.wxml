@@ -6,12 +6,11 @@
       <view class="stat-row"><text class="stat-k">健康</text><text class="stat-v">{{healthText}}</text></view>
       <view class="stat-row"><text class="stat-k">等级</text><text class="stat-v">{{levelText}}</text></view>
     </view>
-    <view class="meals">
+    <view class="meals {{guideId === 'meals' ? 'guide-target' : ''}}">
     <view
       wx:for="{{chips}}"
       wx:key="meal"
       class="meal meal-{{item.tone}}"
-      data-meal="{{item.meal}}"
       bindtap="onChip"
     >
       <view wx:if="{{item.tone === 'done'}}" class="badge"><view class="tick"></view></view>
@@ -25,7 +24,7 @@
   <view wx:if="{{petView === 'pasture'}}" class="stage" style="transform: scale({{stageScale}});">
     <view class="adopt">
       <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtouchstart="onPetTouchStart" bindtouchend="onPetTouchEnd" bindtap="onPetTap"></image>
-      <text class="adopt-label" bindtap="goAdopt">领养</text>
+      <text class="adopt-label {{guideId === 'adopt' ? 'guide-target' : ''}}" bindtap="goAdopt">领养</text>
     </view>
     <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
       <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
@@ -56,18 +55,21 @@
 
     <view wx:else class="adopt">
       <image class="person" src="/assets/icon/person.png" mode="aspectFit" bindtouchstart="onPetTouchStart" bindtouchend="onPetTouchEnd" bindtap="onPetTap"></image>
-      <text class="adopt-label" bindtap="goAdopt">领养</text>
+      <text class="adopt-label {{guideId === 'adopt' ? 'guide-target' : ''}}" bindtap="goAdopt">领养</text>
     </view>
 
-    <image wx:if="{{showBag}}" class="bag" src="/assets/icon/bag.png" mode="aspectFit"></image>
+    <view wx:if="{{petView === 'living'}}" class="bag" bindtap="askStaple">
+      <image class="bag-img" src="/assets/icon/bag.png" mode="aspectFit"></image>
+      <text class="bag-count">{{stapleLeft}}</text>
+    </view>
 
     <view wx:for="{{photos}}" wx:key="meal" class="polaroid polaroid-{{item.meal}}">
       <image class="polaroid-pin" src="/assets/icon/pin.png" mode="aspectFit"></image>
       <image class="polaroid-photo" src="{{item.src}}" mode="aspectFill"></image>
     </view>
   </view>
-  <view class="stage cam-layer" style="transform: scale({{stageScale}});">
-    <view class="cam {{petView === 'living' && species === 'samoyed' ? 'cam-dog' : ''}}" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
+  <view class="stage cam-layer {{guideId === 'meals' ? 'guide-on' : ''}}" style="transform: scale({{stageScale}});">
+    <view class="cam {{petView === 'living' && species === 'samoyed' ? 'cam-dog' : ''}} {{guideId === 'meals' ? 'guide-target' : ''}}" hover-class="cam-press" hover-stay-time="80" bindtap="onCamera" aria-label="拍照记录">
       <image class="cam-img" src="{{cameraSrc}}" mode="aspectFit"></image>
     </view>
   </view>
@@ -120,6 +122,37 @@
         <text class="stat-kicker">宠物等级</text>
         <text class="stat-line">等级随时间增长。漏餐会扣除宠物等级，健康值越低扣得更多。最低降为 0 级。</text>
       </scroll-view>
+    </view>
+  </block>
+
+  <block wx:if="{{guide}}">
+    <view class="guide-card {{guideId === 'adopt' ? 'guide-adopt' : ''}}" style="{{guideId === 'adopt' ? '' : 'top:' + guideTop + 'px'}}">
+      <text class="guide-title">{{guide.title}}</text>
+      <text class="guide-line">{{guide.line}}</text>
+      <text class="guide-note">{{guide.note}}</text>
+      <view class="btn btn-primary guide-next" bindtap="nextGuide" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">{{guide.next}}</text></view>
+    </view>
+  </block>
+
+  <nickname-dialog show="{{nicknameOpen}}" value="{{nicknameDraft}}" bindconfirm="onNicknameConfirm" bindcancel="onNicknameCancel"></nickname-dialog>
+
+  <block wx:if="{{stapleDialog}}">
+    <view class="mask" bindtap="closeStaple"></view>
+    <view class="dialog">
+      <block wx:if="{{stapleDialog === 'ask'}}">
+        <text class="t-title">使用应急口粮？</text>
+        <view class="dialog-body"><text class="t-body t-secondary">每月 2 个，剩下的不带到下个月。</text></view>
+        <view class="dialog-actions">
+          <view class="btn btn-secondary dialog-actions-btn" bindtap="closeStaple" hover-class="btn-secondary-on"><text>取消</text></view>
+          <view class="btn btn-primary dialog-actions-btn" bindtap="confirmStaple" hover-class="btn-primary-on"><text class="t-label">使用</text></view>
+        </view>
+      </block>
+      <block wx:else>
+        <text class="t-title">{{stapleMessage}}</text>
+        <view class="dialog-actions">
+          <view class="btn btn-primary staple-ok" bindtap="closeStaple" hover-class="btn-primary-on"><text class="t-label">知道了</text></view>
+        </view>
+      </block>
     </view>
   </block>
 

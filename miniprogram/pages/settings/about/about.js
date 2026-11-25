@@ -1,15 +1,17 @@
 const api = require('../../../utils/api.js')
 const timeZoneOf = require('../../../utils/time-zone.js')
 const privacy = require('../../../utils/privacy.js')
+const guide = require('../../../utils/guide.js')
 
 function timeZone() {
   return timeZoneOf.deviceTimeZone()
 }
 
 Page({
-  data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》' },
+  data: { shareReady: false, dialog: '', privacyName: '《隐私保护指引》', guideId: '', guide: null },
 
   onShow() {
+    this.syncGuide()
     const page = this
     if (!wx.getPrivacySetting) return
     wx.getPrivacySetting({
@@ -18,6 +20,21 @@ Page({
         if (res.privacyContractName) page.setData({ privacyName: res.privacyContractName })
       },
     })
+  },
+
+  syncGuide() {
+    const step = guide.current()
+    if (step !== 'backup') {
+      this.setData({ guideId: '', guide: null })
+      return
+    }
+    this.setData({ guideId: 'backup', guide: guide.view('backup') })
+  },
+
+  finishGuide() {
+    guide.advance('backup')
+    this.setData({ guideId: '', guide: null })
+    wx.navigateBack()
   },
 
   showPrivacy(resolve) { privacy.show(this, resolve) },

@@ -2,6 +2,7 @@
 // 这里的 problem() 只是为了在点保存前少走一趟网络，规则和领域层一致，改规则时两处一起改。
 const api = require('../../../utils/api.js')
 const config = require('../../../utils/config.js')
+const nickname = require('../../../utils/nickname.js')
 
 const NAMES = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' }
 const ORDER = ['breakfast', 'lunch', 'dinner']
@@ -27,7 +28,7 @@ function problem(clocks) {
 }
 
 Page({
-  data: { rows: [], dirty: false, error: '' },
+  data: { rows: [], dirty: false, error: '', nicknameOpen: false, nicknameDraft: '' },
 
   onLoad() {
     this.clocks = { breakfast: '07:30', lunch: '12:00', dinner: '18:00' }
@@ -51,6 +52,11 @@ Page({
     if (!this.data.dirty) return
     if (problem(this.clocks)) return
     const self = this
+    nickname.gate(this, function () { self.persist() })
+  },
+
+  persist() {
+    const self = this
     if (config.usePreviewData) {
       this.saved = Object.assign({}, this.clocks)
       this.render()
@@ -66,5 +72,13 @@ Page({
       self.render()
       wx.showToast({ title: '已设置，次日 04:00 生效', icon: 'none' })
     })
+  },
+
+  onNicknameConfirm(event) {
+    nickname.save(this, event.detail.nickname)
+  },
+
+  onNicknameCancel() {
+    nickname.cancel(this)
   },
 })

@@ -8,8 +8,7 @@
     "pages/memorial/list",
     "pages/memorial/detail",
     "pages/settings/meals/meals",
-    "pages/settings/about/about",
-    "pages/start/start"
+    "pages/settings/about/about"
   ],
   "window": {
     "navigationBarTitleText": "吃饭喵",

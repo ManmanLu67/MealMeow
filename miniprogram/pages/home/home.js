@@ -7,6 +7,9 @@ const pets = require('../../utils/pets.js')
 const feedback = require('../../utils/feedback.js')
 const timeZoneOf = require('../../utils/time-zone.js')
 const remind = require('../../utils/remind.js')
+const guide = require('../../utils/guide.js')
+const nickname = require('../../utils/nickname.js')
+const rules = require('../../generated/domain/meal.js')
 
 const MEAL_META = {
   breakfast: { name: '早餐', time: '07:30' },
@@ -54,7 +57,9 @@ Page({
     cameraSrc: '',
     photos: [],
     stageScale: 1,
-    showBag: false,
+    stapleLeft: 0,
+    stapleDialog: '',
+    stapleMessage: '',
     showMemorial: false,
     hasCurrent: false,
     camera: { type: 'snack' },
@@ -65,6 +70,11 @@ Page({
     bandNote: '',
     remindMeal: '',
     remindName: '',
+    guideId: '',
+    guide: null,
+    guideTop: 240,
+    nicknameOpen: false,
+    nicknameDraft: '',
   },
 
   onLoad(query) {
@@ -103,20 +113,59 @@ Page({
       this.apply(view, chosen)
       return
     }
-    api.call('home', {}).then(function (res) {
-      if (!res.ok && res.error === 'no_user') return null
-      if (!res.ok) {
-        wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
+    api.call('sync', { timeZone: timeZoneOf.deviceTimeZone() }).then(function (synced) {
+      if (!synced.ok) {
+        wx.showToast({ title: synced.error || '加载失败，请稍后再试', icon: 'none' })
         return null
       }
-      return api.call('sync', { timeZone: timeZoneOf.deviceTimeZone() }).then(function () {
-        return api.call('home', {})
-      })
+      const created = !!(synced.data && synced.data.created)
+      guide.beginIfNew(created)
+      self.refreshGuide()
+      return api.call('home', {})
     }).then(function (res) {
       if (!res) return
       if (res.ok) self.apply(res.data)
-      else if (res.error !== 'no_user') wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
+      else wx.showToast({ title: '加载失败，请稍后再试', icon: 'none' })
     })
+  },
+
+  refreshGuide() {
+    const step = guide.current()
+    if (step === 'backup') {
+      if (this._openingBackup) return
+      this._openingBackup = true
+      const page = this
+      this.setData({ guideId: '', guide: null })
+      wx.navigateTo({
+        url: '/pages/settings/about/about',
+        complete() { page._openingBackup = false },
+      })
+      return
+    }
+    if (step === 'meals' || step === 'adopt') {
+      this.setData({
+        guideId: step,
+        guide: guide.view(step),
+        guideTop: (this.data.padTop || 88) + 148,
+      })
+      return
+    }
+    this.setData({ guideId: '', guide: null })
+  },
+
+  nextGuide() {
+    const next = guide.advance(this.data.guideId)
+    if (next === 'backup') {
+      this._openingBackup = true
+      const page = this
+      this.setData({ guideId: '', guide: null })
+      wx.navigateTo({
+        url: '/pages/settings/about/about',
+        complete() { page._openingBackup = false },
+      })
+      return
+    }
+    this.setData({ guideId: next, guide: guide.view(next) })
   },
 
   chosenSpecies() {
@@ -160,6 +209,7 @@ Page({
         time: chip.time || meta.time,
         state: chip.state,
         tone: tone,
+        inWindow: !!chip.inWindow,
       }
     })
     const showMemorial = view.petView === 'memorial'
@@ -189,7 +239,7 @@ Page({
       cameraSrc: view.petView === 'living' ? pets.camera(species) : '/assets/pet/camera-plain.png',
       photos: photosOf(view.photos),
       statChanges: view.statChanges || [],
-      showBag: chips.some(function (chip) { return chip.tone === 'staple' }),
+      stapleLeft: typeof view.stapleLeft === 'number' ? view.stapleLeft : 0,
       showMemorial: showMemorial,
       hasCurrent: chips.some(function (chip) { return chip.tone === 'now' }),
       camera: view.camera,
@@ -200,20 +250,16 @@ Page({
     this.markTab()
   },
 
-  onChip(event) {
-    const meal = event.currentTarget.dataset.meal
-    const chip = this.data.chips.filter(function (item) { return item.meal === meal })[0]
-    if (!chip) return
-    if (chip.tone === 'now') {
-      const action = this.data.camera
-      const meals = action && action.type === 'pick' ? action.meals : [{ meal: chip.meal, name: chip.name }]
-      this.setData({ sheet: 'pick', pickMeals: meals, showSnack: true })
-      return
-    }
-    if (chip.tone === 'done' || chip.tone === 'staple') this.goCheckin(meal)
+  onChip() {
+    wx.switchTab({ url: '/pages/me/me' })
   },
 
   onCamera() {
+    const self = this
+    nickname.gate(this, function () { self.openCamera() })
+  },
+
+  openCamera() {
     const action = this.data.camera
     if (action.type === 'pick') this.setData({ sheet: 'pick', pickMeals: action.meals, showSnack: action.snack })
     else this.goSnack()
@@ -229,16 +275,51 @@ Page({
     this.goCheckin(event.currentTarget.dataset.meal)
   },
 
+  askStaple() {
+    if (this.data.petView !== 'living') return
+    this.setData({ stapleDialog: 'ask', stapleMessage: '' })
+  },
+
+  closeStaple() {
+    this.setData({ stapleDialog: '', stapleMessage: '' })
+  },
+
+  confirmStaple() {
+    const result = rules.stapleTap(this.data.chips, this.data.stapleLeft)
+    if (!result || result.action === 'block') {
+      this.setData({
+        stapleDialog: 'result',
+        stapleMessage: (result && result.message) || '当前未在打卡时间',
+      })
+      return
+    }
+    if (config.usePreviewData) {
+      this.setData({ stapleDialog: '', stapleMessage: '' })
+      return
+    }
+    const self = this
+    api.call('exempt', { meal: result.meal }).then(function (res) {
+      if (res && res.ok) {
+        self.setData({ stapleDialog: '', stapleMessage: '' })
+        self.load()
+        return
+      }
+      self.setData({
+        stapleDialog: 'result',
+        stapleMessage: (res && res.error) || '口粮使用失败，请重试',
+      })
+    })
+  },
+
   dismissRemind() {
     remind.markShown()
     this.setData({ remindMeal: '' })
   },
 
   goRemindCheckin() {
-    const meal = this.data.remindMeal
     remind.markShown()
     this.setData({ remindMeal: '' })
-    if (meal) this.goCheckin(meal)
+    this.onCamera()
   },
 
   goCheckin(meal) {
@@ -252,7 +333,20 @@ Page({
   },
 
   goAdopt() {
+    const self = this
+    nickname.gate(this, function () { self.openAdopt() })
+  },
+
+  openAdopt() {
     wx.navigateTo({ url: '/pages/adopt/adopt' + (this.previewState ? '?state=' + this.previewState : '') })
+  },
+
+  onNicknameConfirm(event) {
+    nickname.save(this, event.detail.nickname)
+  },
+
+  onNicknameCancel() {
+    nickname.cancel(this)
   },
 
   onPetTouchStart(event) {

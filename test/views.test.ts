@@ -390,7 +390,7 @@ describe('me and memorial', () => {
   it('shows the nickname and a stable account id', async () => {
     const store = await seededStore({ nickname: '' })
     const view = await meView(store, { userId: 'u' })
-    assert.equal(view.nickname, '吃饭人')
+    assert.equal(view.nickname, '')
     const again = await meView(store, { userId: 'u' })
     assert.equal(again.accountId, view.accountId)
     assert.match(view.accountId, /^cf-\d{4}-\d{4}$/)

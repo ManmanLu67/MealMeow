@@ -16,11 +16,13 @@
   </view>
 
   <view class="notes">
-    <view class="note"><text class="t-caption">修改次日 04:00 生效。</text></view>
-    <view class="note"><text class="t-caption">相邻饭点至少相隔 2 小时，窗口是饭点前后各 1 小时。</text></view>
-    <view class="note"><text class="t-caption">饭点不能落在 03:01 到 04:59。</text></view>
+    <view class="note"><text class="t-caption">修改后次日 04:00 生效。</text></view>
+    <view class="note"><text class="t-caption">相邻饭点至少相隔 2 小时，打卡窗口为饭点前后各 1 小时。</text></view>
+    <view class="note"><text class="t-caption">03:01-04:59间不可设为打卡时间。</text></view>
   </view>
   <view wx:if="{{error}}" class="error"><text class="t-label error-text">{{error}}</text></view>
+
+  <nickname-dialog show="{{nicknameOpen}}" value="{{nicknameDraft}}" bindconfirm="onNicknameConfirm" bindcancel="onNicknameCancel"></nickname-dialog>
 
   <view class="footer">
     <view class="btn btn-primary {{dirty ? '' : 'btn-disabled'}}" bindtap="save" hover-class="{{dirty ? 'btn-primary-on' : ''}}" hover-stay-time="120"><text class="t-button">保存</text></view>

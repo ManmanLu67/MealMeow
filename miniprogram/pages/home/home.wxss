@@ -45,6 +45,10 @@
 .bowl-plate, .bowl-kibble { position: absolute; left: 0; top: 0; width: 168rpx; height: 112rpx; }
 
 .bag { position: absolute; left: 40rpx; top: 444rpx; z-index: 3; width: 109rpx; height: 132rpx; }
+.bag-img { width: 109rpx; height: 132rpx; }
+.bag-count { position: absolute; top: -14rpx; right: -14rpx; min-width: 36rpx; height: 36rpx; padding: 0 6rpx; box-sizing: border-box; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 18rpx; font-size: 24rpx; font-weight: 800; line-height: 28rpx; text-align: center; color: #1A1A1A; }
+.dialog-body { margin-top: 16rpx; }
+.staple-ok { width: 100%; }
 .polaroid { position: absolute; z-index: 4; box-sizing: border-box; width: 148rpx; height: 176rpx; padding: 12rpx 12rpx 40rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 4rpx; box-shadow: 6rpx 6rpx 0 #1A1A1A; transform: rotate(-5deg); overflow: visible; }
 .polaroid-photo { display: block; width: 116rpx; height: 116rpx; background: #F7F8F9; }
 .polaroid-pin { position: absolute; left: 56rpx; top: -20rpx; z-index: 2; width: 36rpx; height: 44rpx; transform: rotate(5deg); }
@@ -60,6 +64,16 @@
 .album-img { width: 174rpx; height: 158rpx; }
 
 .cam-layer { z-index: 7; pointer-events: none; }
+.cam-layer.guide-on { z-index: 90; }
+.meals.guide-target { position: relative; z-index: 90; }
+.guide-target { z-index: 90; box-shadow: 0 0 0 8rpx #FFC107; }
+.guide-card { position: fixed; left: 32rpx; right: 32rpx; z-index: 80; box-sizing: border-box; padding: 28rpx 28rpx 24rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; }
+.guide-adopt { bottom: calc(176rpx + env(safe-area-inset-bottom)); }
+.guide-title { display: block; font-size: 40rpx; line-height: 56rpx; font-weight: 800; color: #1A1A1A; }
+.guide-line { display: block; margin-top: 16rpx; font-size: 32rpx; line-height: 48rpx; color: #1A1A1A; }
+.guide-note { display: block; margin-top: 16rpx; font-size: 26rpx; line-height: 36rpx; font-weight: 800; color: #1A1A1A; }
+.guide-next { margin-top: 28rpx; }
+.guide-next .t-button { color: #FFFFFF; }
 .cam { position: absolute; left: 50%; top: 828rpx; z-index: 6; width: 168rpx; height: 168rpx; margin-left: -84rpx; overflow: visible; pointer-events: auto; }
 .cam-dog { width: 268rpx; margin-left: -184rpx; }
 .cam-dog .cam-img { width: 268rpx; height: 168rpx; }

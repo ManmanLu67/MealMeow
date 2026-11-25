@@ -69,6 +69,7 @@ function chips(states) {
       time: META[m.meal].time,
       state: states[i],
       label: chipLabel(m.short, states[i]),
+      inWindow: states[i] === 'due',
     }
   })
 }
@@ -125,6 +126,7 @@ function homeView(name) {
     mealsEaten: memorial ? 30 : 41,
     cooldownDays: memorial ? 6 : 0,
     camera: cameraFor(scene.states),
+    stapleLeft: 2,
   }
 }
 
