@@ -23,7 +23,7 @@ const STEPS = {
     selector: '.adopt-label',
     icon: '/assets/icon/person.png',
     lead: '第三步：点这里领养你的宠物。',
-    rest: '注：界面素材由AI生成',
+    rest: '注：界面宠物形象及部分视觉元素由 AI 辅助生成',
     next: '下一步',
   },
   backup: {

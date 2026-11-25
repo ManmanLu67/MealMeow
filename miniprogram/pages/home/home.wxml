@@ -161,8 +161,7 @@
   <block wx:if="{{remindMeal}}">
     <view class="mask"></view>
     <view class="dialog">
-      <text class="t-title">{{remindName}}时间到了</text>
-      <view class="dialog-body"><text class="t-body t-secondary">去打这一餐，宠物才有饭吃。</text></view>
+      <text class="t-title">{{petName}}饿了，请及时打卡投喂哦！</text>
       <view class="dialog-actions">
         <view class="btn btn-secondary dialog-actions-btn" bindtap="dismissRemind" hover-class="btn-secondary-on"><text>稍后</text></view>
         <view class="btn btn-primary dialog-actions-btn" bindtap="goRemindCheckin" hover-class="btn-primary-on"><text class="t-label">去打卡</text></view>

@@ -69,7 +69,6 @@ Page({
     statChanges: [],
     bandNote: '',
     remindMeal: '',
-    remindName: '',
     guideId: '',
     guide: null,
     hole: null,
@@ -270,13 +269,12 @@ Page({
       camera: view.camera,
       bandNote: labels.bandNote(view.band, view.petName),
       remindMeal: due ? due.meal : '',
-      remindName: due ? due.name : '',
     }, function () { self.fitStage() })
     this.markTab()
   },
 
   onChip() {
-    wx.switchTab({ url: '/pages/me/me' })
+    wx.navigateTo({ url: '/pages/settings/meals/meals' })
   },
 
   onCamera() {

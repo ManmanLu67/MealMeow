@@ -43,7 +43,7 @@
     <view class="mask" bindtap="closeDialog"></view>
     <view class="dialog">
       <text class="t-title">确认领养</text>
-      <view class="dialog-body"><text class="t-body">连续漏餐会饿死，死亡不可恢复。</text></view>
+      <view class="dialog-body"><text class="t-body">连续漏餐会导致死亡，死亡不可恢复。</text></view>
       <view class="dialog-actions">
         <view class="btn btn-secondary dialog-actions-btn" bindtap="closeDialog" hover-class="btn-secondary-on"><text>取消</text></view>
         <view class="btn btn-primary dialog-actions-btn" bindtap="confirm" hover-class="btn-primary-on"><text class="t-label">确认</text></view>

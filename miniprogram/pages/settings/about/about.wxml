@@ -21,11 +21,11 @@
 
 <view class="body">
   <text class="t-title">隐私</text>
-  <text class="t-body para">照片与打卡记录仅留在本机。备份不含照片，换机保留仅连续打卡时间。</text>
-  <text class="t-body para">照片的素材化处理全在设备本地完成，不上传云端，也不接入任何外部 AI 接口。</text>
+  <text class="t-body para">照片只留在本机，备份不含照片。换机后保留宠物信息与打卡记录。</text>
+  <text class="t-body para">照片的素材化处理全在设备本地完成。</text>
   
   <text class="t-title" style="margin-top: 40rpx;">关于</text>
-  <text class="t-body para">界面中的宠物形象及部分视觉元素由 AI 辅助生成，仅作静态展示。</text>
+  <text class="t-body para">界面中的宠物形象及部分视觉元素由 AI 辅助生成。</text>
   <text class="t-body para">宠物的状态由你每天按时打卡的情况决定。连续漏餐宠物死亡，死亡不可恢复。</text>
 </view>
   <guide-spot

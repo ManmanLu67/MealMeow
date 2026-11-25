@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { exportBackup, importBackup } from '../app/backup.ts'
 import { runDueJobs } from '../app/settle.ts'
+import { homeView } from '../app/views.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
 import { mustPet, record, seededStore, user } from './fixtures.ts'
 
@@ -92,6 +93,34 @@ describe('backup', () => {
     assert.equal((await importBackup(phone, backup, 'u')).ok, true)
     await runDueJobs(phone, new Date('2026-11-13T01:00:00.000Z'))
     assert.equal((await mustPet(phone)).hunger, 5)
+  })
+
+  it('keeps the pet name, hunger, and level', async () => {
+    const when = new Date('2026-11-13T04:00:00.000Z')
+    const store = await seededStore({}, {
+      name: '饭团',
+      hunger: 3,
+      hungerLog: [{ date: '2026-11-12', band: 'peckish', meals: 1 }],
+    })
+    await store.saveRecord(record({
+      date: '2026-11-12',
+      meal: 'dinner',
+      status: 'checked_in',
+      review: 'passed',
+      photoReviews: ['passed'],
+      checkinAt: '2026-11-12T10:00:00.000Z',
+    }))
+    const before = await homeView(store, { userId: 'u' }, when)
+    const phone = createMemoryStore()
+    assert.equal((await importBackup(phone, await exportBackup(store, 'u'), 'u')).ok, true)
+    const pet = await mustPet(phone)
+    assert.equal(pet.name, '饭团')
+    assert.equal(pet.hunger, 3)
+    assert.equal(pet.alive, true)
+    assert.deepEqual(pet.hungerLog, [{ date: '2026-11-12', band: 'peckish', meals: 1 }])
+    const after = await homeView(phone, { userId: 'u' }, when)
+    assert.equal(after.levelText, before.levelText)
+    assert.notEqual(after.levelText, '')
   })
 
   it('removes the pet when the backup has none', async () => {
