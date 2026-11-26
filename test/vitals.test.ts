@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   bowlFill,
+  bowlSatiety,
   emotionFromHunger,
   feedingHungerPercent,
   healthScore,
@@ -10,6 +11,7 @@ import {
   nextMealAt,
   petLevel,
   recordHungerDay,
+  satietyAt,
 } from '../domain/index.ts'
 
 const clocks = { breakfast: '07:30', lunch: '12:00', dinner: '18:00' }
@@ -88,11 +90,77 @@ describe('health and level', () => {
     assert.equal(petLevel(1, [{ date: '2026-11-11', band: 'hungry', meals: 3 }]), 0)
   })
 
-  it('labels emotion from the hunger percent', () => {
-    assert.equal(emotionFromHunger(0), '饱足')
-    assert.equal(emotionFromHunger(30), '饱足')
-    assert.equal(emotionFromHunger(31), '满足')
-    assert.equal(emotionFromHunger(85), '有点饿')
-    assert.equal(emotionFromHunger(86), '饿扁了')
+  it('labels emotion from satiety percent', () => {
+    assert.equal(emotionFromHunger(100), '饱足')
+    assert.equal(emotionFromHunger(70), '饱足')
+    assert.equal(emotionFromHunger(69), '满足')
+    assert.equal(emotionFromHunger(40), '满足')
+    assert.equal(emotionFromHunger(39), '有点饿')
+    assert.equal(emotionFromHunger(15), '有点饿')
+    assert.equal(emotionFromHunger(14), '饿扁了')
+  })
+})
+
+describe('satiety', () => {
+  const clocksFor = () => clocks
+  const breakfast = {
+    kind: 'meal' as const,
+    at: '2026-11-12T23:30:00.000Z',
+    meal: 'breakfast' as const,
+    date: '2026-11-13',
+  }
+
+  it('is 0 with no events and 100 at a meal, then 50 halfway to lunch', () => {
+    assert.equal(satietyAt(new Date('2026-11-12T23:30:00.000Z'), [], clocksFor, SH), 0)
+    assert.equal(satietyAt(new Date('2026-11-12T23:30:00.000Z'), [breakfast], clocksFor, SH), 100)
+    assert.equal(satietyAt(new Date('2026-11-13T01:45:00.000Z'), [breakfast], clocksFor, SH), 50)
+    assert.equal(satietyAt(new Date('2026-11-13T04:00:00.000Z'), [breakfast], clocksFor, SH), 0)
+  })
+
+  it('adds at a meal instant against the following meal, not zero', () => {
+    const snack = { kind: 'snack' as const, at: '2026-11-13T04:00:00.000Z' }
+    assert.equal(satietyAt(new Date('2026-11-13T04:00:00.000Z'), [breakfast, snack], clocksFor, SH), 5)
+  })
+
+  it('adds 90 for a staple and a later meal sets 100', () => {
+    const staple = {
+      kind: 'staple' as const,
+      at: '2026-11-13T04:00:00.000Z',
+      meal: 'lunch' as const,
+      date: '2026-11-13',
+    }
+    assert.equal(satietyAt(new Date('2026-11-13T04:00:00.000Z'), [staple], clocksFor, SH), 90)
+    assert.equal(satietyAt(new Date('2026-11-13T07:00:00.000Z'), [staple], clocksFor, SH), 45)
+    assert.equal(satietyAt(new Date('2026-11-13T10:00:00.000Z'), [staple], clocksFor, SH), 0)
+    const again = {
+      kind: 'meal' as const,
+      at: '2026-11-13T04:30:00.000Z',
+      meal: 'lunch' as const,
+      date: '2026-11-13',
+    }
+    assert.equal(satietyAt(new Date('2026-11-13T04:30:00.000Z'), [staple, again], clocksFor, SH), 100)
+  })
+
+  it('lets three snacks add 15 on top of a full meal and ignores the bowl for staples', () => {
+    const at = '2026-11-12T23:30:00.000Z'
+    const staple = {
+      kind: 'staple' as const,
+      at,
+      meal: 'breakfast' as const,
+      date: '2026-11-13',
+    }
+    const snacks = [1, 2, 3].map((n) => ({
+      kind: 'snack' as const,
+      at: new Date(Date.parse(at) + n).toISOString(),
+    }))
+    assert.equal(
+      satietyAt(new Date(Date.parse(at) + 3), [breakfast, staple, ...snacks], clocksFor, SH),
+      205,
+    )
+    assert.equal(bowlSatiety(new Date(at), [staple], clocksFor, SH), 0)
+    assert.equal(
+      bowlSatiety(new Date(Date.parse(at) + 3), [breakfast, staple, ...snacks], clocksFor, SH),
+      100,
+    )
   })
 })

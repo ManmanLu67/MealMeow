@@ -64,6 +64,7 @@ export type {
 export { dayComplete, personalStreak, streakAnchor, streakEndingAt } from './streak.ts'
 export {
   bowlFill,
+  bowlSatiety,
   emotionFromHunger,
   feedingHungerPercent,
   healthScore,
@@ -72,6 +73,7 @@ export {
   nextMealAt,
   petLevel,
   recordHungerDay,
+  satietyAt,
 } from './vitals.ts'
-export type { HungerDay } from './vitals.ts'
+export type { HungerDay, SatietyEvent } from './vitals.ts'
 export type { StreakInput } from './streak.ts'

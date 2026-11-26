@@ -1,7 +1,144 @@
 import type { MealClocks, MealType } from './meal.ts'
 import { MEALS } from './meal.ts'
 import type { PetBand } from './pet.ts'
-import { addIsoDays, mealInstant } from './time.ts'
+import { addIsoDays, logicalDate, mealInstant } from './time.ts'
+
+export type SatietyEvent = {
+  kind: 'meal' | 'staple' | 'snack'
+  at: string
+  meal?: MealType
+  date?: string
+}
+
+const SATIETY_KIND_ORDER: Record<SatietyEvent['kind'], number> = {
+  meal: 0,
+  staple: 1,
+  snack: 2,
+}
+
+function sortSatietyEvents(events: readonly SatietyEvent[]): SatietyEvent[] {
+  return [...events].sort((a, b) => {
+    const t = Date.parse(a.at) - Date.parse(b.at)
+    if (t !== 0) return t
+    return SATIETY_KIND_ORDER[a.kind] - SATIETY_KIND_ORDER[b.kind]
+  })
+}
+
+/** 事件时刻之后最早的一顿饭点（严格大于该时刻）。 */
+function followingMealInstant(
+  at: Date,
+  clocksFor: (date: string) => MealClocks,
+  timeZone: string,
+): Date {
+  const start = logicalDate(at, timeZone)
+  for (let day = 0; day < 4; day += 1) {
+    const iso = addIsoDays(start, day)
+    const clocks = clocksFor(iso)
+    for (const meal of MEALS) {
+      const instant = mealInstant(iso, clocks[meal], timeZone)
+      if (instant.getTime() > at.getTime()) return instant
+    }
+  }
+  throw new Error('no following meal within range')
+}
+
+function linearSatiety(value: number, anchorAt: Date, nextMeal: Date, at: Date): number {
+  if (value <= 0) return 0
+  const t = at.getTime()
+  if (t >= nextMeal.getTime()) return 0
+  const span = nextMeal.getTime() - anchorAt.getTime()
+  if (span <= 0) return 0
+  const elapsed = t - anchorAt.getTime()
+  if (elapsed <= 0) return value
+  return Math.round(value * (1 - elapsed / span))
+}
+
+type SatietyTrack = {
+  value: number
+  anchorAt: Date
+  nextMeal: Date
+  active: boolean
+}
+
+function initTrack(): SatietyTrack {
+  return { value: 0, anchorAt: new Date(0), nextMeal: new Date(0), active: false }
+}
+
+function applyDecay(track: SatietyTrack, at: Date): void {
+  if (!track.active) return
+  track.value = linearSatiety(track.value, track.anchorAt, track.nextMeal, at)
+  track.anchorAt = at
+  if (track.value <= 0) track.active = false
+}
+
+function anchorTrack(track: SatietyTrack, value: number, at: Date, nextMeal: Date): void {
+  track.value = value
+  track.anchorAt = at
+  track.nextMeal = nextMeal
+  track.active = value > 0
+}
+
+function replaySatiety(
+  now: Date,
+  events: readonly SatietyEvent[],
+  clocksFor: (date: string) => MealClocks,
+  timeZone: string,
+  includeBowl: boolean,
+): number {
+  const satiety = initTrack()
+  const bowl = initTrack()
+  const ordered = sortSatietyEvents(events)
+  const nowMs = now.getTime()
+
+  for (const event of ordered) {
+    const at = new Date(event.at)
+    if (at.getTime() > nowMs) break
+    applyDecay(satiety, at)
+    if (includeBowl && bowl.active) applyDecay(bowl, at)
+
+    const next = followingMealInstant(at, clocksFor, timeZone)
+    if (event.kind === 'meal') {
+      anchorTrack(satiety, 100, at, next)
+      if (includeBowl) anchorTrack(bowl, 100, at, next)
+    } else if (event.kind === 'staple') {
+      const nextValue = Math.round(satiety.value + 90)
+      anchorTrack(satiety, nextValue, at, next)
+    } else {
+      const nextValue = Math.round(satiety.value + 5)
+      anchorTrack(satiety, nextValue, at, next)
+      if (includeBowl) anchorTrack(bowl, nextValue, at, next)
+    }
+  }
+
+  const result = satiety.active
+    ? linearSatiety(satiety.value, satiety.anchorAt, satiety.nextMeal, now)
+    : 0
+
+  if (!includeBowl) return result
+
+  const bowlValue = bowl.active
+    ? linearSatiety(bowl.value, bowl.anchorAt, bowl.nextMeal, now)
+    : 0
+  return Math.min(100, bowlValue)
+}
+
+export function satietyAt(
+  now: Date,
+  events: readonly SatietyEvent[],
+  clocksFor: (date: string) => MealClocks,
+  timeZone: string,
+): number {
+  return replaySatiety(now, events, clocksFor, timeZone, false)
+}
+
+export function bowlSatiety(
+  now: Date,
+  events: readonly SatietyEvent[],
+  clocksFor: (date: string) => MealClocks,
+  timeZone: string,
+): number {
+  return replaySatiety(now, events, clocksFor, timeZone, true)
+}
 
 /** 某一逻辑日结束时的饥饿档，以及这一天结算了几餐。 */
 export type HungerDay = {
@@ -99,10 +236,10 @@ export function petLevel(hours: number, closedDays: readonly HungerDay[]): numbe
   return Math.max(0, levelFromCheckinHours(hours) - levelPenalty(closedDays))
 }
 
-/** 情绪标签跟着饥饿百分比，不跟健康档。 */
+/** 情绪标签跟着饱腹百分比，不跟健康档。 */
 export function emotionFromHunger(percent: number): string {
-  if (percent <= 30) return '饱足'
-  if (percent <= 60) return '满足'
-  if (percent <= 85) return '有点饿'
+  if (percent >= 70) return '饱足'
+  if (percent >= 40) return '满足'
+  if (percent >= 15) return '有点饿'
   return '饿扁了'
 }
