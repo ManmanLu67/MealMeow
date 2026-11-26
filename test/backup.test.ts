@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { exportBackup, importBackup } from '../app/backup.ts'
+import { handle } from '../app/handle.ts'
 import { runDueJobs } from '../app/settle.ts'
 import { homeView } from '../app/views.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
@@ -158,5 +159,37 @@ describe('backup', () => {
     const exported = exportBackup(store, 'u').then(() => order.push('export'))
     await Promise.all([held, exported])
     assert.deepEqual(order, ['hold', 'release', 'export'])
+  })
+
+  it('round-trips meal annotations and accepts records without note', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({ review: 'passed', photoReviews: ['passed'], photos: ['wxfile://a.jpg'] }))
+    const t0 = new Date('2026-11-13T04:00:00.000Z')
+    assert.deepEqual(
+      await handle(store, { userId: 'u' }, t0, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '早饭',
+      }),
+      { ok: true },
+    )
+    const backup = await exportBackup(store, 'u')
+    assert.equal(backup.records[0]?.note?.text, '早饭')
+    const fresh = createMemoryStore()
+    assert.equal((await importBackup(fresh, backup, 'u')).ok, true)
+    assert.equal((await fresh.getRecord('u', '2026-11-13', 'lunch'))?.note?.text, '早饭')
+
+    const legacy = await seededStore()
+    await legacy.saveRecord(record())
+    const legacyBackup = await exportBackup(legacy, 'u')
+    const noNote = {
+      ...legacyBackup,
+      records: legacyBackup.records.map(({ note: _note, ...row }) => row),
+    }
+    const phone = createMemoryStore()
+    assert.equal((await importBackup(phone, noNote, 'u')).ok, true)
+    assert.equal((await phone.getRecord('u', '2026-11-13', 'lunch'))?.note, undefined)
   })
 })

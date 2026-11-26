@@ -175,3 +175,118 @@ describe('platform-neutral entry', () => {
     assert.deepEqual(result, { ok: false, error: 'no_user' })
   })
 })
+
+describe('批注', () => {
+  it('stores one annotation on a meal and updates or clears it', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({ review: 'passed', photoReviews: ['passed'], photos: ['wxfile://a.jpg'] }))
+    const who = { userId: 'u' }
+    const t0 = new Date('2026-11-13T04:00:00.000Z')
+    assert.deepEqual(
+      await handle(store, who, t0, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '早饭',
+      }),
+      { ok: true },
+    )
+    let rec = await store.getRecord('u', '2026-11-13', 'lunch')
+    assert.equal(rec?.note?.text, '早饭')
+    assert.equal(rec?.note?.createdAt, t0.toISOString())
+    assert.equal(rec?.note?.updatedAt, t0.toISOString())
+
+    const t1 = new Date('2026-11-13T05:00:00.000Z')
+    assert.deepEqual(
+      await handle(store, who, t1, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '加菜',
+      }),
+      { ok: true },
+    )
+    rec = await store.getRecord('u', '2026-11-13', 'lunch')
+    assert.equal(rec?.note?.text, '加菜')
+    assert.equal(rec?.note?.createdAt, t0.toISOString())
+    assert.equal(rec?.note?.updatedAt, t1.toISOString())
+
+    assert.deepEqual(
+      await handle(store, who, t1, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '   ',
+      }),
+      { ok: true },
+    )
+    rec = await store.getRecord('u', '2026-11-13', 'lunch')
+    assert.equal(rec?.note, undefined)
+
+    const t2 = new Date('2026-11-13T06:00:00.000Z')
+    assert.deepEqual(
+      await handle(store, who, t2, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '又记',
+      }),
+      { ok: true },
+    )
+    rec = await store.getRecord('u', '2026-11-13', 'lunch')
+    assert.equal(rec?.note?.text, '又记')
+    assert.equal(rec?.note?.createdAt, t2.toISOString())
+
+    const tooLong = '字'.repeat(201)
+    assert.deepEqual(
+      await handle(store, who, t2, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: tooLong,
+      }),
+      { ok: false, error: '批注太长' },
+    )
+    rec = await store.getRecord('u', '2026-11-13', 'lunch')
+    assert.equal(rec?.note?.text, '又记')
+  })
+
+  it('rejects staple meals and missing snacks', async () => {
+    const store = await seededStore()
+    await store.saveRecord(
+      record({
+        status: 'exempt',
+        photos: [],
+        photoReviews: [],
+        review: 'pending',
+        checkinAt: '2026-11-13T04:00:00.000Z',
+      }),
+    )
+    const who = { userId: 'u' }
+    assert.deepEqual(
+      await handle(store, who, now, {
+        action: 'annotate',
+        kind: 'meal',
+        date: '2026-11-13',
+        meal: 'lunch',
+        text: '不该写',
+      }),
+      { ok: false, error: '口粮没有批注' },
+    )
+    assert.deepEqual(
+      await handle(store, who, now, {
+        action: 'annotate',
+        kind: 'snack',
+        date: '2026-11-13',
+        startedAt: '2026-11-13T01:00:00.000Z',
+        text: '零食记',
+      }),
+      { ok: false, error: '无这条记录' },
+    )
+  })
+})

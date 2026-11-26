@@ -1,6 +1,7 @@
 import { adoptPet } from './settle.ts'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from './checkin.ts'
 import { recordSnack, removeSnack } from './snack.ts'
+import { setAnnotation } from './annotate.ts'
 import { closeAccount } from './backup.ts'
 import { syncUser } from './user.ts'
 import { adoptView, galleryView, homeView, meView, memorialView } from './views.ts'
@@ -27,6 +28,8 @@ export type Request =
   | { action: 'exempt'; meal: MealType }
   | { action: 'deleteCheckin'; date: string; meal: MealType }
   | { action: 'deleteSnack'; date: string; startedAt: string }
+  | { action: 'annotate'; kind: 'meal'; date: string; meal: MealType; text: string }
+  | { action: 'annotate'; kind: 'snack'; date: string; startedAt: string; text: string }
   | { action: 'adopt'; name?: string; species?: PetSpecies }
   | { action: 'home' }
   | { action: 'gallery'; date?: string; month?: string }
@@ -48,6 +51,7 @@ export const PAGE_ACTIONS = [
   'exempt',
   'deleteCheckin',
   'deleteSnack',
+  'annotate',
   'adopt',
   'home',
   'gallery',
@@ -67,6 +71,10 @@ function isSpecies(value: unknown): value is PetSpecies {
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === 'string'
 }
 
 function isDate(value: unknown): value is string {
@@ -130,6 +138,23 @@ export function parseRequest(raw: unknown): Request | null {
     case 'deleteSnack':
       if (!isString(body.date) || !isString(body.startedAt)) return null
       return { action: 'deleteSnack', date: body.date, startedAt: body.startedAt }
+    case 'annotate':
+      if (!isText(body.text)) return null
+      if (body.kind === 'meal') {
+        if (!isDate(body.date) || !isMeal(body.meal)) return null
+        return { action: 'annotate', kind: 'meal', date: body.date, meal: body.meal, text: body.text }
+      }
+      if (body.kind === 'snack') {
+        if (!isDate(body.date) || !isString(body.startedAt)) return null
+        return {
+          action: 'annotate',
+          kind: 'snack',
+          date: body.date,
+          startedAt: body.startedAt,
+          text: body.text,
+        }
+      }
+      return null
     case 'adopt':
       // 名字可选。类型不对当作没填，具体长度和字符由领域层校验。
       // 物种写了但不是四种动物之一，整条请求无效。
@@ -221,6 +246,21 @@ export async function handle(
     }
     case 'deleteSnack':
       return removeSnack(store, caller, { date: request.date, startedAt: request.startedAt })
+    case 'annotate':
+      if (request.kind === 'meal') {
+        return setAnnotation(store, caller, now, {
+          kind: 'meal',
+          date: request.date,
+          meal: request.meal,
+          text: request.text,
+        })
+      }
+      return setAnnotation(store, caller, now, {
+        kind: 'snack',
+        date: request.date,
+        startedAt: request.startedAt,
+        text: request.text,
+      })
     case 'adopt': {
       const result = await adoptPet(store, caller, now, { name: request.name, species: request.species })
       return result.ok ? { ok: true, data: { name: result.name } } : result

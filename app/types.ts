@@ -8,6 +8,8 @@ import type {
 } from '../domain/index.ts'
 import type { HungerDay } from '../domain/index.ts'
 
+export type Annotation = { text: string; createdAt: string; updatedAt: string }
+
 export type MealRecordDoc = {
   userId: string
   date: string
@@ -22,6 +24,7 @@ export type MealRecordDoc = {
   /** 整餐的审核结论。驳回的记录保留，页面按「没有打卡」处理。 */
   review: MealReview
   hidden: boolean
+  note?: Annotation
 }
 
 /**
@@ -43,6 +46,7 @@ export type SnackDoc = {
   hidden: boolean
   /** 每次零食加饱腹 +5 的时刻（ISO）。没有则不参与饱腹重算。 */
   boosts?: string[]
+  note?: Annotation
 }
 
 /** 内容安全的追踪号。回调只认这个号，不认事件体里的用户。 */
