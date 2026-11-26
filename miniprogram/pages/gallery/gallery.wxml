@@ -2,12 +2,17 @@
   <text class="t-title">连续打卡 {{streak}} 天</text>
 
   <view class="month-row">
-    <view wx:if="{{showPrev}}" class="month-arrow" bindtap="onPrevMonth" hover-class="day-hover" hover-stay-time="120">
-      <view class="chev chev-left"></view>
+    <view class="month-nav">
+      <view wx:if="{{showPrev}}" class="month-arrow" bindtap="onPrevMonth" hover-class="day-hover" hover-stay-time="120">
+        <view class="chev chev-left"></view>
+      </view>
+      <text class="t-body month-label" bindtap="toggleCalendar">{{monthLabel}}</text>
+      <view wx:if="{{showNext}}" class="month-arrow" bindtap="onNextMonth" hover-class="day-hover" hover-stay-time="120">
+        <view class="chev"></view>
+      </view>
     </view>
-    <text class="t-body month-label" bindtap="toggleCalendar">{{monthLabel}}</text>
-    <view wx:if="{{showNext}}" class="month-arrow" bindtap="onNextMonth" hover-class="day-hover" hover-stay-time="120">
-      <view class="chev"></view>
+    <view class="month-info" bindtap="onPhotoHintTap" hover-class="day-hover" hover-stay-time="120" aria-label="说明">
+      <text class="month-info-mark">i</text>
     </view>
   </view>
 
@@ -79,7 +84,29 @@
     </view>
   </block>
 
-  <view wx:if="{{viewer}}" class="viewer" bindtap="closeViewer">
-    <image class="viewer-img" src="{{viewer}}" mode="aspectFit"></image>
+  <view wx:if="{{viewerOpen}}" class="viewer-mask" bindtap="closeViewer">
+    <view class="viewer-photo-wrap">
+      <image class="viewer-img" src="{{viewerPhoto}}" mode="aspectFit" catchtap="stopTap"></image>
+    </view>
+    <view class="viewer-sheet" catchtap="stopTap">
+        <textarea
+          class="viewer-note t-body"
+          value="{{viewerText}}"
+          bindinput="onViewerInput"
+          maxlength="200"
+          auto-height
+          show-confirm-bar="{{false}}"
+          placeholder="写一句话"
+        ></textarea>
+        <text wx:if="{{viewerTimeOne}}" class="t-caption viewer-time">{{viewerTimeOne}}</text>
+        <block wx:elif="{{viewerTimeWrote}}">
+          <text class="t-caption viewer-time">写下 {{viewerTimeWrote}}</text>
+          <text class="t-caption viewer-time">改过 {{viewerTimeEdited}}</text>
+        </block>
+        <view class="viewer-actions">
+          <view class="btn btn-secondary viewer-btn" bindtap="saveViewerPhoto" hover-class="btn-secondary-on" hover-stay-time="120"><text>保存到相册</text></view>
+          <view class="btn btn-primary viewer-btn" bindtap="finishViewer" hover-class="btn-primary-on" hover-stay-time="120"><text class="t-button">完成</text></view>
+        </view>
+    </view>
   </view>
 </view>

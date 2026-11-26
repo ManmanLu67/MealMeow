@@ -2,9 +2,12 @@
 .gallery .t-title { font-weight: 800; color: #1A1A1A; }
 
 /* 日期条：7 格等宽，高 64px，选中为 brand-tint，今天下方一个小圆点。 */
-.month-row { display: flex; align-items: center; margin-top: 24rpx; }
+.month-row { display: flex; align-items: center; justify-content: space-between; margin-top: 24rpx; }
+.month-nav { display: flex; flex: 1; align-items: center; min-width: 0; }
 .month-arrow { display: flex; align-items: center; justify-content: center; width: 64rpx; height: 64rpx; }
 .month-label { margin-left: 0; }
+.month-info { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 64rpx; height: 64rpx; margin-left: 8rpx; }
+.month-info-mark { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 40rpx; height: 40rpx; border: 2rpx solid var(--ink-secondary); border-radius: 50%; color: var(--ink-secondary); font-size: 24rpx; line-height: 1; font-weight: 600; font-style: italic; }
 .chev-left { transform: rotate(-135deg); }
 .month-grid { display: flex; flex-wrap: wrap; margin-top: 8rpx; }
 .month-head { width: calc(100% / 7); height: 48rpx; line-height: 48rpx; text-align: center; color: #6F7A74; }
@@ -48,5 +51,11 @@
 .snack-count { position: absolute; right: 12rpx; bottom: 12rpx; padding: 2rpx 16rpx; border-radius: var(--radius-pill); background: var(--surface); }
 .snack-count .count-text { color: var(--ink); }
 
-.viewer { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(34, 41, 38, 0.92); }
-.viewer-img { width: 100%; height: 100%; }
+.viewer-mask { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 100; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(34, 41, 38, 0.92); }
+.viewer-photo-wrap { display: flex; flex: 1; align-items: center; justify-content: center; width: 100%; min-height: 0; padding: 24rpx 24rpx 0; }
+.viewer-img { width: 100%; max-height: 100%; }
+.viewer-sheet { flex-shrink: 0; box-sizing: border-box; width: 100%; padding: 24rpx 40rpx calc(32rpx + env(safe-area-inset-bottom)); background: var(--surface); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.viewer-note { box-sizing: border-box; width: 100%; min-height: 96rpx; max-height: 240rpx; padding: 16rpx 24rpx; border: 2rpx solid var(--border); border-radius: var(--radius-md); background: var(--surface-sunken); color: var(--ink); }
+.viewer-time { display: block; margin-top: 16rpx; }
+.viewer-actions { display: flex; justify-content: space-between; margin-top: 32rpx; }
+.viewer-btn { width: calc((100% - 16rpx) / 2); height: 96rpx; }

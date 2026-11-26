@@ -2,11 +2,42 @@
 const api = require('../../utils/api.js')
 const config = require('../../utils/config.js')
 const preview = require('../../utils/preview.js')
+const report = require('../../utils/report.js')
+
+const PHOTO_HINT =
+  '图鉴只显示本月和上月的照片。更早的打卡还在，只是没有照片。'
+const HINT_KEY = 'galleryPhotoHint'
 
 function recordedMeals(meals) {
   return (meals || []).filter(function (item) {
     return item.photo || item.exempt || item.face === 'kept'
   })
+}
+
+function formatLocalTime(iso) {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const y = date.getFullYear()
+  const m = date.getMonth() + 1
+  const d = date.getDate()
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return y + '年' + m + '月' + d + '日 ' + h + ':' + min
+}
+
+function noteTimes(note) {
+  if (!note || !note.createdAt) {
+    return { one: '', wrote: '', edited: '' }
+  }
+  if (note.createdAt === note.updatedAt) {
+    return { one: formatLocalTime(note.createdAt), wrote: '', edited: '' }
+  }
+  return {
+    one: '',
+    wrote: formatLocalTime(note.createdAt),
+    edited: formatLocalTime(note.updatedAt),
+  }
 }
 
 Page({
@@ -19,7 +50,12 @@ Page({
     meals: [],
     snacks: [],
     isEmpty: false,
-    viewer: '',
+    viewerOpen: false,
+    viewerPhoto: '',
+    viewerText: '',
+    viewerTimeOne: '',
+    viewerTimeWrote: '',
+    viewerTimeEdited: '',
     calendarOpen: false,
     showPrev: false,
     showNext: false,
@@ -30,6 +66,8 @@ Page({
 
   onLoad(query) {
     this.previewState = query.state || ''
+    this.viewerTarget = null
+    this.viewerSaving = false
   },
 
   onShow() {
@@ -37,6 +75,40 @@ Page({
       this.getTabBar().setData({ selected: 1 })
     }
     this.load()
+    this.maybePhotoHint()
+  },
+
+  maybePhotoHint() {
+    try {
+      if (wx.getStorageSync(HINT_KEY) === '1') return
+    } catch (err) {
+      return
+    }
+    this.showPhotoHint(true)
+  },
+
+  showPhotoHint(fromFirstVisit) {
+    const self = this
+    wx.showModal({
+      title: '图鉴',
+      content: PHOTO_HINT,
+      showCancel: false,
+      confirmText: '确定',
+      success(res) {
+        if (!res.confirm) return
+        if (fromFirstVisit) {
+          try {
+            wx.setStorageSync(HINT_KEY, '1')
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      },
+    })
+  },
+
+  onPhotoHintTap() {
+    this.showPhotoHint(false)
   },
 
   load(open) {
@@ -162,20 +234,144 @@ Page({
     this.load()
   },
 
+  openViewer(target, photo, note) {
+    const times = noteTimes(note)
+    this.viewerTarget = target
+    this.setData({
+      viewerOpen: true,
+      viewerPhoto: photo,
+      viewerText: (note && note.text) || '',
+      viewerTimeOne: times.one,
+      viewerTimeWrote: times.wrote,
+      viewerTimeEdited: times.edited,
+    })
+  },
+
   openTile(event) {
-    const meal = this.data.meals[event.currentTarget.dataset.index]
-    if (meal && meal.photo) this.setData({ viewer: meal.photo })
+    const index = event.currentTarget.dataset.index
+    const meal = this.data.meals[index]
+    if (!meal || !meal.photo || meal.exempt) return
+    this.openViewer({ kind: 'meal', index: index, meal: meal.meal }, meal.photo, meal.note)
   },
 
   openSnack(event) {
-    const snack = this.data.snacks[event.currentTarget.dataset.index]
-    if (snack && snack.photo) this.setData({ viewer: snack.photo })
+    const index = event.currentTarget.dataset.index
+    const snack = this.data.snacks[index]
+    if (!snack || !snack.photo) return
+    this.openViewer({ kind: 'snack', index: index, startedAt: snack.startedAt }, snack.photo, snack.note)
+  },
+
+  onViewerInput(event) {
+    this.setData({ viewerText: event.detail.value })
+  },
+
+  stopTap() {},
+
+  finishViewer() {
+    this.saveNoteAndClose()
   },
 
   closeViewer() {
-    this.setData({ viewer: '' })
+    this.saveNoteAndClose()
+  },
+
+  saveNoteAndClose() {
+    const self = this
+    if (!this.data.viewerOpen || this.viewerSaving) return
+    const text = this.data.viewerText
+    const target = this.viewerTarget
+    this.viewerSaving = true
+    const done = function () {
+      self.viewerSaving = false
+      self.viewerTarget = null
+      self.setData({
+        viewerOpen: false,
+        viewerPhoto: '',
+        viewerText: '',
+        viewerTimeOne: '',
+        viewerTimeWrote: '',
+        viewerTimeEdited: '',
+      })
+    }
+    if (!target || config.usePreviewData) {
+      done()
+      return
+    }
+    const date = this.selectedDate
+    const payload =
+      target.kind === 'meal'
+        ? { kind: 'meal', date: date, meal: target.meal, text: text }
+        : { kind: 'snack', date: date, startedAt: target.startedAt, text: text }
+    api.call('annotate', payload).then(function (res) {
+      self.viewerSaving = false
+      if (!res.ok) {
+        wx.showToast({ title: res.error || '保存失败', icon: 'none' })
+        return
+      }
+      done()
+      self.load()
+    })
+  },
+
+  saveViewerPhoto() {
+    const path = this.data.viewerPhoto
+    if (!path) return
+    saveToAlbum(path)
   },
 })
+
+function saveToAlbum(filePath) {
+  const write = function () {
+    wx.saveImageToPhotosAlbum({
+      filePath: filePath,
+      success() { wx.showToast({ title: '已存入相册', icon: 'none' }) },
+      fail(err) { showAlbumError(err) },
+    })
+  }
+  if (!wx.getSetting) {
+    write()
+    return
+  }
+  wx.getSetting({
+    success(res) {
+      const allowed = res.authSetting && res.authSetting['scope.writePhotosAlbum']
+      if (allowed === false) {
+        askAlbumSetting()
+        return
+      }
+      write()
+    },
+    fail: write,
+  })
+}
+
+function askAlbumSetting() {
+  wx.showModal({
+    title: '无法存入相册',
+    content: '请允许保存到系统相册，拍下的照片才会留在相机相册里。',
+    confirmText: '去设置',
+    success(res) { if (res.confirm && wx.openSetting) wx.openSetting({}) },
+  })
+}
+
+function showAlbumError(err) {
+  const msg = (err && err.errMsg) || ''
+  if (!msg || msg.indexOf('cancel') >= 0) return
+  report.report('gallery.album', err)
+  if (msg.indexOf('auth') >= 0 || msg.indexOf('deny') >= 0 || msg.indexOf('authorize') >= 0) {
+    askAlbumSetting()
+    return
+  }
+  if (err && (err.errno === 112 || msg.indexOf('not declared') >= 0)) {
+    wx.showModal({
+      title: '无法存入相册',
+      content: '指引里要有「相册（仅写入）」。补上后大约 5 分钟生效。',
+      showCancel: false,
+    })
+    return
+  }
+  wx.showToast({ title: '没能存入相册', icon: 'none' })
+}
 
 function monthText(key) {
   if (!key) return ''
