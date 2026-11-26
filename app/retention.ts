@@ -19,7 +19,7 @@ export function purgeNotice(
   return { month, deleteNow }
 }
 
-function previousMonth(month: string): string {
+export function previousMonth(month: string): string {
   const [yearText, monthText] = month.split('-')
   const year = Number(yearText)
   const monthNumber = Number(monthText)

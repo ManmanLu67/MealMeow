@@ -20,6 +20,7 @@ import {
   petBand,
   streakAnchor,
 } from '../domain/index.ts'
+import { previousMonth } from './retention.ts'
 import { loadSatiety } from './satiety.ts'
 import { clocksOn } from './schedule.ts'
 import type { Store } from './ports.ts'
@@ -314,17 +315,9 @@ function dayFinished(records: readonly MealRecordDoc[]): boolean {
   })
 }
 
-function galleryMonthBefore(month: string): string {
-  const [yearText, monthText] = month.split('-')
-  const year = Number(yearText)
-  const monthNumber = Number(monthText)
-  if (monthNumber === 1) return `${year - 1}-12`
-  return `${year}-${String(monthNumber - 1).padStart(2, '0')}`
-}
-
 function clampGalleryDay(today: string, date: string): string {
   const current = today.slice(0, 7)
-  const earliest = galleryMonthBefore(current)
+  const earliest = previousMonth(current)
   const month = date.slice(0, 7)
   if (month < earliest) return `${earliest}-01`
   if (month > current) return today
@@ -333,7 +326,7 @@ function clampGalleryDay(today: string, date: string): string {
 
 function clampGalleryMonth(today: string, month: string): string {
   const current = today.slice(0, 7)
-  const earliest = galleryMonthBefore(current)
+  const earliest = previousMonth(current)
   if (month < earliest) return earliest
   if (month > current) return current
   return month
@@ -445,7 +438,7 @@ export async function galleryView(
   const user = await requireUser(store, caller.userId)
   const today = logicalDate(now, user.timeZone)
   const currentMonth = stapleMonth(now, user.timeZone)
-  const earliestMonth = galleryMonthBefore(currentMonth)
+  const earliestMonth = previousMonth(currentMonth)
   const shown = clampGalleryDay(today, date ?? today)
   const week = weekOf(today)
   const [streak, records, snacks] = await Promise.all([
