@@ -19,13 +19,13 @@ describe('home view', () => {
     const bare = await seededStore({}, null)
     const empty = await homeView(bare, { userId: 'u' }, now)
     assert.equal(empty.petView, 'pasture')
-    assert.equal(empty.hungerText, '0%')
+    assert.equal(empty.satietyText, '0%')
     assert.equal(empty.healthText, '100')
     assert.equal(empty.levelText, '')
 
     const adopted = await seededStore({}, { hunger: 0 })
     const fresh = await homeView(adopted, { userId: 'u' }, now)
-    assert.equal(fresh.hungerText, '0%')
+    assert.equal(fresh.satietyText, '0%')
     assert.equal(fresh.healthText, '100')
     assert.equal(fresh.levelText, '0')
   })
@@ -52,7 +52,7 @@ describe('home view', () => {
     assert.equal(view.chips[0].name, '早餐')
     assert.equal(view.chips[0].time, '07:30')
     assert.equal(view.chips[1].name, '午餐')
-    assert.equal(view.hungerText, '0%')
+    assert.equal(view.satietyText, '100%')
     assert.equal(view.healthText, '33')
     assert.equal(view.levelText, '0')
     assert.equal(view.emotion, '饱足')
@@ -74,7 +74,7 @@ describe('home view', () => {
     assert.equal(view.species, 'cat')
   })
 
-  it('keeps hunger at 100% after a missed meal until the next check-in', async () => {
+  it('decays satiety to 0% after the anchor meal passes', async () => {
     const store = await seededStore()
     await store.saveRecord(record({
       date: '2026-11-13',
@@ -85,10 +85,10 @@ describe('home view', () => {
       photoReviews: ['passed'],
     }))
     const later = await homeView(store, { userId: 'u' }, new Date('2026-11-16T02:00:00.000Z'))
-    assert.equal(later.hungerText, '100%')
+    assert.equal(later.satietyText, '0%')
   })
 
-  it('lists today\'s hunger and health changes on the status sheet', async () => {
+  it('lists today\'s satiety and health changes on the status sheet', async () => {
     const now = new Date('2026-11-13T04:10:00.000Z')
     const store = await seededStore({}, { hunger: 1 })
     await store.saveRecord(record({
@@ -109,11 +109,12 @@ describe('home view', () => {
       hungerAfter: 1,
     })
     const view = await homeView(store, { userId: 'u' }, now)
-    assert.ok(view.statChanges.some((line) => line.includes('午餐打卡后') && line.includes('现在的 0%')))
+    assert.ok(view.statChanges.some((line) => line.includes('午餐打卡后') && line.includes('现在的 100%')))
+    assert.ok(!view.statChanges.some((line) => line.includes('饥饿')))
     assert.ok(view.statChanges.some((line) => line.includes('早餐漏餐') && line.includes('漏了 0 餐，变成 1 餐') && line.includes('健康 100 → 89')))
   })
 
-  it('lets a staple fall to 10% and rise again toward the next meal', async () => {
+  it('lets a staple decay from 90% to 0% toward the next meal', async () => {
     const store = await seededStore()
     await store.saveRecord(record({
       date: '2026-11-13',
@@ -125,9 +126,9 @@ describe('home view', () => {
       review: 'passed',
     }))
     const used = await homeView(store, { userId: 'u' }, new Date('2026-11-13T04:00:00.000Z'))
-    assert.equal(used.hungerText, '10%')
+    assert.equal(used.satietyText, '90%')
     const dinner = await homeView(store, { userId: 'u' }, new Date('2026-11-13T10:00:00.000Z'))
-    assert.equal(dinner.hungerText, '100%')
+    assert.equal(dinner.satietyText, '0%')
   })
 
   it('puts a full bowl on a check-in and lets it empty by the next meal', async () => {
@@ -168,6 +169,85 @@ describe('home view', () => {
     })
     const view = await homeView(store, { userId: 'u' }, now)
     assert.equal(view.bowlFill, 0)
+  })
+
+  it('stacks meal, staple, and snack boosts at the same instant', async () => {
+    const at = '2026-11-13T04:00:00.000Z'
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: at,
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'breakfast',
+      status: 'exempt',
+      checkinAt: at,
+      photos: [],
+      photoReviews: [],
+      review: 'passed',
+    }))
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: at,
+      photos: ['s'],
+      photoReviews: ['passed'],
+      hidden: false,
+      boosts: [at],
+    })
+    const view = await homeView(store, { userId: 'u' }, new Date(at))
+    assert.equal(view.satietyText, '195%')
+    assert.equal(view.bowlFill, 100)
+    const pet = await store.getPet('u')
+    assert.equal(pet?.alive, true)
+  })
+
+  it('skips rejected meals but keeps passed meals with rejected photos', async () => {
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const rejected = await seededStore()
+    await rejected.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: now.toISOString(),
+      photos: ['a'],
+      photoReviews: ['rejected'],
+      review: 'rejected',
+    }))
+    assert.equal((await homeView(rejected, { userId: 'u' }, now)).satietyText, '0%')
+
+    const partial = await seededStore()
+    await partial.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: now.toISOString(),
+      photos: ['bad', 'good'],
+      photoReviews: ['rejected', 'passed'],
+      review: 'passed',
+    }))
+    assert.equal((await homeView(partial, { userId: 'u' }, now)).satietyText, '100%')
+  })
+
+  it('counts snack boosts even when every photo was rejected', async () => {
+    const at = '2026-11-13T04:00:00.000Z'
+    const store = await seededStore()
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: at,
+      photos: ['bad'],
+      photoReviews: ['rejected'],
+      hidden: false,
+      boosts: [at],
+    })
+    const view = await homeView(store, { userId: 'u' }, new Date(at))
+    assert.equal(view.satietyText, '5%')
   })
 
   it('reports staple left for this month and whether the window is open', async () => {

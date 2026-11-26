@@ -41,6 +41,8 @@ export type SnackDoc = {
   /** 和 photos 一一对应。空字符串表示这张还没提交成功。 */
   traceIds?: string[]
   hidden: boolean
+  /** 每次零食加饱腹 +5 的时刻（ISO）。没有则不参与饱腹重算。 */
+  boosts?: string[]
 }
 
 /** 内容安全的追踪号。回调只认这个号，不认事件体里的用户。 */

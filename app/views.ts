@@ -11,17 +11,15 @@ import {
   homeBadge,
   homePetView,
   emotionFromHunger,
-  feedingHungerPercent,
   healthScore,
   petLevel,
-  bowlFill,
   logicalDate,
   mealWindow,
-  nextMealAt,
   personalStreak,
   petBand,
   streakAnchor,
 } from '../domain/index.ts'
+import { loadSatiety } from './satiety.ts'
 import { clocksOn } from './schedule.ts'
 import type { Store } from './ports.ts'
 import type { MealRecordDoc, PetSpecies, SnackDoc, UserDoc } from './types.ts'
@@ -51,7 +49,7 @@ export type HomeView = {
   companyDays: number
   mealsEaten: number
   cooldownDays: number
-  hungerText: string
+  satietyText: string
   healthText: string
   levelText: string
   emotion: string
@@ -147,41 +145,17 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   const records = await store.listRecords(caller.userId, today)
   const states = chipStates(user, today, now, records)
   const span = await checkinSpan(store, caller.userId, today, records)
-  let hungerPercent = 0
-  if (span.latest) {
-    const next = nextMealAt(
-      span.latest.date,
-      span.latest.meal,
-      clocksOn(user, span.latest.date),
-      user.timeZone,
-    )
-    hungerPercent = feedingHungerPercent(
-      now,
-      new Date(span.latest.checkinAt),
-      next,
-      span.latest.status === 'exempt',
-    )
-  }
+  const { satiety, bowl } = await loadSatiety(store, user, now)
   const hours = span.earliestAt === null
     ? 0
     : (now.getTime() - new Date(span.earliestAt).getTime()) / 3_600_000
-  let bowl = 0
-  if (span.bowlFrom) {
-    const next = nextMealAt(
-      span.bowlFrom.date,
-      span.bowlFrom.meal,
-      clocksOn(user, span.bowlFrom.date),
-      user.timeZone,
-    )
-    bowl = bowlFill(now, new Date(span.bowlFrom.checkinAt), next)
-  }
   const statChanges = await todayStatChanges(
     store,
     caller.userId,
     today,
     records,
     span.latest,
-    hungerPercent,
+    satiety,
   )
   const alive = pet?.alive === true
   const dead = pet !== null && !pet.alive
@@ -209,12 +183,12 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     companyDays: pet?.companyDays ?? 0,
     mealsEaten: pet?.mealsEaten ?? 0,
     cooldownDays: cooldownDaysLeft(user, today, now),
-    hungerText: `${hungerPercent}%`,
+    satietyText: `${satiety}%`,
     healthText: String(healthScore(pet?.hunger ?? 0)),
     levelText: pet
       ? String(petLevel(hours, (pet.hungerLog ?? []).filter((day) => day.date < today)))
       : '',
-    emotion: emotionFromHunger(hungerPercent),
+    emotion: emotionFromHunger(satiety),
     camera: cameraOf(states),
     species: pet?.species ?? 'cat',
     photos: MEALS.flatMap((meal) => {
@@ -237,13 +211,13 @@ async function todayStatChanges(
   percent: number,
 ): Promise<string[]> {
   const lines: string[] = []
-  if (!latest) lines.push('还没吃过，饥饿是 0%')
+  if (!latest) lines.push('还没吃过，饱腹是 0%')
   else if (latest.date === today) {
     const name = MEAL_NAME[latest.meal]
     lines.push(latest.status === 'exempt'
-      ? `${name}口粮后，饥饿从 10% 涨到现在的 ${percent}%`
-      : `${name}打卡后，饥饿从 0% 涨到现在的 ${percent}%`)
-  } else if (percent >= 100) lines.push('上一餐之后没再吃，饥饿停在 100%')
+      ? `${name}口粮后，饱腹加上 90，现在是 ${percent}%`
+      : `${name}打卡后，饱腹从 100% 掉到现在的 ${percent}%`)
+  } else if (percent === 0) lines.push('上一餐之后没再吃，饱腹停在 0%')
 
   for (const meal of MEALS) {
     const settlement = await store.getSettlement(userId, today, meal)
