@@ -1,8 +1,8 @@
 # MealMeow
 
-个人可见的三餐打卡小程序：先吃饭，宠物才有饭吃。
+三餐打卡小程序。
 
-产品规则在 [docs/agent/ARCHITECTURE.md](docs/agent/ARCHITECTURE.md)，这是唯一的一份，其他文档不重复它。给 agent 的工作约定在 [AGENTS.md](AGENTS.md)。当前进度在 [docs/agent/CURRENT_STATE.md](docs/agent/CURRENT_STATE.md)。
+产品规则在 [docs/agent/ARCHITECTURE.md](docs/agent/ARCHITECTURE.md)。agent的工作约定在 [AGENTS.md](AGENTS.md)。当前进度在 [docs/agent/CURRENT_STATE.md](docs/agent/CURRENT_STATE.md)。
 
 ## 目录
 
@@ -29,6 +29,3 @@ npm run typecheck   # tsc --noEmit
 
 运行小程序：用微信开发者工具打开本目录。本机的 `project.config.json` 指向 `miniprogram/` 和 `cloudfunctions/`，含 AppID，不入库。仓库里的示例是 `project.example.config`。`project.private.config.json` 由开发者工具本机生成，不入库。
 
-## 还没接上
-
-云函数里的数据库读写、内容安全、订阅消息、AI 抠图、手机 App。小组不在这个版本。
