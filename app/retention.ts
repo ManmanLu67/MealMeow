@@ -27,46 +27,49 @@ export function previousMonth(month: string): string {
   return `${year}-${String(monthNumber - 1).padStart(2, '0')}`
 }
 
-/** 本月和上月以外的照片路径（只读，不写库）。 */
-export async function listExpiredPhotoPaths(store: Store, caller: Caller, now: Date): Promise<string[]> {
+async function scanExpiredPhotos(
+  store: Store,
+  caller: Caller,
+  now: Date,
+): Promise<{ paths: string[]; records: Awaited<ReturnType<Store['listRecords']>>; snacks: Awaited<ReturnType<Store['listSnacks']>> } | null> {
   const user = await store.getUser(caller.userId)
-  if (user === null) return []
+  if (user === null) return null
   const current = stapleMonth(now, user.timeZone)
   const kept = new Set([current, previousMonth(current)])
-  const dropped: string[] = []
+  const paths: string[] = []
+  const records: Awaited<ReturnType<Store['listRecords']>> = []
+  const snacks: Awaited<ReturnType<Store['listSnacks']>> = []
   for (const date of await store.listDates(caller.userId)) {
     if (kept.has(date.slice(0, 7))) continue
     for (const record of await store.listRecords(caller.userId, date)) {
-      dropped.push(...record.photos)
+      paths.push(...record.photos)
+      if (record.photos.length > 0) records.push(record)
     }
     for (const snack of await store.listSnacks(caller.userId, date)) {
-      dropped.push(...snack.photos)
+      paths.push(...snack.photos)
+      if (snack.photos.length > 0) snacks.push(snack)
     }
   }
-  return dropped
+  return { paths, records, snacks }
+}
+
+/** 本月和上月以外的照片路径（只读，不写库）。 */
+export async function listExpiredPhotoPaths(store: Store, caller: Caller, now: Date): Promise<string[]> {
+  const scan = await scanExpiredPhotos(store, caller, now)
+  return scan === null ? [] : scan.paths
 }
 
 /** 本月和上月以外的照片路径清掉。记录、审核和结算留下。返回被清掉的路径。 */
 export async function clearExpiredPhotos(store: Store, caller: Caller, now: Date): Promise<string[]> {
-  const user = await store.getUser(caller.userId)
-  if (user === null) return []
-  const current = stapleMonth(now, user.timeZone)
-  const kept = new Set([current, previousMonth(current)])
-  const dropped: string[] = []
-  for (const date of await store.listDates(caller.userId)) {
-    if (kept.has(date.slice(0, 7))) continue
-    for (const record of await store.listRecords(caller.userId, date)) {
-      dropped.push(...record.photos)
-      if (record.photos.length === 0) continue
-      await store.saveRecord({ ...record, photos: [], photoReviews: [] })
-    }
-    for (const snack of await store.listSnacks(caller.userId, date)) {
-      dropped.push(...snack.photos)
-      if (snack.photos.length === 0) continue
-      await store.saveSnack({ ...snack, photos: [], photoReviews: [] })
-    }
+  const scan = await scanExpiredPhotos(store, caller, now)
+  if (scan === null) return []
+  for (const record of scan.records) {
+    await store.saveRecord({ ...record, photos: [], photoReviews: [] })
   }
-  return dropped
+  for (const snack of scan.snacks) {
+    await store.saveSnack({ ...snack, photos: [], photoReviews: [] })
+  }
+  return scan.paths
 }
 
 export async function photoPurgeNotice(
