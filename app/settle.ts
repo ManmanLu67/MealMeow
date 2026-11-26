@@ -11,6 +11,7 @@ import {
 import type { MealType, PhotoReview } from '../domain/index.ts'
 import { evaluateFeeding, nextHunger, settleStep } from '../domain/settlement.ts'
 import { daysBetweenInclusive } from '../domain/time.ts'
+import { loadSatiety } from './satiety.ts'
 import { topUpAllJobs } from './schedule.ts'
 import type { Store } from './ports.ts'
 import type { MealRecordDoc, PetDoc, PetSpecies, SettlementJobDoc, UserDoc } from './types.ts'
@@ -31,7 +32,7 @@ function byWindowThenMeal(a: SettlementJobDoc, b: SettlementJobDoc): number {
  * 陪伴天数取领养日到死亡日（含），在这里一次定下来。
  * 个人连续天数的算法读 user.adoptedOn 和 user.diedOn，所以这里一并写回。
  */
-async function markDead(
+export async function markPetDead(
   store: Store,
   user: UserDoc,
   pet: PetDoc,
@@ -52,6 +53,20 @@ async function markDead(
     cooldownUntil: cooldownUntil(diedAt, user.timeZone).toISOString(),
   })
   return dead
+}
+
+/** 写入主食或零食后，整数饱腹到 200 时按过饱死亡（与漏餐饿死同一套字段）。 */
+export async function killPetIfSatietyAtLeast200(
+  store: Store,
+  userId: string,
+  now: Date,
+): Promise<void> {
+  const user = await store.getUser(userId)
+  if (user === null) return
+  const pet = await store.getPet(userId)
+  if (pet === null || !pet.alive) return
+  const { satiety } = await loadSatiety(store, user, now)
+  if (satiety >= 200) await markPetDead(store, user, pet, now)
 }
 
 /** 结算后给存活宠物累计吃到的餐数，陪伴天数在活着时按今天算。 */
@@ -152,7 +167,7 @@ async function settleOne(
     const next = afterMeal(pet, outcome, updated, job.date)
     if (updated >= 9) {
       // 死亡时刻取窗口结束，而不是扫描跑到的时刻，这样补跑也落在正确的逻辑日。
-      await markDead(store, user, next, new Date(job.windowEndAt))
+      await markPetDead(store, user, next, new Date(job.windowEndAt))
     } else {
       await store.savePet(next)
     }

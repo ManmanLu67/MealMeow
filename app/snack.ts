@@ -1,7 +1,16 @@
 import { logicalDate, snackMergeTarget } from '../domain/index.ts'
+import { killPetIfSatietyAtLeast200 } from './settle.ts'
 import type { Store } from './ports.ts'
 import type { SnackDoc } from './types.ts'
 import { requireUser } from './user.ts'
+
+const MAX_SNACK_BOOSTS = 3
+
+function nextBoosts(existing: string[] | undefined, now: Date): string[] | undefined {
+  const boosts = existing ?? []
+  if (boosts.length >= MAX_SNACK_BOOSTS) return existing
+  return [...boosts, now.toISOString()]
+}
 
 type Fail = { ok: false; error: string }
 
@@ -30,7 +39,9 @@ export async function recordSnack(
         ...base,
         photos: [...base.photos, ...input.photos],
         photoReviews: [...base.photoReviews, ...input.photos.map(() => 'pending' as const)],
+        boosts: nextBoosts(base.boosts, now),
       })
+      await killPetIfSatietyAtLeast200(store, caller.userId, now)
       return { ok: true, merged: true }
     }
     await store.saveSnack({
@@ -40,7 +51,9 @@ export async function recordSnack(
       photos: [...input.photos],
       photoReviews: input.photos.map(() => 'pending' as const),
       hidden: false,
+      boosts: nextBoosts([], now),
     })
+    await killPetIfSatietyAtLeast200(store, caller.userId, now)
     return { ok: true, merged: false }
   })
 }

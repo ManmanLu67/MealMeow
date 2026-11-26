@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { finishCheckin, removeCheckin, useStaple } from '../app/checkin.ts'
 import { applySnackReview, recordSnack, removeSnack } from '../app/snack.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
-import { seededStore } from './fixtures.ts'
+import { MEALS_DEFAULT, seededStore } from './fixtures.ts'
+
+const MEALS_LUNCH_930 = { ...MEALS_DEFAULT, lunch: '09:30' }
 
 const caller = { userId: 'u' }
 const day = '2026-11-13'
@@ -67,6 +70,81 @@ describe('record snack', () => {
     const result = await recordSnack(store, caller, outOfWindow, { photos: [] })
     assert.equal(result.ok, false)
     assert.equal(result.ok === false && result.error, '需要照片')
+  })
+})
+
+describe('satiety boosts and death at 200', () => {
+  const day = '2026-11-13'
+  const breakfastAt = new Date('2026-11-13T00:29:00.000Z') // 上海 08:29
+  const stapleAt = new Date('2026-11-13T00:30:00.000Z') // 上海 08:30
+  const lunch = { date: day, meal: 'lunch' as const }
+
+  async function storeAfterBreakfast() {
+    const store = await seededStore({ meals: MEALS_LUNCH_930 }, {})
+    await finishCheckin(store, caller, breakfastAt, {
+      date: day,
+      meal: 'breakfast',
+      photos: ['m'],
+    })
+    await useStaple(store, caller, stapleAt, lunch)
+    return store
+  }
+
+  it('kills the pet after three snack boosts in the same hour', async () => {
+    const store = await storeAfterBreakfast()
+    const t1 = new Date(stapleAt.getTime() + 1_000)
+    const t2 = new Date(stapleAt.getTime() + 2_000)
+    const t3 = new Date(stapleAt.getTime() + 3_000)
+    const t4 = new Date(stapleAt.getTime() + 4_000)
+    assert.equal((await recordSnack(store, caller, t1, { photos: ['a'] })).ok, true)
+    assert.equal((await recordSnack(store, caller, t2, { photos: ['b'] })).ok, true)
+    assert.equal((await recordSnack(store, caller, t3, { photos: ['c'] })).ok, true)
+    let pet = await store.getPet('u')
+    assert.equal(pet?.alive, false)
+    assert.notEqual((await store.getUser('u'))?.diedOn, null)
+    const snacks = await store.listSnacks('u', day)
+    assert.equal(snacks.length, 1)
+    assert.equal(snacks[0].boosts?.length, 3)
+    assert.deepEqual(snacks[0].photos, ['a', 'b', 'c'])
+
+    assert.equal((await recordSnack(store, caller, t4, { photos: ['d'] })).ok, true)
+    const after = (await store.listSnacks('u', day))[0]
+    assert.equal(after.boosts?.length, 3)
+    assert.deepEqual(after.photos, ['a', 'b', 'c', 'd'])
+    pet = await store.getPet('u')
+    assert.equal(pet?.alive, false)
+  })
+
+  it('records three boosts without a pet and does not throw', async () => {
+    const store = await seededStore({ meals: MEALS_LUNCH_930 }, null)
+    const base = new Date('2026-11-13T00:31:00.000Z')
+    for (let i = 0; i < 3; i += 1) {
+      const ok = await recordSnack(
+        store,
+        caller,
+        new Date(base.getTime() + i * 60_000),
+        { photos: [`p${i}`] },
+      )
+      assert.equal(ok.ok, true)
+    }
+    const snacks = await store.listSnacks('u', day)
+    assert.equal(snacks.length, 1)
+    assert.equal(snacks[0].boosts?.length, 3)
+  })
+
+  it('stays dead after removing the snack and staple that caused satiety death', async () => {
+    const store = await storeAfterBreakfast()
+    const t1 = new Date(stapleAt.getTime() + 1_000)
+    const t2 = new Date(stapleAt.getTime() + 2_000)
+    const t3 = new Date(stapleAt.getTime() + 3_000)
+    await recordSnack(store, caller, t1, { photos: ['a'] })
+    await recordSnack(store, caller, t2, { photos: ['b'] })
+    await recordSnack(store, caller, t3, { photos: ['c'] })
+    assert.equal((await store.getPet('u'))?.alive, false)
+    const snack = (await store.listSnacks('u', day))[0]
+    await removeSnack(store, caller, { date: day, startedAt: snack.startedAt })
+    await removeCheckin(store, caller, stapleAt, lunch)
+    assert.equal((await store.getPet('u'))?.alive, false)
   })
 })
 

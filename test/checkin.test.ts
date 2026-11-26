@@ -216,4 +216,14 @@ describe('staple and delete', () => {
     assert.equal(result.ok === false && result.error, '没有存活宠物')
     assert.equal((await store.getUser('u'))?.stapleLeft, user().stapleLeft)
   })
+
+  it('staple alone without a meal does not kill the pet below 200 satiety', async () => {
+    const meals = { ...MEALS_DEFAULT, lunch: '09:30' }
+    const stapleAt = new Date('2026-11-13T00:30:00.000Z') // 上海 08:30，午餐窗口内
+    const store = await seededStore({ meals }, {})
+    const used = await useStaple(store, caller, stapleAt, { date: '2026-11-13', meal: 'lunch' })
+    assert.equal(used.ok, true)
+    assert.equal((await mustPet(store)).alive, true)
+    assert.equal((await store.getUser('u'))?.diedOn, null)
+  })
 })
