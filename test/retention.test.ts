@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { clearExpiredPhotos } from '../app/retention.ts'
+import { clearExpiredPhotos, purgeNotice } from '../app/retention.ts'
 import { galleryView } from '../app/views.ts'
 import type { MealRecordDoc } from '../app/types.ts'
 import { MEALS } from '../domain/index.ts'
@@ -52,6 +52,21 @@ describe('expired photos', () => {
     assert.deepEqual((await store.getRecord('u', '2026-11-12', 'lunch'))?.photos, ['2026-11-12-lunch'])
     const gallery = await galleryView(store, { userId: 'u' }, now, '2026-09-30')
     assert.equal(gallery.streak, 44)
-    assert.ok(gallery.meals.every((meal) => meal.face === 'kept' && meal.photo === null))
+    assert.equal(gallery.meals.find((meal) => meal.meal === 'breakfast')?.photo, '2026-10-01-breakfast')
+  })
+})
+
+describe('purgeNotice', () => {
+  it('warns on the last logical day of a month without deleting yet', () => {
+    const at = new Date('2026-11-30T15:00:00.000Z')
+    assert.deepEqual(purgeNotice(at, 'Asia/Shanghai', null), { month: '2026-10', deleteNow: false })
+    assert.equal(purgeNotice(at, 'Asia/Shanghai', '2026-10'), null)
+    assert.deepEqual(purgeNotice(at, 'Asia/Shanghai', '2026-09'), { month: '2026-10', deleteNow: false })
+  })
+
+  it('warns after the window rolls with deleteNow once the month has fallen out', () => {
+    const at = new Date('2026-11-30T20:00:00.000Z')
+    assert.deepEqual(purgeNotice(at, 'Asia/Shanghai', null), { month: '2026-10', deleteNow: true })
+    assert.deepEqual(purgeNotice(at, 'Asia/Shanghai', '2026-10'), { month: '2026-10', deleteNow: true })
   })
 })

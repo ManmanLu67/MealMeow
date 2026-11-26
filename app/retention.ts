@@ -1,6 +1,23 @@
-import { stapleMonth } from '../domain/index.ts'
+import { addIsoDays, logicalDate, stapleMonth } from '../domain/index.ts'
 import type { Store } from './ports.ts'
 import type { Caller } from './handle.ts'
+
+export function purgeNotice(
+  now: Date,
+  timeZone: string,
+  noted: string | null,
+): { month: string; deleteNow: boolean } | null {
+  const today = logicalDate(now, timeZone)
+  const currentMonth = today.slice(0, 7)
+  const previous = previousMonth(currentMonth)
+  const fallenOut = previousMonth(previous)
+  const nextDay = addIsoDays(today, 1)
+  const lastDayOfMonth = nextDay.slice(0, 7) !== currentMonth
+  const month = lastDayOfMonth ? previous : fallenOut
+  const deleteNow = !lastDayOfMonth
+  if (noted === month && !deleteNow) return null
+  return { month, deleteNow }
+}
 
 function previousMonth(month: string): string {
   const [yearText, monthText] = month.split('-')

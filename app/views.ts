@@ -14,6 +14,7 @@ import {
   healthScore,
   petLevel,
   logicalDate,
+  stapleMonth,
   mealWindow,
   personalStreak,
   petBand,
@@ -22,7 +23,7 @@ import {
 import { loadSatiety } from './satiety.ts'
 import { clocksOn } from './schedule.ts'
 import type { Store } from './ports.ts'
-import type { MealRecordDoc, PetSpecies, SnackDoc, UserDoc } from './types.ts'
+import type { Annotation, MealRecordDoc, PetSpecies, SnackDoc, UserDoc } from './types.ts'
 import { requireUser } from './user.ts'
 
 const MEAL_NAME: Record<MealType, string> = {
@@ -246,6 +247,7 @@ export type GalleryMeal = {
   name: string
   photo: string | null
   exempt: boolean
+  note: Annotation | null
   face: GalleryFace
 }
 
@@ -253,6 +255,7 @@ export type GallerySnack = {
   startedAt: string
   photo: string
   count: number
+  note: Annotation | null
 }
 
 export type GalleryDay = {
@@ -284,8 +287,8 @@ export type GalleryView = {
   days: GalleryDay[]
   meals: GalleryMeal[]
   snacks: GallerySnack[]
-  /** 最早一条打卡或零食所在的 YYYY-MM。没有记录就是 null。漏餐结算不算。 */
-  earliestMonth: string | null
+  /** 图鉴月份箭头的起点：始终是上一个逻辑月。 */
+  earliestMonth: string
   calendar: GalleryCalendar | null
 }
 
@@ -311,6 +314,31 @@ function dayFinished(records: readonly MealRecordDoc[]): boolean {
   })
 }
 
+function galleryMonthBefore(month: string): string {
+  const [yearText, monthText] = month.split('-')
+  const year = Number(yearText)
+  const monthNumber = Number(monthText)
+  if (monthNumber === 1) return `${year - 1}-12`
+  return `${year}-${String(monthNumber - 1).padStart(2, '0')}`
+}
+
+function clampGalleryDay(today: string, date: string): string {
+  const current = today.slice(0, 7)
+  const earliest = galleryMonthBefore(current)
+  const month = date.slice(0, 7)
+  if (month < earliest) return `${earliest}-01`
+  if (month > current) return today
+  return date
+}
+
+function clampGalleryMonth(today: string, month: string): string {
+  const current = today.slice(0, 7)
+  const earliest = galleryMonthBefore(current)
+  if (month < earliest) return earliest
+  if (month > current) return current
+  return month
+}
+
 function firstShown(photos: readonly string[], reviews: readonly string[]): string | null {
   for (let i = 0; i < photos.length; i += 1) {
     if (reviews[i] !== 'rejected') return photos[i]
@@ -320,13 +348,14 @@ function firstShown(photos: readonly string[], reviews: readonly string[]): stri
 
 function mealTile(meal: MealType, record: MealRecordDoc | undefined): Omit<GalleryMeal, 'face'> {
   const eaten = countsAsEaten(record)
-  if (!eaten) return { meal, name: MEAL_NAME[meal], photo: null, exempt: false }
-  if (eaten.status === 'exempt') return { meal, name: MEAL_NAME[meal], photo: null, exempt: true }
+  if (!eaten) return { meal, name: MEAL_NAME[meal], photo: null, exempt: false, note: null }
+  if (eaten.status === 'exempt') return { meal, name: MEAL_NAME[meal], photo: null, exempt: true, note: null }
   return {
     meal,
     name: MEAL_NAME[meal],
     photo: firstShown(eaten.photos, eaten.photoReviews),
     exempt: false,
+    note: eaten.note ?? null,
   }
 }
 
@@ -358,7 +387,12 @@ function snackTiles(snacks: readonly SnackDoc[]): GallerySnack[] {
     if (snack.hidden) continue
     const photos = snack.photos.filter((_, index) => snack.photoReviews[index] !== 'rejected')
     if (photos.length === 0) continue
-    rows.push({ startedAt: snack.startedAt, photo: photos[0], count: photos.length })
+    rows.push({
+      startedAt: snack.startedAt,
+      photo: photos[0],
+      count: photos.length,
+      note: snack.note ?? null,
+    })
   }
   return rows
 }
@@ -410,13 +444,14 @@ export async function galleryView(
 ): Promise<GalleryView> {
   const user = await requireUser(store, caller.userId)
   const today = logicalDate(now, user.timeZone)
-  const shown = date ?? today
+  const currentMonth = stapleMonth(now, user.timeZone)
+  const earliestMonth = galleryMonthBefore(currentMonth)
+  const shown = clampGalleryDay(today, date ?? today)
   const week = weekOf(today)
-  const [streak, records, snacks, earliestMonth] = await Promise.all([
+  const [streak, records, snacks] = await Promise.all([
     streakOf(store, user, now),
     store.listRecords(caller.userId, shown),
     store.listSnacks(caller.userId, shown),
-    earliestRecordMonth(store, caller.userId),
   ])
   const days = await Promise.all(week.days.map(async (day) => {
     const rows = day.key === shown ? records : await store.listRecords(caller.userId, day.key)
@@ -430,22 +465,10 @@ export async function galleryView(
     meals: MEALS.map((meal) => mealFace(meal, records.find((row) => row.meal === meal), now, user, shown)),
     snacks: snackTiles(snacks),
     earliestMonth,
-    calendar: month ? await monthCalendar(store, caller.userId, month, today) : null,
+    calendar: month
+      ? await monthCalendar(store, caller.userId, clampGalleryMonth(today, month), today)
+      : null,
   }
-}
-
-/** 从最早的日期往后找，第一条看得见的打卡或零食决定箭头范围。 */
-async function earliestRecordMonth(store: Store, userId: string): Promise<string | null> {
-  const dates = [...await store.listDates(userId)].sort()
-  for (const date of dates) {
-    const [records, snacks] = await Promise.all([
-      store.listRecords(userId, date),
-      store.listSnacks(userId, date),
-    ])
-    const eaten = MEALS.some((meal) => countsAsEaten(records.find((row) => row.meal === meal)) !== null)
-    if (eaten || snackTiles(snacks).length > 0) return date.slice(0, 7)
-  }
-  return null
 }
 
 async function monthCalendar(

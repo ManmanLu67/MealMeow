@@ -374,7 +374,7 @@ describe('gallery and adoption', () => {
     const view = await galleryView(store, { userId: 'u' }, new Date('2026-11-13T15:00:00.000Z'))
     assert.equal(view.streak, 0)
     assert.deepEqual(view.snacks, [
-      { startedAt: '2026-11-13T06:00:00.000Z', photo: 'snack-b', count: 1 },
+      { startedAt: '2026-11-13T06:00:00.000Z', photo: 'snack-b', count: 1, note: null },
     ])
   })
 
@@ -411,7 +411,7 @@ describe('gallery and adoption', () => {
     const now = new Date('2026-11-13T04:10:00.000Z')
     const view = await galleryView(store, { userId: 'u' }, now)
     assert.equal(view.calendar, null)
-    assert.equal(view.earliestMonth, '2026-11')
+    assert.equal(view.earliestMonth, '2026-10')
     const wednesday = view.days.find((day) => day.key === '2026-11-11')
     const thursday = view.days.find((day) => day.key === '2026-11-12')
     assert.equal(wednesday?.marked, true)
@@ -440,20 +440,10 @@ describe('gallery and adoption', () => {
     assert.equal(view.earliestMonth, '2026-10')
   })
 
-  it('starts month arrows at the earliest visible check-in or snack', async () => {
+  it('earliestMonth is always the previous logical month', async () => {
     const store = await seededStore({}, { hunger: 0 })
     const now = new Date('2026-11-13T04:10:00.000Z')
-    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, null)
-    await store.saveSettlement({
-      subjectType: 'personal',
-      subjectId: 'u',
-      date: '2026-09-02',
-      meal: 'lunch',
-      outcome: 'starved',
-      hungerBefore: 4,
-      hungerAfter: 5,
-    })
-    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, null)
+    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, '2026-10')
     await store.saveSnack({
       userId: 'u',
       date: '2026-08-03',
@@ -462,7 +452,82 @@ describe('gallery and adoption', () => {
       photoReviews: ['passed'],
       hidden: false,
     })
-    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, '2026-08')
+    assert.equal((await galleryView(store, { userId: 'u' }, now)).earliestMonth, '2026-10')
+  })
+
+  it('keeps streak across months before the gallery window', async () => {
+    const store = await seededStore({}, { hunger: 0 })
+    const dates: string[] = []
+    let cursor = '2026-09-01'
+    while (cursor <= '2026-11-13') {
+      dates.push(cursor)
+      const [year, month, day] = cursor.split('-').map(Number)
+      cursor = new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10)
+    }
+    await markComplete(store, dates)
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const view = await galleryView(store, { userId: 'u' }, now)
+    assert.equal(view.earliestMonth, '2026-10')
+    assert.ok(view.streak > 40)
+  })
+
+  it('clamps an out-of-range date and month to the two-month window', async () => {
+    const store = await seededStore({}, { hunger: 0 })
+    await store.saveRecord(record({
+      date: '2026-10-01',
+      meal: 'breakfast',
+      photos: ['oct-first'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    await store.saveRecord(record({
+      date: '2026-09-15',
+      meal: 'lunch',
+      photos: ['sep'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    const now = new Date('2026-11-13T04:10:00.000Z')
+    const clampedDay = await galleryView(store, { userId: 'u' }, now, '2026-09-15')
+    assert.equal(clampedDay.meals.find((meal) => meal.meal === 'breakfast')?.photo, 'oct-first')
+    const clampedMonth = await galleryView(store, { userId: 'u' }, now, undefined, '2026-09')
+    assert.equal(clampedMonth.calendar?.key, '2026-10')
+  })
+
+  it('surfaces meal and snack notes and omits staple notes', async () => {
+    const store = await seededStore()
+    const noteAt = '2026-11-13T06:00:00.000Z'
+    const snackNote = { text: '下午茶', createdAt: noteAt, updatedAt: noteAt }
+    const mealNote = { text: '加菜', createdAt: noteAt, updatedAt: noteAt }
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      photos: ['lunch'],
+      photoReviews: ['passed'],
+      review: 'passed',
+      note: mealNote,
+    }))
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'breakfast',
+      status: 'exempt',
+      photos: [],
+      photoReviews: [],
+      review: 'passed',
+    }))
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: '2026-11-13T08:00:00.000Z',
+      photos: ['snack'],
+      photoReviews: ['passed'],
+      hidden: false,
+      note: snackNote,
+    })
+    const view = await galleryView(store, { userId: 'u' }, new Date('2026-11-13T15:00:00.000Z'))
+    assert.equal(view.meals.find((meal) => meal.meal === 'lunch')?.note?.text, '加菜')
+    assert.equal(view.meals.find((meal) => meal.meal === 'breakfast')?.note, null)
+    assert.equal(view.snacks[0]?.note?.text, '下午茶')
   })
 })
 
