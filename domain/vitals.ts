@@ -24,22 +24,27 @@ function sortSatietyEvents(events: readonly SatietyEvent[]): SatietyEvent[] {
   })
 }
 
-/** 事件时刻之后最早的一顿饭点（严格大于该时刻）。 */
+/**
+ * 事件时刻之后最早的一顿饭点（严格大于该时刻）。
+ * 每天三顿饭，下一顿只可能落在该逻辑日或次日；只扫这两天。
+ */
 function followingMealInstant(
   at: Date,
   clocksFor: (date: string) => MealClocks,
   timeZone: string,
 ): Date {
   const start = logicalDate(at, timeZone)
-  for (let day = 0; day < 4; day += 1) {
+  const atMs = at.getTime()
+  for (let day = 0; day <= 1; day += 1) {
     const iso = addIsoDays(start, day)
     const clocks = clocksFor(iso)
     for (const meal of MEALS) {
       const instant = mealInstant(iso, clocks[meal], timeZone)
-      if (instant.getTime() > at.getTime()) return instant
+      if (instant.getTime() > atMs) return instant
     }
   }
-  throw new Error('no following meal within range')
+  const after = addIsoDays(start, 2)
+  return mealInstant(after, clocksFor(after).breakfast, timeZone)
 }
 
 function linearSatiety(value: number, anchorAt: Date, nextMeal: Date, at: Date): number {

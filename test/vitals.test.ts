@@ -141,6 +141,21 @@ describe('satiety', () => {
     assert.equal(satietyAt(new Date('2026-11-13T04:30:00.000Z'), [staple, again], clocksFor, SH), 100)
   })
 
+  it('anchors after dinner to the next breakfast and does not throw', () => {
+    const dinner = {
+      kind: 'meal' as const,
+      at: '2026-11-13T10:00:00.000Z',
+      meal: 'dinner' as const,
+      date: '2026-11-13',
+    }
+    const nextBreakfast = new Date('2026-11-13T23:30:00.000Z')
+    const dinnerAt = new Date(dinner.at)
+    const mid = new Date(dinnerAt.getTime() + (nextBreakfast.getTime() - dinnerAt.getTime()) / 2)
+    assert.equal(satietyAt(dinnerAt, [dinner], clocksFor, SH), 100)
+    assert.equal(satietyAt(mid, [dinner], clocksFor, SH), 50)
+    assert.equal(satietyAt(nextBreakfast, [dinner], clocksFor, SH), 0)
+  })
+
   it('lets three snacks add 15 on top of a full meal and ignores the bowl for staples', () => {
     const at = '2026-11-12T23:30:00.000Z'
     const staple = {
