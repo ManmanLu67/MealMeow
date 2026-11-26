@@ -1,6 +1,6 @@
 # Current Project State
 
-> Last updated: 2026-11-25
+> Last updated: 2026-11-26
 > Keep under ~2 pages. Record verified facts only. Update when status or findings materially change.
 
 ## 1. Current goal
@@ -31,6 +31,7 @@
 
 ## 4. Current work
 
+- 2026-11-26（feat/satiety-notes）：首页左上角「饱腹」进度条读 `satietyText`；口粮在当前饱腹上加 90；每天前三次零食各加 5%，第四次起不加；饱腹到 200% 由口粮/零食触发死亡。零食模式第一次进入打卡页（拍照前）弹出本机说明 `snackSatietyHint`。
 - 2026-11-26：领养失败的实时日志是 `adopt: Invalid regular expression: /[\p{C}\p{Zl}\p{Zp}]/u`。客户端 8.0.23，基础库 3.18.0，系统类型记成 Android。名字校验改成按码点拒绝换行和控制字符，不再用这则 Unicode 属性正则。手机上还要用新编译的 `miniprogram/generated/` 再点一次领养确认。
 - 2026-11-25：失败记入微信实时日志。`api.js` 上报动作名、错误原文和本机 `localUserId`；页面里收成固定提示的存储、照片和备份失败也上报；`app.js` 的 `onError` / `onUnhandledRejection` 补未捕获异常。不记昵称、宠物名和备份内容。同一用户同一种失败，一次打开只记一条。用户取消不记。手机上的提示文案没改。
 - 2026-11-25：有活着的宠物时，首页舞台左侧的口袋一直在，右上角是本月剩余口粮。点口袋先确认。不在窗口显示「当前未在打卡时间」；窗口里已打过或用过口粮显示「已打卡」；剩余 0 显示「已用完」；否则才记在本餐上。打卡页的入口仍在。这一步还没有在微信开发者工具里点过。

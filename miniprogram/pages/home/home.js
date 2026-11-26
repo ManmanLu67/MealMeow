@@ -26,6 +26,14 @@ function photosOf(list) {
   }).filter(Boolean)
 }
 
+function satietyBarWidth(text) {
+  const raw = String(text || '').replace('%', '').trim()
+  if (raw === '—' || raw === '') return 0
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return 0
+  return Math.min(100, Math.max(0, n))
+}
+
 function toneOf(state) {
   if (state === 'checked_in') return 'done'
   if (state === 'due') return 'now'
@@ -37,7 +45,8 @@ function toneOf(state) {
 Page({
   data: {
     padTop: 88,
-    hungerText: '0%',
+    satietyText: '0%',
+    satietyBarWidth: 0,
     healthText: '100',
     levelText: '',
     badge: false,
@@ -243,7 +252,8 @@ Page({
     const self = this
     this.setData({
       date: view.date,
-      hungerText: view.hungerText || '—',
+      satietyText: view.satietyText || '—',
+      satietyBarWidth: satietyBarWidth(view.satietyText || '—'),
       healthText: view.healthText || '—',
       levelText: view.levelText || '',
       levelCard: view.levelText || '',

@@ -26,22 +26,22 @@ const META = {
 
 const HEALTH = { full: '100', peckish: '78', hungry: '44', critical: '22' }
 
-// 预览没有时钟。每个饥饿档落在不同的百分比区间，情绪词才会跟着变。
-const SCENE_HUNGER = {
-  living: '18%',
-  snack: '18%',
-  pasture: '18%',
-  idle: '8%',
-  memorial: '10%',
-  peckish: '48%',
-  'two-due': '48%',
-  hungry: '74%',
-  critical: '96%',
-  cooling: '100%',
+// 预览没有时钟。每个场景落在不同的饱腹区间，情绪词才会跟着变。
+const SCENE_SATIETY = {
+  living: '82%',
+  snack: '82%',
+  pasture: '82%',
+  idle: '92%',
+  memorial: '90%',
+  peckish: '52%',
+  'two-due': '52%',
+  hungry: '26%',
+  critical: '4%',
+  cooling: '0%',
 }
 
-function sceneHunger(name) {
-  return SCENE_HUNGER[name] || '18%'
+function sceneSatiety(name) {
+  return SCENE_SATIETY[name] || '82%'
 }
 
 // 预览没有时钟。丸子按这一幕固定：刚打完还在窗口里是满盘，下一顿还没到留一半，
@@ -54,10 +54,10 @@ function sceneBowl(name) {
 }
 
 function sceneEmotion(name) {
-  const percent = Number(sceneHunger(name).replace('%', ''))
-  if (percent <= 30) return '饱足'
-  if (percent <= 60) return '满足'
-  if (percent <= 85) return '有点饿'
+  const percent = Number(sceneSatiety(name).replace('%', ''))
+  if (percent >= 70) return '饱足'
+  if (percent >= 40) return '满足'
+  if (percent >= 15) return '有点饿'
   return '饿扁了'
 }
 
@@ -108,9 +108,9 @@ function homeView(name) {
     petName: '小饭',
     band: scene.band,
     bandText: BAND_TEXT[scene.band],
-    // 饥饿百分比按场景写死，情绪词由百分比换算。健康用原来的档换算成满分 100。
+    // 饱腹百分比按场景写死，情绪词由饱腹换算。健康用原来的档换算成满分 100。
     emotion: sceneEmotion(name),
-    hungerText: sceneHunger(name),
+    satietyText: sceneSatiety(name),
     healthText: scene.pet === 'pasture' ? '—' : (scene.pet === 'memorial' ? '0' : HEALTH[scene.band]),
     levelText: scene.pet === 'pasture' ? '' : '1',
     bowlFill: sceneBowl(name),

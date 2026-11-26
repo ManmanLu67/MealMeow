@@ -30,6 +30,29 @@ Page({
     nicknameDraft: '',
   },
 
+  showSnackSatietyHint() {
+    try {
+      if (wx.getStorageSync('snackSatietyHint')) return
+    } catch (err) {
+      return
+    }
+    wx.showModal({
+      title: '零食',
+      content: '每天前三次零食各增加 5% 饱腹，第四次起只留照片。饱腹可以超过 100%，到 200% 宠物会死亡。',
+      showCancel: false,
+      confirmText: '确定',
+      success(res) {
+        if (res.confirm) {
+          try {
+            wx.setStorageSync('snackSatietyHint', '1')
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      },
+    })
+  },
+
   onShow() {
     const page = this
     if (!wx.getPrivacySetting) return
@@ -49,6 +72,7 @@ Page({
     this.meal = meal
     if (this.mode === 'snack') {
       this.setData({ mode: 'snack', mealName: labels.SNACK_NAME })
+      this.showSnackSatietyHint()
     } else {
       this.setData({ mode: 'meal', mealName: labels.MEAL_NAME[meal] || '这一餐' })
     }

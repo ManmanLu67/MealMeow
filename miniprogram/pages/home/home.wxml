@@ -2,7 +2,13 @@
   <view class="home-body">
   <view class="top">
     <view class="stat" bindtap="openStat">
-      <view class="stat-row"><text class="stat-k">饥饿</text><text class="stat-v">{{hungerText}}</text></view>
+      <view class="stat-row stat-row-satiety">
+        <text class="stat-k">饱腹</text>
+        <view class="satiety-track">
+          <view class="satiety-fill" style="width: {{satietyBarWidth}}%;"></view>
+          <text class="satiety-text {{satietyBarWidth >= 48 ? 'satiety-text-light' : 'satiety-text-dark'}}">{{satietyText}}</text>
+        </view>
+      </view>
       <view class="stat-row"><text class="stat-k">健康</text><text class="stat-v">{{healthText}}</text></view>
       <view class="stat-row"><text class="stat-k">等级</text><text class="stat-v">{{levelText}}</text></view>
     </view>
@@ -115,8 +121,8 @@
         <text class="stat-h">今日状态</text>
         <text wx:for="{{statChanges}}" wx:key="*this" class="stat-line">{{item}}</text>
         <text class="stat-h">计算方法</text>
-        <text class="stat-kicker">饥饿</text>
-        <text class="stat-line">正餐打卡后恢复为 0%，在下餐前随时间升至 100%。漏餐停在 100%，直到下一次打卡。食用口粮减少 90% 饥饿。零食不记入。</text>
+        <text class="stat-kicker">饱腹</text>
+        <text class="stat-line">正餐打卡后为 100%，在下餐前掉到 0%。口粮在当前饱腹上加 90。每天前三次零食各加 5%，第四次起不加。可以超过 100%，到 200% 宠物死亡。食盘不随口粮变化。</text>
         <text class="stat-kicker">健康</text>
         <text class="stat-line">与饥饿值无关。初始/为漏餐为 0 档（健康 100），每漏一餐档位加 1（健康约减 11 分），漏满 9 档宠物死亡。进食分段恢复：漏 1~2 餐吃完回 0 档（100），漏 3~5 餐回 2 档（78），漏 6~8 餐回 5 档（44）。</text>
         <text class="stat-kicker">宠物等级</text>

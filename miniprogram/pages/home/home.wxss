@@ -18,6 +18,11 @@
 .stat-row:last-child { border-bottom: none; }
 .stat-k { font-size: 28rpx; font-weight: 400; letter-spacing: 0.08em; }
 .stat-v { font-size: 32rpx; font-weight: 800; }
+.satiety-track { position: relative; flex: 1; min-width: 0; height: 40rpx; margin-left: 12rpx; background: rgba(26, 26, 26, 0.15); border-radius: 4rpx; overflow: hidden; }
+.satiety-fill { position: absolute; left: 0; top: 0; height: 100%; background: #1A1A1A; border-radius: 4rpx; }
+.satiety-text { position: relative; z-index: 1; display: block; padding: 0 8rpx; font-size: 32rpx; font-weight: 800; line-height: 40rpx; white-space: nowrap; }
+.satiety-text-light { color: #FFFFFF; }
+.satiety-text-dark { color: #1A1A1A; }
 
 .meals { display: flex; flex: 1; flex-direction: column; justify-content: space-between; min-width: 0; margin-left: 20rpx; overflow: visible; }
 .meal { position: relative; display: flex; flex-direction: row; align-items: center; justify-content: space-between; box-sizing: border-box; width: 100%; height: 72rpx; padding: 0 24rpx; background: #FFFFFF; border: 4rpx solid #1A1A1A; border-radius: 8rpx; overflow: visible; }
