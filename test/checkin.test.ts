@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { finishCheckin, removeCheckin, saveMeals, useStaple } from '../app/checkin.ts'
+import { recordSnack } from '../app/snack.ts'
 import { runDueJobs } from '../app/settle.ts'
 import { syncUser } from '../app/user.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
@@ -225,5 +226,59 @@ describe('staple and delete', () => {
     assert.equal(used.ok, true)
     assert.equal((await mustPet(store)).alive, true)
     assert.equal((await store.getUser('u'))?.diedOn, null)
+  })
+
+  it('kills when this staple crosses 200 and leaves a pet that is already there', async () => {
+    const meals = { ...MEALS_DEFAULT, lunch: '09:30' }
+    const breakfastAt = new Date('2026-11-13T00:29:00.000Z')
+    const crossing = await seededStore({ meals }, {})
+    await finishCheckin(crossing, caller, breakfastAt, {
+      date: '2026-11-13',
+      meal: 'breakfast',
+      photos: ['m'],
+    })
+    await recordSnack(crossing, caller, new Date(breakfastAt.getTime() + 1_000), { photos: ['a'] })
+    await recordSnack(crossing, caller, new Date(breakfastAt.getTime() + 2_000), { photos: ['b'] })
+    await recordSnack(crossing, caller, new Date(breakfastAt.getTime() + 3_000), { photos: ['c'] })
+    const stapleAt = new Date('2026-11-13T00:30:00.000Z')
+    const used = await useStaple(crossing, caller, stapleAt, { date: '2026-11-13', meal: 'lunch' })
+    assert.equal(used.ok, true)
+    assert.equal((await mustPet(crossing)).alive, false)
+
+    const already = await seededStore()
+    const at = '2026-11-13T10:00:00.000Z'
+    await already.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'breakfast',
+      status: 'checked_in',
+      checkinAt: at,
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    await already.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'exempt',
+      checkinAt: new Date(Date.parse(at) + 1).toISOString(),
+      photos: [],
+      photoReviews: [],
+      review: 'passed',
+    }))
+    await already.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: new Date(Date.parse(at) + 2).toISOString(),
+      photos: ['s'],
+      photoReviews: ['passed'],
+      hidden: false,
+      boosts: [2, 3].map((n) => new Date(Date.parse(at) + n).toISOString()),
+    })
+    const held = await useStaple(already, caller, new Date(Date.parse(at) + 10), {
+      date: '2026-11-13',
+      meal: 'dinner',
+    })
+    assert.equal(held.ok, true)
+    assert.equal((await mustPet(already)).alive, true)
+    assert.equal((await already.getUser('u'))?.diedOn, null)
   })
 })

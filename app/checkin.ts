@@ -10,7 +10,8 @@ import {
   STAPLE_PER_MONTH,
 } from '../domain/index.ts'
 import { clocksOn, rollMeals, topUpJobs } from './schedule.ts'
-import { killPetIfSatietyAtLeast200, runDueJobsFor } from './settle.ts'
+import { loadSatiety } from './satiety.ts'
+import { killPetIfSatietyCrossed200, runDueJobsFor } from './settle.ts'
 import type { Store } from './ports.ts'
 import type { UserDoc } from './types.ts'
 import { requireUser } from './user.ts'
@@ -115,6 +116,7 @@ export async function useStaple(
     }
 
     await topUpJobs(store, user, now, { refresh: false })
+    const before = (await loadSatiety(store, user, now)).satiety
     await store.saveRecord({
       userId: caller.userId,
       date: input.date,
@@ -127,7 +129,7 @@ export async function useStaple(
       checkinAt: now.toISOString(),
     })
     await store.saveUser({ ...user, stapleLeft: stapleLeft - 1, stapleMonth: month })
-    await killPetIfSatietyAtLeast200(store, caller.userId, now)
+    await killPetIfSatietyCrossed200(store, caller.userId, now, before)
     return { ok: true, stapleLeft: stapleLeft - 1 }
   })
 }

@@ -1,4 +1,4 @@
-import { addIsoDays, logicalDate, stapleMonth } from '../domain/index.ts'
+import { addIsoDays, logicalDate } from '../domain/index.ts'
 import type { Store } from './ports.ts'
 import type { Caller } from './handle.ts'
 
@@ -27,49 +27,56 @@ export function previousMonth(month: string): string {
   return `${year}-${String(monthNumber - 1).padStart(2, '0')}`
 }
 
-async function scanExpiredPhotos(
-  store: Store,
-  caller: Caller,
-  now: Date,
-): Promise<{ paths: string[]; records: Awaited<ReturnType<Store['listRecords']>>; snacks: Awaited<ReturnType<Store['listSnacks']>> } | null> {
-  const user = await store.getUser(caller.userId)
-  if (user === null) return null
-  const current = stapleMonth(now, user.timeZone)
-  const kept = new Set([current, previousMonth(current)])
-  const paths: string[] = []
-  const records: Awaited<ReturnType<Store['listRecords']>> = []
-  const snacks: Awaited<ReturnType<Store['listSnacks']>> = []
+type MonthPhotos = {
+  paths: string[]
+  records: Awaited<ReturnType<Store['listRecords']>>
+  snacks: Awaited<ReturnType<Store['listSnacks']>>
+}
+
+async function photosByMonth(store: Store, caller: Caller): Promise<Map<string, MonthPhotos>> {
+  const map = new Map<string, MonthPhotos>()
+  if ((await store.getUser(caller.userId)) === null) return map
   for (const date of await store.listDates(caller.userId)) {
-    if (kept.has(date.slice(0, 7))) continue
+    const month = date.slice(0, 7)
+    const paths: string[] = []
+    const records: MonthPhotos['records'] = []
+    const snacks: MonthPhotos['snacks'] = []
     for (const record of await store.listRecords(caller.userId, date)) {
+      if (record.photos.length === 0) continue
       paths.push(...record.photos)
-      if (record.photos.length > 0) records.push(record)
+      records.push(record)
     }
     for (const snack of await store.listSnacks(caller.userId, date)) {
+      if (snack.photos.length === 0) continue
       paths.push(...snack.photos)
-      if (snack.photos.length > 0) snacks.push(snack)
+      snacks.push(snack)
     }
+    if (paths.length === 0) continue
+    const hit = map.get(month) ?? { paths: [], records: [], snacks: [] }
+    hit.paths.push(...paths)
+    hit.records.push(...records)
+    hit.snacks.push(...snacks)
+    map.set(month, hit)
   }
-  return { paths, records, snacks }
+  return map
 }
 
-/** 本月和上月以外的照片路径（只读，不写库）。 */
-export async function listExpiredPhotoPaths(store: Store, caller: Caller, now: Date): Promise<string[]> {
-  const scan = await scanExpiredPhotos(store, caller, now)
-  return scan === null ? [] : scan.paths
-}
-
-/** 本月和上月以外的照片路径清掉。记录、审核和结算留下。返回被清掉的路径。 */
-export async function clearExpiredPhotos(store: Store, caller: Caller, now: Date): Promise<string[]> {
-  const scan = await scanExpiredPhotos(store, caller, now)
-  if (scan === null) return []
-  for (const record of scan.records) {
+/** 只清掉这一个月的照片。记录、审核和结算留下。返回被清掉的路径。 */
+export async function clearExpiredPhotos(
+  store: Store,
+  caller: Caller,
+  _now: Date,
+  month: string,
+): Promise<string[]> {
+  const hit = (await photosByMonth(store, caller)).get(month)
+  if (hit === undefined) return []
+  for (const record of hit.records) {
     await store.saveRecord({ ...record, photos: [], photoReviews: [] })
   }
-  for (const snack of scan.snacks) {
+  for (const snack of hit.snacks) {
     await store.saveSnack({ ...snack, photos: [], photoReviews: [] })
   }
-  return scan.paths
+  return hit.paths
 }
 
 export async function photoPurgeNotice(
@@ -80,10 +87,12 @@ export async function photoPurgeNotice(
 ): Promise<{ month: string; deleteNow: boolean } | null> {
   const user = await store.getUser(caller.userId)
   if (user === null) return null
-  let notice = purgeNotice(now, user.timeZone, noted)
-  if (notice !== null && notice.deleteNow) {
-    const paths = await listExpiredPhotoPaths(store, caller, now)
-    if (paths.length === 0) notice = null
-  }
+  const today = logicalDate(now, user.timeZone)
+  const previous = previousMonth(today.slice(0, 7))
+  const byMonth = await photosByMonth(store, caller)
+  const older = [...byMonth.keys()].filter((month) => month < previous).sort()
+  if (older.length > 0) return { month: older[0], deleteNow: true }
+  const notice = purgeNotice(now, user.timeZone, noted)
+  if (notice !== null && notice.deleteNow && !byMonth.has(notice.month)) return null
   return notice
 }

@@ -42,7 +42,7 @@ describe('expired photos', () => {
       photoReviews: ['passed'],
       review: 'passed',
     }))
-    const dropped = await clearExpiredPhotos(store, { userId: 'u' }, now)
+    const dropped = await clearExpiredPhotos(store, { userId: 'u' }, now, '2026-09')
     assert.ok(dropped.includes('2026-09-30-breakfast'))
     const early = await store.getRecord('u', '2026-09-30', 'breakfast')
     assert.equal(early?.status, 'checked_in')

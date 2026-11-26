@@ -68,7 +68,7 @@ describe('local session', () => {
     assert.equal(home.ok, true)
     if (home.ok) assert.deepEqual(home.droppedPhotos, [])
     assert.deepEqual((await store.getRecord('u', '2026-09-30', 'lunch'))?.photos, ['old.jpg'])
-    const purged = await openLocal(store, caller, inside, { action: 'purgePhotos' })
+    const purged = await openLocal(store, caller, inside, { action: 'purgePhotos', month: '2026-09' })
     assert.equal(purged.ok, true)
     if (purged.ok) {
       assert.ok(purged.droppedPhotos.includes('old.jpg'))
@@ -97,6 +97,59 @@ describe('local session', () => {
       })
       assert.deepEqual((await store.getRecord('u', '2026-11-13', 'lunch'))?.photos, ['p.jpg'])
     }
+  })
+
+  it('names September while October photos remain, then deletes only that month', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-09-15',
+      meal: 'breakfast',
+      photos: ['sept.jpg'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    await store.saveRecord(record({
+      date: '2026-10-15',
+      meal: 'breakfast',
+      photos: ['oct.jpg'],
+      photoReviews: ['passed'],
+      review: 'passed',
+    }))
+    const nov30 = new Date('2026-11-30T15:00:00.000Z')
+    const dec1 = new Date('2026-11-30T20:00:00.000Z')
+    const onNov30 = await openLocal(store, caller, nov30, { action: 'photoPurge', noted: null })
+    const onDec1 = await openLocal(store, caller, dec1, { action: 'photoPurge', noted: null })
+    assert.equal(onNov30.ok, true)
+    assert.equal(onDec1.ok, true)
+    if (onNov30.ok) {
+      assert.deepEqual((onNov30.data as { notice: unknown }).notice, { month: '2026-09', deleteNow: true })
+    }
+    if (onDec1.ok) {
+      assert.deepEqual((onDec1.data as { notice: unknown }).notice, { month: '2026-09', deleteNow: true })
+    }
+    assert.deepEqual((await store.getRecord('u', '2026-09-15', 'breakfast'))?.photos, ['sept.jpg'])
+    assert.deepEqual((await store.getRecord('u', '2026-10-15', 'breakfast'))?.photos, ['oct.jpg'])
+
+    const purged = await openLocal(store, caller, dec1, { action: 'purgePhotos', month: '2026-09' })
+    assert.equal(purged.ok, true)
+    if (purged.ok) assert.deepEqual(purged.droppedPhotos, ['sept.jpg'])
+    assert.deepEqual((await store.getRecord('u', '2026-09-15', 'breakfast'))?.photos, [])
+    assert.deepEqual((await store.getRecord('u', '2026-10-15', 'breakfast'))?.photos, ['oct.jpg'])
+
+    const warning = await openLocal(store, caller, nov30, { action: 'photoPurge', noted: null })
+    assert.equal(warning.ok, true)
+    if (warning.ok) {
+      assert.deepEqual((warning.data as { notice: unknown }).notice, { month: '2026-10', deleteNow: false })
+    }
+    const october = await openLocal(store, caller, dec1, { action: 'photoPurge', noted: null })
+    assert.equal(october.ok, true)
+    if (october.ok) {
+      assert.deepEqual((october.data as { notice: unknown }).notice, { month: '2026-10', deleteNow: true })
+    }
+    const droppedOctober = await openLocal(store, caller, dec1, { action: 'purgePhotos', month: '2026-10' })
+    assert.equal(droppedOctober.ok, true)
+    if (droppedOctober.ok) assert.deepEqual(droppedOctober.droppedPhotos, ['oct.jpg'])
+    assert.deepEqual((await store.getRecord('u', '2026-10-15', 'breakfast'))?.photos, [])
   })
 
   it('deletes the account and hands its photos back for removal', async () => {

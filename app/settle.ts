@@ -55,18 +55,22 @@ export async function markPetDead(
   return dead
 }
 
-/** 写入主食或零食后，整数饱腹到 200 时按过饱死亡（与漏餐饿死同一套字段）。 */
-export async function killPetIfSatietyAtLeast200(
+/**
+ * 这一次主食或零食写入把整数饱腹从不到 200 抬到 200 或以上时死亡。
+ * 写入前已经不低于 200，或这次没有把数字抬过 200，都不死。打开页面不调用。
+ */
+export async function killPetIfSatietyCrossed200(
   store: Store,
   userId: string,
   now: Date,
+  before: number,
 ): Promise<void> {
   const user = await store.getUser(userId)
   if (user === null) return
   const pet = await store.getPet(userId)
   if (pet === null || !pet.alive) return
   const { satiety } = await loadSatiety(store, user, now)
-  if (satiety >= 200) await markPetDead(store, user, pet, now)
+  if (before < 200 && satiety >= 200) await markPetDead(store, user, pet, now)
 }
 
 /** 结算后给存活宠物累计吃到的餐数，陪伴天数在活着时按今天算。 */

@@ -142,15 +142,15 @@ function dispatch(action, payload) {
     })
 }
 
-function runPurgePhotos() {
-  return dispatch('purgePhotos', {})
+function runPurgePhotos(month) {
+  return dispatch('purgePhotos', { month: month })
 }
 
 function confirmPurgeNotice(notice) {
   return showPurgeModal(notice.month).then(function (confirmed) {
     if (!confirmed) return
     writeNoted(notice.month)
-    if (notice.deleteNow) return runPurgePhotos()
+    if (notice.deleteNow) return runPurgePhotos(notice.month)
   })
 }
 
@@ -160,7 +160,7 @@ function runPhotoPurgeSide(action) {
     const notice = purgeRes.data && purgeRes.data.notice
     if (!notice) return
     const noted = readNoted()
-    if (noted === notice.month && notice.deleteNow) return runPurgePhotos()
+    if (noted === notice.month && notice.deleteNow) return runPurgePhotos(notice.month)
     if (noted === notice.month) return
     if (action === 'gallery' && !galleryHintSeen()) {
       writeStash(notice)

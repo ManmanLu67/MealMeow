@@ -178,4 +178,26 @@ describe('satiety', () => {
       100,
     )
   })
+
+  it('applies at most the first three snack boosts of a logical day', () => {
+    const at = '2026-11-13T04:00:00.000Z'
+    const close = [0, 1, 2, 3].map((n) => ({
+      kind: 'snack' as const,
+      at: new Date(Date.parse(at) + n).toISOString(),
+    }))
+    const closeNow = new Date(Date.parse(at) + 3)
+    assert.equal(satietyAt(closeNow, close, clocksFor, SH), 15)
+    assert.equal(satietyAt(closeNow, close.slice(0, 3), clocksFor, SH), 15)
+
+    const base = Date.parse('2026-11-13T00:00:00.000Z')
+    const spaced = [0, 2, 4, 6].map((hour) => ({
+      kind: 'snack' as const,
+      at: new Date(base + hour * 3_600_000).toISOString(),
+    }))
+    const atFourteen = new Date(base + 6 * 3_600_000)
+    assert.equal(satietyAt(atFourteen, spaced, clocksFor, SH), satietyAt(atFourteen, spaced.slice(0, 3), clocksFor, SH))
+
+    const nextDay = { kind: 'snack' as const, at: '2026-11-14T04:00:00.000Z' }
+    assert.equal(satietyAt(new Date(nextDay.at), [...close, nextDay], clocksFor, SH), 5)
+  })
 })

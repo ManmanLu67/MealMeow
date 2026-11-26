@@ -158,6 +158,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
     records,
     span.latest,
     satiety,
+    now,
   )
   const alive = pet?.alive === true
   const dead = pet !== null && !pet.alive
@@ -203,7 +204,7 @@ export async function homeView(store: Store, caller: Caller, now: Date): Promise
   }
 }
 
-/** 状态板浮窗里的当天变化。百分比跟着最近一餐，健康跟着今天已经结算的饥饿档。 */
+/** 状态板浮窗里的当天变化。百分比是重算后的整数，健康跟着今天已经结算的饥饿档。 */
 async function todayStatChanges(
   store: Store,
   userId: string,
@@ -211,15 +212,36 @@ async function todayStatChanges(
   records: readonly MealRecordDoc[],
   latest: MealRecordDoc | null,
   percent: number,
+  now: Date,
 ): Promise<string[]> {
   const lines: string[] = []
-  if (!latest) lines.push('还没吃过，饱腹是 0%')
-  else if (latest.date === today) {
-    const name = MEAL_NAME[latest.meal]
-    lines.push(latest.status === 'exempt'
+  const boosts: string[] = []
+  for (const snack of await store.listSnacks(userId, today)) {
+    if (snack.hidden) continue
+    for (const at of snack.boosts ?? []) {
+      if (Date.parse(at) <= now.getTime()) boosts.push(at)
+    }
+  }
+  boosts.sort()
+  const applied = boosts.slice(0, 3)
+  const todayMeal = latest !== null && latest.date === today ? latest : null
+  const snacksChanged = applied.length > 0 && (
+    todayMeal === null
+    || todayMeal.status === 'exempt'
+    || applied.some((at) => Date.parse(at) >= Date.parse(todayMeal.checkinAt))
+  )
+  if (todayMeal !== null) {
+    const name = MEAL_NAME[todayMeal.meal]
+    lines.push(todayMeal.status === 'exempt'
       ? `${name}口粮后，饱腹加上 90，现在是 ${percent}%`
       : `${name}打卡后，饱腹从 100% 掉到现在的 ${percent}%`)
+    if (snacksChanged) lines.push('今天的零食加成也算在这个数里')
+  } else if (snacksChanged) {
+    lines.push(`今天的零食加成后，饱腹是 ${percent}%`)
+  } else if (!latest) {
+    lines.push(`还没吃过，饱腹是 ${percent}%`)
   } else if (percent === 0) lines.push('上一餐之后没再吃，饱腹停在 0%')
+  else lines.push(`饱腹是 ${percent}%`)
 
   for (const meal of MEALS) {
     const settlement = await store.getSettlement(userId, today, meal)

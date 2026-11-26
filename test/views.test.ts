@@ -248,6 +248,33 @@ describe('home view', () => {
     })
     const view = await homeView(store, { userId: 'u' }, new Date(at))
     assert.equal(view.satietyText, '5%')
+    assert.ok(view.statChanges.some((line) => line.includes('零食') && line.includes('5%')))
+  })
+
+  it('prints the recomputed percent when snacks push a meal above 100', async () => {
+    const at = '2026-11-13T04:00:00.000Z'
+    const store = await seededStore()
+    await store.saveRecord(record({
+      date: '2026-11-13',
+      meal: 'lunch',
+      status: 'checked_in',
+      checkinAt: at,
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    await store.saveSnack({
+      userId: 'u',
+      date: '2026-11-13',
+      startedAt: at,
+      photos: ['s'],
+      photoReviews: ['passed'],
+      hidden: false,
+      boosts: [at],
+    })
+    const view = await homeView(store, { userId: 'u' }, new Date(at))
+    assert.equal(view.satietyText, '105%')
+    assert.ok(view.statChanges.some((line) => line.includes('午餐打卡后') && line.includes('105%')))
+    assert.ok(view.statChanges.some((line) => line.includes('零食')))
   })
 
   it('reports staple left for this month and whether the window is open', async () => {

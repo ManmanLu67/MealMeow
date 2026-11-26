@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { finishCheckin, removeCheckin, useStaple } from '../app/checkin.ts'
+import { loadSatiety } from '../app/satiety.ts'
 import { applySnackReview, recordSnack, removeSnack } from '../app/snack.ts'
+import { homeView } from '../app/views.ts'
 import { createMemoryStore } from '../adapters/memory/memory-store.ts'
-import { MEALS_DEFAULT, seededStore } from './fixtures.ts'
+import { MEALS_DEFAULT, record, seededStore } from './fixtures.ts'
 
 const MEALS_LUNCH_930 = { ...MEALS_DEFAULT, lunch: '09:30' }
 
@@ -113,6 +115,69 @@ describe('satiety boosts and death at 200', () => {
     assert.deepEqual(after.photos, ['a', 'b', 'c', 'd'])
     pet = await store.getPet('u')
     assert.equal(pet?.alive, false)
+  })
+
+  it('raises satiety by 15 across four snacks more than an hour apart', async () => {
+    const store = await seededStore()
+    const times = [8, 10, 12, 14].map((hour) => new Date(Date.UTC(2026, 10, 13, hour - 8, 0, 0)))
+    const photos = ['a', 'b', 'c', 'd']
+    for (let i = 0; i < times.length; i += 1) {
+      assert.equal((await recordSnack(store, caller, times[i], { photos: [photos[i]] })).ok, true)
+    }
+    const snacks = await store.listSnacks('u', day)
+    assert.equal(snacks.length, 4)
+    const boosts = snacks.flatMap((snack) => snack.boosts ?? [])
+    assert.equal(boosts.length * 5, 15)
+    const fourth = snacks.find((snack) => snack.startedAt === times[3].toISOString())
+    assert.deepEqual(fourth?.photos, ['d'])
+    assert.equal(fourth?.boosts, undefined)
+    const user = await store.getUser('u')
+    assert.ok(user)
+    assert.equal((await loadSatiety(store, user, times[3])).satiety, 3)
+  })
+
+  it('does not kill on a fourth finish that adds no boost when satiety is already at 200', async () => {
+    const store = await seededStore()
+    const at = '2026-11-13T04:00:00.000Z'
+    await store.saveRecord(record({
+      date: day,
+      meal: 'breakfast',
+      status: 'checked_in',
+      checkinAt: at,
+      review: 'passed',
+      photoReviews: ['passed'],
+    }))
+    await store.saveRecord(record({
+      date: day,
+      meal: 'lunch',
+      status: 'exempt',
+      checkinAt: at,
+      photos: [],
+      photoReviews: [],
+      review: 'passed',
+    }))
+    await store.saveSnack({
+      userId: 'u',
+      date: day,
+      startedAt: at,
+      photos: ['a', 'b', 'c'],
+      photoReviews: ['passed', 'passed', 'passed'],
+      hidden: false,
+      boosts: [1, 2, 3].map((n) => new Date(Date.parse(at) + n).toISOString()),
+    })
+    const now = new Date(Date.parse(at) + 4)
+    const opened = await homeView(store, caller, now)
+    assert.equal(opened.satietyText, '205%')
+    assert.equal((await store.getPet('u'))?.alive, true)
+
+    const fourth = await recordSnack(store, caller, now, { photos: ['d'] })
+    assert.equal(fourth.ok, true)
+    const snacks = await store.listSnacks('u', day)
+    assert.equal(snacks.length, 1)
+    assert.equal(snacks[0].boosts?.length, 3)
+    assert.deepEqual(snacks[0].photos, ['a', 'b', 'c', 'd'])
+    assert.equal((await store.getPet('u'))?.alive, true)
+    assert.equal((await store.getUser('u'))?.diedOn, null)
   })
 
   it('records three boosts without a pet and does not throw', async () => {

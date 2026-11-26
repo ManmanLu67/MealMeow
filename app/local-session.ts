@@ -22,6 +22,15 @@ function notedOf(raw: unknown): string | null {
   return typeof noted === 'string' ? noted : null
 }
 
+function monthOf(raw: unknown): string | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const month = (raw as { month?: unknown }).month
+  if (typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) return null
+  const number = Number(month.slice(5))
+  if (number < 1 || number > 12) return null
+  return month
+}
+
 function hideMissing(data: unknown, fileExists: (path: string) => boolean): unknown {
   if (typeof data !== 'object' || data === null) return data
   const body = { ...(data as Record<string, unknown>) }
@@ -89,7 +98,9 @@ export async function openLocal(
 
   if (action === 'purgePhotos') {
     if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
-    const droppedPhotos = await clearExpiredPhotos(store, caller, now)
+    const month = monthOf(raw)
+    if (month === null) return { ok: false, error: 'bad_request' }
+    const droppedPhotos = await clearExpiredPhotos(store, caller, now, month)
     return { ok: true, droppedPhotos }
   }
 

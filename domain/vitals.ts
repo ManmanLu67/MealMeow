@@ -94,10 +94,17 @@ function replaySatiety(
   const bowl = initTrack()
   const ordered = sortSatietyEvents(events)
   const nowMs = now.getTime()
+  const snackBoosts = new Map<string, number>()
 
   for (const event of ordered) {
     const at = new Date(event.at)
     if (at.getTime() > nowMs) break
+    if (event.kind === 'snack') {
+      const day = logicalDate(at, timeZone)
+      const used = snackBoosts.get(day) ?? 0
+      if (used >= 3) continue
+      snackBoosts.set(day, used + 1)
+    }
     applyDecay(satiety, at)
     if (includeBowl && bowl.active) applyDecay(bowl, at)
 

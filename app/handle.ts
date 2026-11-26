@@ -39,7 +39,7 @@ export type Request =
   | { action: 'memorial'; id?: string }
   | { action: 'closeAccount' }
   | { action: 'photoPurge'; noted: string | null }
-  | { action: 'purgePhotos' }
+  | { action: 'purgePhotos'; month: string }
 
 export type Response =
   | { ok: true; data?: unknown }
@@ -196,7 +196,8 @@ export function parseRequest(raw: unknown): Request | null {
       return { action: 'photoPurge', noted }
     }
     case 'purgePhotos':
-      return { action: 'purgePhotos' }
+      if (!isMonth(body.month)) return null
+      return { action: 'purgePhotos', month: body.month }
     default:
       return null
   }
@@ -290,7 +291,7 @@ export async function handle(
     }
     case 'purgePhotos': {
       if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
-      await clearExpiredPhotos(store, caller, now)
+      await clearExpiredPhotos(store, caller, now, request.month)
       return { ok: true }
     }
     case 'home':

@@ -1,22 +1,32 @@
 import { logicalDate, snackMergeTarget } from '../domain/index.ts'
-import { killPetIfSatietyAtLeast200 } from './settle.ts'
+import { loadSatiety } from './satiety.ts'
+import { killPetIfSatietyCrossed200 } from './settle.ts'
 import type { Store } from './ports.ts'
 import type { SnackDoc } from './types.ts'
 import { requireUser } from './user.ts'
 
 const MAX_SNACK_BOOSTS = 3
 
-function nextBoosts(existing: string[] | undefined, now: Date): string[] | undefined {
-  const boosts = existing ?? []
-  if (boosts.length >= MAX_SNACK_BOOSTS) return existing
-  return [...boosts, now.toISOString()]
+function boostCount(snacks: readonly SnackDoc[]): number {
+  let count = 0
+  for (const snack of snacks) {
+    if (snack.hidden) continue
+    count += snack.boosts?.length ?? 0
+  }
+  return count
+}
+
+function withBoost(existing: string[] | undefined, now: Date, room: boolean): string[] | undefined {
+  if (!room) return existing
+  return [...(existing ?? []), now.toISOString()]
 }
 
 type Fail = { ok: false; error: string }
 
 /**
  * 打卡可以另记一份零食，饭点里也可以，不代替这一餐。一小时内的打卡并入同一份。
- * 零食不改宠物、不进结算、不算「一天三餐都完成」，也不占应急口粮额度。
+ * 当天前三次各记一次饱腹加成。这次写入把整数饱腹从不到 200 抬到 200 或以上时，宠物死亡。
+ * 不进结算、不算「一天三餐都完成」，也不占应急口粮额度。
  */
 export async function recordSnack(
   store: Store,
@@ -29,9 +39,11 @@ export async function recordSnack(
     if (input.photos.length === 0) return { ok: false, error: '需要照片' }
 
     const day = logicalDate(now, user.timeZone)
+    const before = (await loadSatiety(store, user, now)).satiety
 
     // 零食按逻辑日归档。04:00 前的零食属于前一个逻辑日，所以并入时要看当前这一天和前一天。
     const today = await store.listSnacks(caller.userId, day)
+    const room = boostCount(today) < MAX_SNACK_BOOSTS
     const target = snackMergeTarget(today.map((s) => s.startedAt), now)
     if (target !== null) {
       const base = today.find((s) => s.startedAt === target) as SnackDoc
@@ -39,9 +51,9 @@ export async function recordSnack(
         ...base,
         photos: [...base.photos, ...input.photos],
         photoReviews: [...base.photoReviews, ...input.photos.map(() => 'pending' as const)],
-        boosts: nextBoosts(base.boosts, now),
+        boosts: withBoost(base.boosts, now, room),
       })
-      await killPetIfSatietyAtLeast200(store, caller.userId, now)
+      await killPetIfSatietyCrossed200(store, caller.userId, now, before)
       return { ok: true, merged: true }
     }
     await store.saveSnack({
@@ -51,9 +63,9 @@ export async function recordSnack(
       photos: [...input.photos],
       photoReviews: input.photos.map(() => 'pending' as const),
       hidden: false,
-      boosts: nextBoosts([], now),
+      boosts: withBoost(undefined, now, room),
     })
-    await killPetIfSatietyAtLeast200(store, caller.userId, now)
+    await killPetIfSatietyCrossed200(store, caller.userId, now, before)
     return { ok: true, merged: false }
   })
 }
