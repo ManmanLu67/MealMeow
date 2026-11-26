@@ -102,6 +102,7 @@ Page({
           } catch (err) {
             /* ignore */
           }
+          api.afterGalleryPhotoHint()
         }
       },
     })

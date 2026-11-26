@@ -4,6 +4,7 @@ import { recordSnack, removeSnack } from './snack.ts'
 import { setAnnotation } from './annotate.ts'
 import { closeAccount } from './backup.ts'
 import { syncUser } from './user.ts'
+import { clearExpiredPhotos, photoPurgeNotice } from './retention.ts'
 import { adoptView, galleryView, homeView, meView, memorialView } from './views.ts'
 import { submitPhotos, submitSnackPhotos, type MediaChecker } from './media-check.ts'
 import type { Store } from './ports.ts'
@@ -37,6 +38,8 @@ export type Request =
   | { action: 'me' }
   | { action: 'memorial'; id?: string }
   | { action: 'closeAccount' }
+  | { action: 'photoPurge'; noted: string | null }
+  | { action: 'purgePhotos' }
 
 export type Response =
   | { ok: true; data?: unknown }
@@ -183,6 +186,17 @@ export function parseRequest(raw: unknown): Request | null {
       return { action: 'memorial', id: isString(body.id) ? body.id : undefined }
     case 'closeAccount':
       return { action: 'closeAccount' }
+    case 'photoPurge': {
+      const noted =
+        body.noted === undefined || body.noted === null
+          ? null
+          : typeof body.noted === 'string'
+            ? body.noted
+            : null
+      return { action: 'photoPurge', noted }
+    }
+    case 'purgePhotos':
+      return { action: 'purgePhotos' }
     default:
       return null
   }
@@ -268,6 +282,16 @@ export async function handle(
     case 'closeAccount': {
       const result = await closeAccount(store, caller.userId)
       return result.ok ? { ok: true, data: { photos: result.photos } } : result
+    }
+    case 'photoPurge': {
+      if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
+      const notice = await photoPurgeNotice(store, caller, now, request.noted)
+      return { ok: true, data: { notice } }
+    }
+    case 'purgePhotos': {
+      if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
+      await clearExpiredPhotos(store, caller, now)
+      return { ok: true }
     }
     case 'home':
     case 'gallery':

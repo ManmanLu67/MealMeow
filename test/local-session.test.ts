@@ -61,6 +61,44 @@ describe('local session', () => {
     assert.equal(await phone.getUser('other'), null)
   })
 
+  it('keeps expired photos on an ordinary open and purges only after purgePhotos', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({ date: '2026-09-30', photos: ['old.jpg'], photoReviews: ['passed'], review: 'passed' }))
+    const home = await openLocal(store, caller, inside, { action: 'home' })
+    assert.equal(home.ok, true)
+    if (home.ok) assert.deepEqual(home.droppedPhotos, [])
+    assert.deepEqual((await store.getRecord('u', '2026-09-30', 'lunch'))?.photos, ['old.jpg'])
+    const purged = await openLocal(store, caller, inside, { action: 'purgePhotos' })
+    assert.equal(purged.ok, true)
+    if (purged.ok) {
+      assert.ok(purged.droppedPhotos.includes('old.jpg'))
+      assert.deepEqual((await store.getRecord('u', '2026-09-30', 'lunch'))?.photos, [])
+    }
+  })
+
+  it('returns no photo purge notice without expiring photos away from month end', async () => {
+    const store = await seededStore()
+    await store.saveRecord(record({ date: '2026-11-13', photos: ['p.jpg'], photoReviews: ['passed'], review: 'passed' }))
+    const probe = await openLocal(store, caller, inside, { action: 'photoPurge', noted: null })
+    assert.equal(probe.ok, true)
+    if (probe.ok) assert.deepEqual((probe.data as { notice: unknown }).notice, null)
+  })
+
+  it('warns on month end without deleting when there are no expiring photos', async () => {
+    const store = await seededStore()
+    const lastDay = new Date('2026-11-30T15:00:00.000Z')
+    await store.saveRecord(record({ date: '2026-11-13', photos: ['p.jpg'], photoReviews: ['passed'], review: 'passed' }))
+    const probe = await openLocal(store, caller, lastDay, { action: 'photoPurge', noted: null })
+    assert.equal(probe.ok, true)
+    if (probe.ok) {
+      assert.deepEqual((probe.data as { notice: { month: string; deleteNow: boolean } }).notice, {
+        month: '2026-10',
+        deleteNow: false,
+      })
+      assert.deepEqual((await store.getRecord('u', '2026-11-13', 'lunch'))?.photos, ['p.jpg'])
+    }
+  })
+
   it('deletes the account and hands its photos back for removal', async () => {
     const store = await seededStore()
     await store.saveRecord(record({ photos: ['wxfile://lunch.jpg'] }))

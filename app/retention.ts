@@ -27,6 +27,25 @@ export function previousMonth(month: string): string {
   return `${year}-${String(monthNumber - 1).padStart(2, '0')}`
 }
 
+/** 本月和上月以外的照片路径（只读，不写库）。 */
+export async function listExpiredPhotoPaths(store: Store, caller: Caller, now: Date): Promise<string[]> {
+  const user = await store.getUser(caller.userId)
+  if (user === null) return []
+  const current = stapleMonth(now, user.timeZone)
+  const kept = new Set([current, previousMonth(current)])
+  const dropped: string[] = []
+  for (const date of await store.listDates(caller.userId)) {
+    if (kept.has(date.slice(0, 7))) continue
+    for (const record of await store.listRecords(caller.userId, date)) {
+      dropped.push(...record.photos)
+    }
+    for (const snack of await store.listSnacks(caller.userId, date)) {
+      dropped.push(...snack.photos)
+    }
+  }
+  return dropped
+}
+
 /** 本月和上月以外的照片路径清掉。记录、审核和结算留下。返回被清掉的路径。 */
 export async function clearExpiredPhotos(store: Store, caller: Caller, now: Date): Promise<string[]> {
   const user = await store.getUser(caller.userId)
@@ -48,4 +67,20 @@ export async function clearExpiredPhotos(store: Store, caller: Caller, now: Date
     }
   }
   return dropped
+}
+
+export async function photoPurgeNotice(
+  store: Store,
+  caller: Caller,
+  now: Date,
+  noted: string | null,
+): Promise<{ month: string; deleteNow: boolean } | null> {
+  const user = await store.getUser(caller.userId)
+  if (user === null) return null
+  let notice = purgeNotice(now, user.timeZone, noted)
+  if (notice !== null && notice.deleteNow) {
+    const paths = await listExpiredPhotoPaths(store, caller, now)
+    if (paths.length === 0) notice = null
+  }
+  return notice
 }

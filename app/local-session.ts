@@ -1,6 +1,6 @@
 import { handle, type Caller, type Response } from './handle.ts'
 import { acceptPendingPhotos } from './local-pass.ts'
-import { clearExpiredPhotos } from './retention.ts'
+import { clearExpiredPhotos, photoPurgeNotice } from './retention.ts'
 import { runDueJobs } from './settle.ts'
 import { exportBackup, importBackup } from './backup.ts'
 import type { Store } from './ports.ts'
@@ -13,6 +13,13 @@ function actionOf(raw: unknown): string | null {
   if (typeof raw !== 'object' || raw === null) return null
   const action = (raw as { action?: unknown }).action
   return typeof action === 'string' ? action : null
+}
+
+function notedOf(raw: unknown): string | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const noted = (raw as { noted?: unknown }).noted
+  if (noted === undefined || noted === null) return null
+  return typeof noted === 'string' ? noted : null
 }
 
 function hideMissing(data: unknown, fileExists: (path: string) => boolean): unknown {
@@ -74,6 +81,18 @@ export async function openLocal(
     return result.ok ? { ok: true, droppedPhotos: [] } : result
   }
 
+  if (action === 'photoPurge') {
+    if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
+    const notice = await photoPurgeNotice(store, caller, now, notedOf(raw))
+    return { ok: true, data: { notice }, droppedPhotos: [] }
+  }
+
+  if (action === 'purgePhotos') {
+    if ((await store.getUser(caller.userId)) === null) return { ok: false, error: 'no_user' }
+    const droppedPhotos = await clearExpiredPhotos(store, caller, now)
+    return { ok: true, droppedPhotos }
+  }
+
   if (action === 'checkin' || action === 'snack') {
     const result = await handle(store, caller, now, raw)
     if (result.ok) await acceptPendingPhotos(store, caller, now)
@@ -85,9 +104,8 @@ export async function openLocal(
     return finish(await handle(store, caller, now, raw), [])
   }
   await runDueJobs(store, now)
-  const droppedPhotos = await clearExpiredPhotos(store, caller, now)
   const result = await handle(store, caller, now, raw)
   const extra = action === 'closeAccount' ? closedPhotos(result) : []
   const shown = action === 'closeAccount' && result.ok ? { ok: true as const } : result
-  return finish(shown, [...droppedPhotos, ...extra], fileExists)
+  return finish(shown, extra, fileExists)
 }
