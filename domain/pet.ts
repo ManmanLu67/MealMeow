@@ -47,6 +47,11 @@ export type HomePetView = 'pasture' | 'living' | 'memorial'
 export const DEFAULT_PET_NAME = '小饭'
 export const MAX_PET_NAME_LENGTH = 6
 
+function isControlOrBreak(char: string): boolean {
+  const code = char.codePointAt(0) ?? 0
+  return code <= 0x1f || (code >= 0x7f && code <= 0x9f) || code === 0x2028 || code === 0x2029
+}
+
 /**
  * 领养时取的名字。不填叫「小饭」，最多 6 个字符（按 Unicode 字符计），
  * 不能含换行和控制字符。取了不能改，死亡后仍留在纪念页。
@@ -56,10 +61,12 @@ export function validatePetName(
 ): { ok: true; name: string } | { ok: false; error: string } {
   const name = (raw ?? '').trim()
   if (name === '') return { ok: true, name: DEFAULT_PET_NAME }
-  if ([...name].length > MAX_PET_NAME_LENGTH) {
+  const chars = [...name]
+  if (chars.length > MAX_PET_NAME_LENGTH) {
     return { ok: false, error: `名字最多 ${MAX_PET_NAME_LENGTH} 个字` }
   }
-  if (/[\p{C}\p{Zl}\p{Zp}]/u.test(name)) {
+  // 不用 Unicode 属性正则。部分手机基础库编译 \p{C} 会直接抛错，领养就变成「本机保存失败」。
+  if (chars.some(isControlOrBreak)) {
     return { ok: false, error: '名字里不能有换行或特殊符号' }
   }
   return { ok: true, name }

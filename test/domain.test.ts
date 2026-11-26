@@ -473,7 +473,10 @@ describe('pet name', () => {
 
   it('rejects control characters and line breaks', () => {
     assert.equal(validatePetName('饭\n饭').ok, false)
+    assert.equal(validatePetName('饭\r饭').ok, false)
     assert.equal(validatePetName('饭\t饭').ok, false)
+    assert.equal(validatePetName('饭\u2028饭').ok, false)
+    assert.equal(validatePetName('饭\u2029饭').ok, false)
   })
 })
 
